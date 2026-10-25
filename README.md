@@ -2,20 +2,13 @@
 
 Motor independiente de efectos visuales en tiempo real para Minecraft Java Edition, orientado a **Forge 1.20.1**.
 
-El objetivo no es añadir solamente una lista de efectos prefabricados. Queremos una base extensible para combinar shaders, geometría personalizada, partículas, animaciones, posprocesamiento y comportamiento del mundo. La meta es crear escenas cinematográficas —meteoritos con humo, portales, anomalías gravitacionales, supernovas y cielos dinámicos— sin rehacer el sistema para cada nuevo efecto.
+El objetivo no es añadir solamente una lista de efectos prefabricados. Queremos una base extensible para combinar shaders GLSL, geometría personalizada, partículas, animaciones, posprocesamiento y comportamiento del mundo. La meta es crear escenas cinematográficas —meteoritos con humo, portales, anomalías gravitacionales, supernovas y cielos dinámicos— sin rehacer el sistema para cada efecto nuevo.
 
-> **Estado:** estructura inicial, runtime cliente y comandos de control implementados. Los efectos cinematográficos complejos y el editor visual todavía están pendientes.
-
-## Plataforma
-
-- Minecraft Java Edition 1.20.1
-- Minecraft Forge 47.4.18
-- Java 17
-- Gradle 8.1.1
+> **Estado:** estructura del motor, comandos locales, primer efecto de prueba y shader GLSL básico incluidos. Los efectos cinematográficos complejos, el posprocesamiento y el editor visual todavía están pendientes.
 
 ## Comandos dentro del juego
 
-- `/vfx list`: lista los efectos registrados y marca cuáles están activos.
+- `/vfx list`: lista todos los efectos registrados y señala cuáles están activos.
 - `/vfx enable <efecto>`: activa uno.
 - `/vfx disable <efecto>`: desactiva uno.
 - `/vfx toggle <efecto>`: alterna su estado.
@@ -23,45 +16,55 @@ El objetivo no es añadir solamente una lista de efectos prefabricados. Queremos
 - `/vfx disable all`: desactiva todos.
 - `/vfx help`: muestra la ayuda.
 
-Los comandos se ejecutan en el cliente, también al jugar en servidores. Por eso los efectos visuales no requieren permisos de operador. Las mecánicas que alteren el mundo deberán sincronizarse y validarse en el servidor.
+Los argumentos tienen autocompletado con Tab. Puedes escribir `demo_orbit` o el identificador completo `vfxshadersmod:demo_orbit`.
 
-El primer efecto de prueba es `demo_orbit`, tres anillos de color alrededor del jugador local. Está para probar los comandos y el renderizado; no es uno de los efectos cinematográficos finales.
+Los comandos son del cliente y solo afectan los efectos visuales de tu instancia; funcionan también al jugar en un servidor sin requerir permisos de operador. Las mecánicas que alteren jugadores, criaturas o bloques deberán ejecutarse y validarse en el servidor.
 
-Consulta [todos los comandos](docs/COMANDOS.md).
+### VFX incluido como prueba
 
-## Principios del proyecto
+- **Órbitas de demostración** (`demo_orbit`): tres anillos de color alrededor del jugador local. Está para probar el registro, la activación, el ciclo de vida y el renderizado; no es uno de los efectos cinematográficos finales.
 
-- **Independiente:** no modifica ni depende del repositorio `shadermod`.
-- **Componible:** un efecto se construye combinando componentes reutilizables.
-- **Separación clara:** renderizado, animación, simulación y red son responsabilidades distintas.
-- **Orientado a escenas:** los efectos pueden tener fases, curvas temporales, transiciones y parámetros.
-- **Multijugador consciente:** el servidor controla la lógica que afecta al mundo; el cliente dibuja los efectos.
-- **Rendimiento medible:** evitar trabajo innecesario por fotograma y permitir ajustar la calidad.
-- **Extensible:** la lista de comandos se genera desde el registro central, sin mantener una segunda lista.
+Consulta la [guía de comandos](docs/COMANDOS.md).
 
-## Compilar
+## Arquitectura
 
-Se necesita un JDK 17 y Gradle 8.1.1.
+El catálogo central guarda el identificador, nombre visible, descripción y fábrica de cada efecto. `/vfx list`, el estado activo y el autocompletado se generan desde ese registro: al crear un efecto nuevo, se añade su fábrica a `ClientVfxCatalog` y aparece en la lista.
+
+- **Núcleo:** ciclo de vida, identificadores y registro.
+- **Renderizado:** componentes del lado cliente que dibujan en las etapas del mundo.
+- **Shaders y materiales:** la base GLSL se carga desde `VfxShaderLibrary`; `VfxRenderTypes` contiene tipos de renderizado reutilizables.
+- **Partículas y estelas:** sistemas previstos para efectos compuestos.
+- **Posprocesamiento:** infraestructura futura para distorsión, bloom y composición de pantalla.
+- **Simulación y red:** separación entre visuales locales y comportamiento autoritativo del mundo.
+
+## Plataforma y compilación
+
+- Minecraft Java Edition 1.20.1
+- Minecraft Forge 47.4.18
+- Java 17
+- Gradle 8.1.1
+
+Se necesita un JDK 17 y Gradle 8.1.1 instalado:
 
 ```bash
 gradle build
 ```
 
-El JAR se genera en `build/libs/`. Gradle Forge proporciona las tareas `runClient` y `runServer` para probar el entorno de desarrollo. GitHub Actions ejecuta la compilación en cada push a `main` y almacena el JAR como artefacto cuando finaliza correctamente.
+El JAR se genera en `build/libs/`. GitHub Actions compila en cada push a `main` y guarda el JAR como artefacto al terminar correctamente.
 
-## Arquitectura y documentos
+## Documentación
 
 - [Arquitectura del motor](docs/ARQUITECTURA.md)
 - [Hoja de ruta](docs/HOJA_DE_RUTA.md)
-- [Cómo diseñar efectos nuevos](docs/CREAR_EFECTOS.md)
+- [Cómo crear un efecto nuevo](docs/CREAR_EFECTOS.md)
 - [Comandos VFX](docs/COMANDOS.md)
 
-## Estado actual
+## Qué falta
 
-Implementado: configuración Forge, contrato común para efectos, registro de fábricas, runtime cliente, activación/desactivación mediante comandos, renderizado de prueba y compilación automática configurada.
+Aunque ya existe una base GLSL y un tipo de renderizado compartido, aún debe validarse la carga en una sesión real del cliente de Minecraft. También faltan el cargador de materiales reutilizables, partículas avanzadas, estelas, posprocesamiento, definiciones externas de efectos, eventos sincronizados para multijugador y el editor visual.
 
-Pendiente: cargador y gestión de shaders GLSL, materiales reutilizables, partículas avanzadas, estelas, cadena de posprocesamiento, definiciones externas de efectos, multijugador para eventos visuales y mecánicas y editor visual. La existencia de estas ideas en la documentación no significa que ya estén implementadas.
+## Independencia y licencia
 
-## Licencia
+Este proyecto es independiente y no modifica ni depende del repositorio `shadermod`.
 
 Todavía no se ha elegido una licencia. Hasta que se añada una, no se debe asumir que el código puede redistribuirse o reutilizarse libremente.
