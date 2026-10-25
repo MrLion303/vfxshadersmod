@@ -9,8 +9,8 @@ import net.minecraft.client.renderer.RenderType;
 import java.util.OptionalDouble;
 
 /**
- * Tipos de renderizado compartidos por los VFX. Se mantienen aquí para que
- * cada efecto no tenga que construir y configurar sus propios RenderType.
+ * Tipos de renderizado compartidos por los VFX. Los efectos usan estos estados
+ * comunes en lugar de configurar una canalización distinta para cada dibujo.
  */
 public final class VfxRenderTypes extends RenderType {
     private static final RenderType COLOR_LINES = RenderType.create(
@@ -31,6 +31,23 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType COLOR_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":color_quads",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS,
+            16384,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private VfxRenderTypes() {
         super(
                 VfxShadersMod.MOD_ID + ":internal",
@@ -46,5 +63,13 @@ public final class VfxRenderTypes extends RenderType {
 
     public static RenderType colorLines() {
         return COLOR_LINES;
+    }
+
+    /**
+     * Quads translúcidos que respetan la profundidad, pero no escriben en ella.
+     * Esto permite superponer capas de brillo y cortinas semitransparentes.
+     */
+    public static RenderType colorQuads() {
+        return COLOR_QUADS;
     }
 }
