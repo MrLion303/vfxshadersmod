@@ -2,6 +2,7 @@ package com.mrlion303.vfxshadersmod.client;
 
 import com.mojang.logging.LogUtils;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
+import com.mrlion303.vfxshadersmod.client.render.ClientWorldVfxRendererRegistry;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.EffectRegistry;
@@ -19,9 +20,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Runtime de VFX locales. La autoridad de las mecánicas que cambien el mundo
- * debe vivir en el servidor; esta clase administra únicamente instancias del
- * lado cliente y su renderizado.
+ * Runtime de efectos visuales activados localmente. Las definiciones activadas
+ * con /vfx son independientes de las apariciones colocadas en el mundo.
  */
 public final class ClientVfxManager {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -97,10 +97,7 @@ public final class ClientVfxManager {
         return count;
     }
 
-    /**
-     * Detiene los efectos cuando exista un mundo disponible para ejecutar su
-     * limpieza. Si ya se abandonó el mundo, se descartan las instancias locales.
-     */
+    /** Limpia el runtime de efectos y las apariciones locales al abandonar el mundo. */
     public static void clear() {
         Level level = Minecraft.getInstance().level;
         if (level != null) {
@@ -114,6 +111,7 @@ public final class ClientVfxManager {
             }
         }
         ACTIVE.clear();
+        ClientWorldVfxInstances.clear();
     }
 
     public static void tick(Level level) {
@@ -137,25 +135,29 @@ public final class ClientVfxManager {
                 iterator.remove();
             }
         }
+        ClientWorldVfxInstances.tick(level);
     }
 
     public static void render(RenderLevelStageEvent event) {
-        if (ACTIVE.isEmpty()) {
-            return;
+        if (!ACTIVE.isEmpty()) {
+            for (Map.Entry<EffectId, VfxEffect> entry : new ArrayList<>(ACTIVE.entrySet())) {
+                if (!(entry.getValue() instanceof ClientVfxRenderer renderer)) {
+                    continue;
+                }
+
+                try {
+                    renderer.render(event, event.getPartialTick());
+                } catch (RuntimeException exception) {
+                    LOGGER.error("El renderizado del efecto VFX {} falló; se desactivará",
+                            entry.getKey(), exception);
+                    disable(entry.getKey());
+                }
+            }
         }
 
-        for (Map.Entry<EffectId, VfxEffect> entry : new ArrayList<>(ACTIVE.entrySet())) {
-            if (!(entry.getValue() instanceof ClientVfxRenderer renderer)) {
-                continue;
-            }
-
-            try {
-                renderer.render(event, event.getPartialTick());
-            } catch (RuntimeException exception) {
-                LOGGER.error("El renderizado del efecto VFX {} falló; se desactivará", entry.getKey(), exception);
-                disable(entry.getKey());
-            }
-        }
+        // Una aparición colocada tiene su propio ciclo de vida y se dibuja
+        // aunque no haya efectos globales activados con /vfx.
+        ClientWorldVfxRendererRegistry.render(event);
     }
 
     public static boolean isActive(EffectId id) {

@@ -10,10 +10,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/**
- * Eventos que solo existen en el cliente. El filtro Dist.CLIENT evita cargar
- * estas clases en un servidor dedicado.
- */
+/** Eventos que solo existen en el cliente. */
 @Mod.EventBusSubscriber(
         modid = VfxShadersMod.MOD_ID,
         bus = Mod.EventBusSubscriber.Bus.FORGE,

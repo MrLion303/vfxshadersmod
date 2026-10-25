@@ -11,44 +11,53 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-/**
- * Registro central de definiciones y fábricas de efectos.
- *
- * Se completa durante la inicialización del cliente. Las definiciones también
- * alimentan la lista y el autocompletado de los comandos /vfx.
- */
+/** Registro central de definiciones y fábricas de efectos. */
 public final class EffectRegistry {
-    private static final Map<EffectId, Supplier<? extends VfxEffect>> FACTORIES =
-            new LinkedHashMap<>();
+    private static final Map<EffectId, Supplier<? extends VfxEffect>> FACTORIES = new LinkedHashMap<>();
     private static final Map<EffectId, Definition> DEFINITIONS = new LinkedHashMap<>();
 
     private EffectRegistry() {
     }
 
-    public record Definition(EffectId id, String displayName, String description) {
+    public record Definition(
+            EffectId id,
+            String displayName,
+            String description,
+            VfxEffectCategory category
+    ) {
         public Definition {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(displayName, "displayName");
             Objects.requireNonNull(description, "description");
+            Objects.requireNonNull(category, "category");
         }
     }
 
-    /**
-     * Registro compatible para efectos que todavía no tienen metadatos propios.
-     */
     public static void register(EffectId id, Supplier<? extends VfxEffect> factory) {
-        register(id, id.toString(), "", factory);
+        register(id, id.toString(), "", VfxEffectCategory.COMPOSITE, factory);
     }
 
+    /** Firma compatible con las definiciones anteriores al sistema de categorías. */
     public static void register(
             EffectId id,
             String displayName,
             String description,
             Supplier<? extends VfxEffect> factory
     ) {
+        register(id, displayName, description, VfxEffectCategory.COMPOSITE, factory);
+    }
+
+    public static void register(
+            EffectId id,
+            String displayName,
+            String description,
+            VfxEffectCategory category,
+            Supplier<? extends VfxEffect> factory
+    ) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(displayName, "displayName");
         Objects.requireNonNull(description, "description");
+        Objects.requireNonNull(category, "category");
         Objects.requireNonNull(factory, "factory");
 
         if (FACTORIES.containsKey(id)) {
@@ -56,7 +65,7 @@ public final class EffectRegistry {
         }
 
         FACTORIES.put(id, factory);
-        DEFINITIONS.put(id, new Definition(id, displayName, description));
+        DEFINITIONS.put(id, new Definition(id, displayName, description, category));
     }
 
     public static Optional<VfxEffect> create(EffectId id) {
@@ -70,7 +79,6 @@ public final class EffectRegistry {
             throw new IllegalStateException(
                     "La fábrica de " + id + " creó un efecto con identificador " + effect.id());
         }
-
         return Optional.of(effect);
     }
 

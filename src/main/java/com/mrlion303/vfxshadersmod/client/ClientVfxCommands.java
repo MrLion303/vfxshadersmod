@@ -49,7 +49,7 @@ public final class ClientVfxCommands {
     private static int help(CommandContext<CommandSourceStack> context) {
         var source = context.getSource();
         source.sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos locales"), false);
-        source.sendSuccess(() -> Component.literal("/vfx list — lista los efectos disponibles y su estado"), false);
+        source.sendSuccess(() -> Component.literal("/vfx list — lista los efectos disponibles, sus categorías y estado"), false);
         source.sendSuccess(() -> Component.literal("/vfx enable <efecto> — activa un efecto"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva un efecto"), false);
         source.sendSuccess(() -> Component.literal("/vfx toggle <efecto> — alterna su estado"), false);
@@ -71,11 +71,9 @@ public final class ClientVfxCommands {
         for (EffectRegistry.Definition definition : definitions) {
             boolean active = ClientVfxManager.isActive(definition.id());
             String state = active ? "ACTIVO" : "INACTIVO";
-            String description = definition.description().isBlank()
-                    ? ""
-                    : " — " + definition.description();
-            String line = "[" + state + "] " + definition.displayName()
-                    + " (" + definition.id() + ")" + description;
+            String description = definition.description().isBlank() ? "" : " — " + definition.description();
+            String line = "[" + state + "] [" + definition.category().displayName() + "] "
+                    + definition.displayName() + " (" + definition.id() + ")" + description;
             source.sendSuccess(() -> Component.literal(line), false);
         }
         source.sendSuccess(() -> Component.literal("Usa /vfx enable <efecto>, /vfx disable <efecto> o /vfx toggle <efecto>."), false);
