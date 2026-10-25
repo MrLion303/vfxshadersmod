@@ -10,11 +10,8 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mrlion303.vfxshadersmod.client.ClientVfxManager;
 import com.mrlion303.vfxshadersmod.client.ClientWorldVfxInstances;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
-import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
-import com.mrlion303.vfxshadersmod.client.effect.RainbowSkyEffect;
 import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
 import net.minecraft.client.Camera;
@@ -34,8 +31,8 @@ import java.util.List;
 
 /**
  * Aplica una lente gravitacional fuerte, una sombra negra y el disco brillante
- * alrededor de los agujeros negros. El mismo pase tiñe el cielo y las nubes
- * cuando está activo rainbow_sky.
+ * alrededor de los agujeros negros. Los efectos de cielo se renderizan aparte
+ * para no alterar el resto de la imagen.
  */
 public final class BlackHoleLensingPass {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -54,18 +51,16 @@ public final class BlackHoleLensingPass {
             return;
         }
 
-        boolean skyHoleActive = ClientVfxManager.isActive(BlackHoleSkyEffect.ID);
-        boolean rainbowSkyActive = ClientVfxManager.isActive(RainbowSkyEffect.ID);
         List<WorldVfxInstance> holes = ClientWorldVfxInstances.forLevel(minecraft.level).stream()
                 .filter(instance -> instance.effectId().equals(BlackHoleEffect.ID))
                 .filter(instance -> instance.position().distanceToSqr(event.getCamera().getPosition())
                         <= 192.0D * 192.0D)
                 .sorted(Comparator.comparingDouble(instance ->
                         instance.position().distanceToSqr(event.getCamera().getPosition())))
-                .limit(MAX_HOLES - (skyHoleActive ? 1 : 0))
+                .limit(MAX_HOLES)
                 .toList();
 
-        if (holes.isEmpty() && !skyHoleActive && !rainbowSkyActive) {
+        if (holes.isEmpty()) {
             releaseTarget();
             return;
         }
@@ -88,26 +83,6 @@ public final class BlackHoleLensingPass {
             Vec3 cameraPosition = camera.getPosition();
             Vector3f cameraLeft = camera.getLeftVector();
 
-            // La posición del agujero celeste es un vector fijo del mundo, no el ángulo
-            // de la cámara cuando se activa. Su altura es de 50 grados sobre el horizonte.
-            if (skyHoleActive) {
-                double radius = BlackHoleSkyEffect.SKY_DIAMETER * 0.5D;
-                Vec3 skyCenter = cameraPosition.add(BlackHoleSkyEffect.centerOffset());
-                Vec3 skyEdge = skyCenter.add(
-                        cameraLeft.x * radius,
-                        cameraLeft.y * radius,
-                        cameraLeft.z * radius
-                );
-                float[] center = project(skyCenter, camera, event);
-                float[] edge = project(skyEdge, camera, event);
-                if (center != null && edge != null) {
-                    float dx = (edge[0] - center[0]) * aspect;
-                    float dy = edge[1] - center[1];
-                    float projectedRadius = Math.max(0.012F, (float) Math.sqrt(dx * dx + dy * dy));
-                    screenHoles.add(new float[]{center[0], center[1], projectedRadius, 1.55F});
-                }
-            }
-
             for (WorldVfxInstance hole : holes) {
                 double diameter = hole.parameters().getOrDefault(
                         "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
@@ -117,9 +92,9 @@ public final class BlackHoleLensingPass {
                 // Al entrar en el horizonte se mantiene la distorsión en pantalla,
                 // en lugar de perderla por la proyección de un punto demasiado cercano.
                 if (distance <= radius) {
-                    float spread = (float) Math.min(0.62D,
-                            0.22D + 0.40D * (1.0D - distance / radius));
-                    screenHoles.add(new float[]{0.5F, 0.5F, spread, 2.2F});
+                    float spread = (float) Math.min(0.25D,
+                            0.025D + 0.12D * (1.0D - distance / radius));
+                    screenHoles.add(new float[]{0.5F, 0.5F, spread, 1.2F});
                     continue;
                 }
 
@@ -137,23 +112,12 @@ public final class BlackHoleLensingPass {
                 float dx = (edge[0] - center[0]) * aspect;
                 float dy = edge[1] - center[1];
                 float projectedRadius = Math.max(0.006F, (float) Math.sqrt(dx * dx + dy * dy));
-                float strength = (float) (1.35D + 0.65D * Math.max(0.0D, 1.0D - distance / 160.0D));
+                float strength = (float) (0.85D + 0.35D * Math.max(0.0D, 1.0D - distance / 160.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
             }
 
             shader.setSampler("DiffuseSampler", (java.util.function.IntSupplier) main::getColorTextureId);
-            shader.setSampler("DepthSampler", (java.util.function.IntSupplier) main::getDepthTextureId);
             setUniform(shader, "ScreenSize", new float[]{main.width, main.height});
-            setUniform(shader, "RainbowSkyActive", new float[]{rainbowSkyActive ? 1.0F : 0.0F});
-
-            int rgb = RainbowSkyEffect.currentColorRgb();
-            setUniform(shader, "RainbowSkyColor", new float[]{
-                    ((rgb >> 16) & 0xFF) / 255.0F,
-                    ((rgb >> 8) & 0xFF) / 255.0F,
-                    (rgb & 0xFF) / 255.0F,
-                    1.0F
-            });
-
             for (int i = 0; i < MAX_HOLES; i++) {
                 float[] data = i < screenHoles.size()
                         ? screenHoles.get(i)
@@ -161,14 +125,18 @@ public final class BlackHoleLensingPass {
                 setUniform(shader, "Hole" + i, data);
             }
 
+            // Captura la imagen original como textura de entrada antes de dibujar al destino auxiliar.
+            main.bindRead();
             scratch.bindWrite(true);
             scratch.setClearColor(0.0F, 0.0F, 0.0F, 1.0F);
             scratch.clear(false);
+            shader.setSampler("DiffuseSampler", (java.util.function.IntSupplier) main::getColorTextureId);
 
             RenderSystem.disableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.disableBlend();
             RenderSystem.setShader(() -> shader);
+            RenderSystem.setShaderTexture(0, main.getColorTextureId());
 
             BufferBuilder builder = Tesselator.getInstance().getBuilder();
             builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
@@ -190,7 +158,7 @@ public final class BlackHoleLensingPass {
             loggedFailure = false;
         } catch (RuntimeException exception) {
             if (!loggedFailure) {
-                LOGGER.error("No se pudo aplicar el pase de lente/graduación de cielo; se mantiene el renderizado normal.", exception);
+                LOGGER.error("No se pudo aplicar la distorsión del agujero negro; se mantiene el renderizado normal.", exception);
                 loggedFailure = true;
             }
         } finally {
