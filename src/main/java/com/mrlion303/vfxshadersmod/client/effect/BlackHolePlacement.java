@@ -3,41 +3,24 @@ package com.mrlion303.vfxshadersmod.client.effect;
 import com.mrlion303.vfxshadersmod.client.ClientWorldVfxInstances;
 import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Map;
 
-/** Utilidades de colocación para los comandos locales de agujero negro. */
+/** Crea agujeros negros en coordenadas exactas del mundo actual del cliente. */
 public final class BlackHolePlacement {
-    private static final double FALLBACK_DISTANCE = 16.0D;
-
     private BlackHolePlacement() {
     }
 
-    public static WorldVfxInstance spawnAtAim(float diameter) {
+    public static WorldVfxInstance placeAt(float diameter, Vec3 position) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             return null;
         }
-
-        Vec3 position;
-        HitResult hit = minecraft.hitResult;
-        if (hit != null && hit.getType() != HitResult.Type.MISS) {
-            position = hit.getLocation();
-            if (hit instanceof BlockHitResult blockHit) {
-                Vec3 normal = new Vec3(
-                        blockHit.getDirection().getStepX(),
-                        blockHit.getDirection().getStepY(),
-                        blockHit.getDirection().getStepZ()
-                );
-                // Deja el horizonte del agujero fuera de la superficie seleccionada.
-                position = position.add(normal.scale(diameter * 0.5D + 0.15D));
-            }
-        } else {
-            position = minecraft.player.getEyePosition()
-                    .add(minecraft.player.getLookAngle().scale(FALLBACK_DISTANCE));
+        if (!Float.isFinite(diameter)
+                || diameter < BlackHoleEffect.MIN_DIAMETER
+                || diameter > BlackHoleEffect.MAX_DIAMETER) {
+            throw new IllegalArgumentException("El diámetro debe estar entre 1 y 100 bloques.");
         }
 
         return ClientWorldVfxInstances.spawn(

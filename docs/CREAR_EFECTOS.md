@@ -1,57 +1,42 @@
 # Diseñar y añadir efectos
 
-## Modelo mental
+## Elegir el tipo de efecto
 
-Un efecto es una composición de componentes, no necesariamente una clase que lo dibuja todo. Un meteorito podría combinar un núcleo 3D con material emisivo, una estela, emisores de humo y chispas, y una secuencia temporal de aparición, vuelo y disipación.
-
-Un agujero negro requiere una definición de efecto, una aparición colocada en coordenadas, una malla para su horizonte y disco de acreción y un pase de pantalla que deforme la escena en torno a la posición proyectada.
-
-## Elegir dónde vive un efecto
-
-- Ambiental: se extiende por una zona amplia o forma parte del entorno, como auroras y fenómenos del cielo.
-- Anclado al mundo: tiene coordenadas concretas y no sigue automáticamente al jugador. Puede haber varias instancias del mismo tipo.
-- Ligado a entidad: sigue a un jugador, criatura u otra entidad.
-- Pantalla/cámara: procesa la imagen que ve la cámara; por ejemplo, una lente gravitacional.
-- Partículas o compuesto: combina emisores, geometría, materiales y fases.
-- Simulación del mundo: altera el mundo real o aplica fuerzas. Requiere reglas de autoridad y validación del servidor; no es lo mismo que deformar visualmente la imagen de un bloque.
+- Ambiental: se extiende por el cielo o el entorno.
+- Anclado al mundo: existe en coordenadas concretas y no sigue automáticamente al jugador.
+- Ligado a entidad: sigue a un jugador o criatura.
+- Pantalla/cámara: modifica la imagen renderizada, como una lente gravitacional.
+- Compuesto: combina mallas, materiales, partículas y fases temporales.
+- Simulación: cambia el mundo real o aplica fuerzas y requiere autoridad del servidor.
 
 ## Contratos principales
 
-- VfxEffect: identificador, inicio, actualización, finalización y limpieza.
-- VfxEffectCategory: categoría funcional guardada en el registro.
-- WorldVfxInstance: aparición concreta con dimensión, posición, rotación, escala, duración y parámetros.
-- ClientWorldVfxInstances: almacén local para múltiples apariciones colocadas.
-- VfxRenderContext: datos compartidos de cámara y etapa para un renderer espacial.
-- ClientWorldVfxRenderer y ClientWorldVfxRendererRegistry: dibujan y registran apariciones ancladas al mundo.
-- BlackHoleLensingPass: pase GLSL que proyecta agujeros negros en pantalla y deforma la textura del nivel.
-- EffectRegistry: catálogo de fábricas, categorías y metadatos.
-- ClientVfxManager: ciclo de vida de efectos globales activados mediante comandos.
+- VfxEffect: ciclo de vida de una definición.
+- VfxEffectCategory: categoría funcional.
+- WorldVfxInstance: aparición colocada con posición y parámetros propios.
+- ClientWorldVfxInstances: almacén de apariciones.
+- VfxRenderContext: datos de cámara y etapa para renderers espaciales.
+- ClientWorldVfxRenderer y ClientWorldVfxRendererRegistry: renderizado de instancias colocadas.
+- BlackHoleLensingPass: pase GLSL que deforma la imagen alrededor de agujeros negros.
+- EffectRegistry y ClientVfxCatalog: definiciones, metadatos y registro.
 
-## Añadir un efecto global
+## Crear un efecto colocado
 
-1. Crear una clase que implemente VfxEffect y definir un EffectId único.
-2. Si dibuja durante el renderizado del mundo, implementar ClientVfxRenderer.
-3. Registrarlo en ClientVfxCatalog.registerDefaults() con la categoría adecuada.
-4. Comprobar que aparece en /vfx list y funciona con los comandos de activación.
-5. Actualizar esta documentación con el comportamiento y las limitaciones.
+1. Crear una definición con EffectId.
+2. Implementar ClientWorldVfxRenderer.
+3. Registrar el renderer para su EffectId.
+4. Crear una WorldVfxInstance con posición, orientación, escala, duración y parámetros.
+5. Utilizar VfxRenderContext para convertir coordenadas mundiales a relativas a cámara.
+6. Si el efecto distorsiona el paisaje o el cielo detrás de él, implementar un pase de posprocesamiento y conectarlo en la etapa adecuada.
 
-## Añadir un efecto colocado
+El comando del agujero negro sirve como ejemplo de tamaño y coordenadas: /vfx enable blackhole <tamaño> <x> <y> <z>. Se desactiva con /vfx disable blackhole.
 
-1. Crear una definición y un renderer que implemente ClientWorldVfxRenderer.
-2. En renderStages(), devolver solo las etapas en las que se debe dibujar.
-3. Registrar el renderer en ClientWorldVfxRendererRegistry con el EffectId de la definición.
-4. Crear apariciones con ClientWorldVfxInstances.spawn(...), indicando nivel del cliente, posición absoluta, rotación, escala, duración y parámetros.
-5. Utilizar VfxRenderContext.toCameraRelative(...) al emitir vértices relativos a la cámara.
-6. Probar varias instancias del mismo tipo a diferentes distancias, al cambiar de dimensión y al abandonar el mundo.
+## Añadir un efecto de cielo
 
-La API de instancias está conectada al comando del agujero negro como ejemplo. Otros tipos pueden reutilizarla. La sincronización de red aún no está añadida.
+Un efecto que permanezca en una dirección celeste puede implementar VfxEffect y ClientVfxRenderer. Renderiza la geometría en una etapa del cielo, usa coordenadas relativas al observador para evitar paralaje no deseado y define claramente su orientación.
 
 ## Añadir un shader GLSL
 
-Los recursos GLSL van en src/main/resources/assets/vfxshadersmod/shaders/core/. Cada shader debe tener configuración JSON y archivos vertex/fragment compatibles con su formato de vértices. Regístralo en VfxShaderLibrary mediante RegisterShadersEvent y almacena la instancia que entrega el callback.
+Los recursos van en src/main/resources/assets/vfxshadersmod/shaders/core/. Crea el JSON de configuración, los archivos vertex/fragment compatibles con el formato de vértices y registra el ShaderInstance en VfxShaderLibrary.
 
-El shader basic_color solo transporta el color por vértice. El shader black_hole_lensing trabaja con la textura de pantalla y los parámetros proyectados de los agujeros negros. El runtime debe renderizar a una textura auxiliar distinta antes de copiar el resultado al target principal.
-
-## Limitaciones y pruebas
-
-La lente gravitacional actual deforma la imagen en pantalla. No altera la geometría real de los bloques ni modifica las mecánicas del mundo. Antes de considerar terminado un efecto, compílalo, pruébalo en una sesión real y verifica el comportamiento ante recargas de recursos, cambios de resolución, varios efectos simultáneos y equipos de rendimiento limitado.
+La compilación no garantiza que un shader se vea correctamente en todos los drivers: hay que probarlo dentro de Minecraft, incluidos los cambios de resolución, recarga de recursos y varios efectos simultáneos.

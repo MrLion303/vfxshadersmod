@@ -1,6 +1,7 @@
 package com.mrlion303.vfxshadersmod.client;
 
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
+import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
 import com.mrlion303.vfxshadersmod.client.effect.DemoOrbitEffect;
 import com.mrlion303.vfxshadersmod.client.effect.MusicHorizonBarsEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraEffect;
@@ -53,9 +54,16 @@ public final class ClientVfxCatalog {
         EffectRegistry.register(
                 BlackHoleEffect.ID,
                 "Agujero negro",
-                "Horizonte negro de tamaño ajustable, disco de acreción y lente gravitacional sobre la escena.",
+                "Horizonte negro colocado en coordenadas exactas, con disco de acreción y lente gravitacional de pantalla.",
                 VfxEffectCategory.WORLD_ANCHORED,
                 BlackHoleEffect::new
+        );
+        EffectRegistry.register(
+                BlackHoleSkyEffect.ID,
+                "Agujero negro celeste",
+                "Un agujero negro de apariencia astronómica en el cielo, con disco de acreción y lente gravitacional.",
+                VfxEffectCategory.ENVIRONMENT,
+                BlackHoleSkyEffect::new
         );
 
         ClientWorldVfxRendererRegistry.register(BlackHoleEffect.ID, new BlackHoleVfxRenderer());

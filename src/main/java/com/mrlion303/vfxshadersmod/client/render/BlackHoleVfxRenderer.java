@@ -12,11 +12,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 
 import java.util.Set;
 
-/**
- * Renderer espacial del agujero negro. Dibuja un horizonte opaco y un disco
- * de acreción que anima el color y la ondulación. La lente gravitacional de
- * pantalla se ejecuta en BlackHoleLensingPass después de renderizar el nivel.
- */
+/** Renderer de agujeros negros colocados en coordenadas del mundo. */
 public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     private static final int SPHERE_SEGMENTS = 48;
     private static final int SPHERE_BANDS = 20;
@@ -34,18 +30,22 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
             return;
         }
 
-        double diameter = instance.parameters().getOrDefault(
-                "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
+        double diameter = instance.parameters().getOrDefault("diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
         double radius = Math.max(0.5D, diameter * 0.5D);
+        double distanceToCenter = instance.position().distanceTo(context.cameraPosition());
         Vec3 center = context.toCameraRelative(instance.position());
         PoseStack.Pose pose = context.poseStack().last();
         Minecraft minecraft = Minecraft.getInstance();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
 
-        RenderType coreType = VfxRenderTypes.colorOpaqueQuads();
-        VertexConsumer core = buffers.getBuffer(coreType);
-        drawSphere(core, pose, center, radius);
-        buffers.endBatch(coreType);
+        // El horizonte solo se dibuja desde fuera. Si el jugador cruza el horizonte,
+        // el objeto no bloquea la vista como una esfera sólida ni impide caminar dentro.
+        if (distanceToCenter > radius) {
+            RenderType coreType = VfxRenderTypes.colorOpaqueQuads();
+            VertexConsumer core = buffers.getBuffer(coreType);
+            drawSphere(core, pose, center, radius);
+            buffers.endBatch(coreType);
+        }
 
         RenderType diskType = VfxRenderTypes.colorQuads();
         VertexConsumer disk = buffers.getBuffer(diskType);
@@ -79,20 +79,13 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
 
     private static Vec3 spherePoint(Vec3 center, double radius, double angle, double latitude) {
         double horizontal = Math.cos(latitude) * radius;
-        return new Vec3(
-                center.x + Math.cos(angle) * horizontal,
+        return new Vec3(center.x + Math.cos(angle) * horizontal,
                 center.y + Math.sin(latitude) * radius,
-                center.z + Math.sin(angle) * horizontal
-        );
+                center.z + Math.sin(angle) * horizontal);
     }
 
-    private static void drawAccretionDisk(
-            VertexConsumer vertices,
-            PoseStack.Pose pose,
-            Vec3 center,
-            double coreRadius,
-            double time
-    ) {
+    private static void drawAccretionDisk(VertexConsumer vertices, PoseStack.Pose pose, Vec3 center,
+                                          double coreRadius, double time) {
         for (int layer = 0; layer < DISK_LAYERS; layer++) {
             double innerRadius = coreRadius * (1.02D + layer * 0.12D);
             double outerRadius = innerRadius + coreRadius * (0.13D + layer * 0.015D);
@@ -117,30 +110,20 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
                 float hue = (float) (angleA / (Math.PI * 2.0D) + time * 0.0018D + layer * 0.13D);
                 int rgb = VfxGeometry.rainbowRgb(hue);
                 VfxGeometry.quad(vertices, pose,
-                        innerA.x, innerA.y, innerA.z,
-                        outerA.x, outerA.y, outerA.z,
-                        outerB.x, outerB.y, outerB.z,
-                        innerB.x, innerB.y, innerB.z,
-                        rgb, layerAlpha);
+                        innerA.x, innerA.y, innerA.z, outerA.x, outerA.y, outerA.z,
+                        outerB.x, outerB.y, outerB.z, innerB.x, innerB.y, innerB.z, rgb, layerAlpha);
             }
         }
     }
 
     private static Vec3 diskPoint(Vec3 center, double radius, double angle, double yOffset) {
-        return new Vec3(
-                center.x + Math.cos(angle) * radius,
+        return new Vec3(center.x + Math.cos(angle) * radius,
                 center.y + yOffset,
-                center.z + Math.sin(angle) * radius
-        );
+                center.z + Math.sin(angle) * radius);
     }
 
-    private static void drawLensingArcs(
-            VertexConsumer vertices,
-            PoseStack.Pose pose,
-            Vec3 center,
-            double coreRadius,
-            double time
-    ) {
+    private static void drawLensingArcs(VertexConsumer vertices, PoseStack.Pose pose,
+                                        Vec3 center, double coreRadius, double time) {
         final int segments = 96;
         for (int plane = 0; plane < 3; plane++) {
             Vec3 previous = arcPoint(center, coreRadius * 1.13D, 0.0D, plane, time);
@@ -165,18 +148,12 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         };
     }
 
-    private static void emitLineVertex(
-            VertexConsumer vertices,
-            PoseStack.Pose pose,
-            Vec3 point,
-            int rgb,
-            float alpha
-    ) {
+    private static void emitLineVertex(VertexConsumer vertices, PoseStack.Pose pose, Vec3 point,
+                                       int rgb, float alpha) {
         float red = ((rgb >> 16) & 0xFF) / 255.0F;
         float green = ((rgb >> 8) & 0xFF) / 255.0F;
         float blue = (rgb & 0xFF) / 255.0F;
         vertices.vertex(pose.pose(), (float) point.x, (float) point.y, (float) point.z)
-                .color(red, green, blue, alpha)
-                .endVertex();
+                .color(red, green, blue, alpha).endVertex();
     }
 }

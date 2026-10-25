@@ -1,5 +1,6 @@
 package com.mrlion303.vfxshadersmod.client.postprocess;
 
+import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -9,8 +10,10 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mrlion303.vfxshadersmod.client.ClientVfxManager;
 import com.mrlion303.vfxshadersmod.client.ClientWorldVfxInstances;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
+import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
 import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
 import net.minecraft.client.Camera;
@@ -23,16 +26,15 @@ import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.slf4j.Logger;
-import com.mojang.logging.LogUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 /**
- * Pasa de posprocesamiento para la lente gravitacional. Proyecta los agujeros
- * negros visibles a pantalla y deforma las UV de la escena, haciendo que los
- * bloques y el paisaje alrededor se vean curvados al mirar a través de ellos.
+ * Deforma la imagen del nivel alrededor de agujeros negros colocados en el mundo
+ * y del agujero negro celeste. Al operar sobre la textura completa afecta tanto
+ * a bloques como al cielo que aparezcan en la zona de influencia de pantalla.
  */
 public final class BlackHoleLensingPass {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -51,15 +53,16 @@ public final class BlackHoleLensingPass {
             return;
         }
 
+        boolean skyHoleActive = ClientVfxManager.isActive(BlackHoleSkyEffect.ID);
         List<WorldVfxInstance> holes = ClientWorldVfxInstances.forLevel(minecraft.level).stream()
                 .filter(instance -> instance.effectId().equals(BlackHoleEffect.ID))
                 .filter(instance -> instance.position().distanceToSqr(event.getCamera().getPosition()) <= 192.0D * 192.0D)
                 .sorted(Comparator.comparingDouble(instance ->
                         instance.position().distanceToSqr(event.getCamera().getPosition())))
-                .limit(MAX_HOLES)
+                .limit(MAX_HOLES - (skyHoleActive ? 1 : 0))
                 .toList();
 
-        if (holes.isEmpty()) {
+        if (holes.isEmpty() && !skyHoleActive) {
             releaseTarget();
             return;
         }
@@ -82,10 +85,42 @@ public final class BlackHoleLensingPass {
             Vec3 cameraPosition = camera.getPosition();
             Vector3f cameraLeft = camera.getLeftVector();
 
+            // Se reserva una entrada para el agujero celeste. Su distancia es fija
+            // para evitar paralaje y el renderizador usa exactamente este mismo centro.
+            if (skyHoleActive) {
+                double radius = BlackHoleSkyEffect.SKY_DIAMETER * 0.5D;
+                Vec3 skyCenter = cameraPosition.add(BlackHoleSkyEffect.centerOffset());
+                Vec3 skyEdge = skyCenter.add(
+                        cameraLeft.x * radius,
+                        cameraLeft.y * radius,
+                        cameraLeft.z * radius
+                );
+                float[] center = project(skyCenter, cameraPosition, event);
+                float[] edge = project(skyEdge, cameraPosition, event);
+                if (center != null && edge != null) {
+                    float dx = (edge[0] - center[0]) * aspect;
+                    float dy = edge[1] - center[1];
+                    float projectedRadius = Math.max(0.0012F, (float) Math.sqrt(dx * dx + dy * dy));
+                    screenHoles.add(new float[]{center[0], center[1], projectedRadius, 0.42F});
+                }
+            }
+
             for (WorldVfxInstance hole : holes) {
                 double diameter = hole.parameters().getOrDefault(
                         "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
                 double radius = Math.max(0.5D, diameter * 0.5D);
+                double distance = hole.position().distanceTo(cameraPosition);
+
+                // Dentro del horizonte, el agujero ocupa el centro de la vista y
+                // la distorsión crece para permitir atravesar el centro sin una esfera-collider.
+                if (distance <= radius) {
+                    float spread = (float) Math.min(0.62D,
+                            0.22D + 0.38D * (1.0D - distance / radius));
+                    float strength = (float) Math.min(1.0D, 0.78D + 0.22D * (1.0D - distance / radius));
+                    screenHoles.add(new float[]{0.5F, 0.5F, spread, strength});
+                    continue;
+                }
+
                 float[] center = project(hole.position(), cameraPosition, event);
                 Vec3 edgePosition = hole.position().add(
                         cameraLeft.x * radius,
@@ -93,7 +128,6 @@ public final class BlackHoleLensingPass {
                         cameraLeft.z * radius
                 );
                 float[] edge = project(edgePosition, cameraPosition, event);
-
                 if (center == null || edge == null) {
                     continue;
                 }
@@ -101,12 +135,12 @@ public final class BlackHoleLensingPass {
                 float dx = (edge[0] - center[0]) * aspect;
                 float dy = edge[1] - center[1];
                 float projectedRadius = Math.max(0.0012F, (float) Math.sqrt(dx * dx + dy * dy));
-                double distance = hole.position().distanceTo(cameraPosition);
                 float strength = (float) (0.24D + 0.48D * Math.max(0.0D, 1.0D - distance / 150.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
             }
 
             if (screenHoles.isEmpty()) {
+                releaseTarget();
                 return;
             }
 

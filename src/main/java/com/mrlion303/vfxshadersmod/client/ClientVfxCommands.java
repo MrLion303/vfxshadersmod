@@ -13,8 +13,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -29,12 +31,19 @@ public final class ClientVfxCommands {
                 .then(Commands.literal("help").executes(ClientVfxCommands::help))
                 .then(Commands.literal("list").executes(ClientVfxCommands::list))
                 .then(Commands.literal("enable")
+                        .then(Commands.literal("blackhole")
+                                .executes(ClientVfxCommands::blackHoleUsage)
+                                .then(Commands.argument("diameter", FloatArgumentType.floatArg(
+                                                BlackHoleEffect.MIN_DIAMETER, BlackHoleEffect.MAX_DIAMETER))
+                                        .then(Commands.argument("position", Vec3Argument.vec3())
+                                                .executes(ClientVfxCommands::placeBlackHole))))
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
                                         EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
                                 .executes(context -> change(context, Action.ENABLE))))
                 .then(Commands.literal("disable")
                         .then(Commands.literal("all").executes(ClientVfxCommands::disableAll))
+                        .then(Commands.literal("blackhole").executes(ClientVfxCommands::clearBlackHoles))
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
                                         EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
@@ -48,14 +57,7 @@ public final class ClientVfxCommands {
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
                                         EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
-                                .executes(ClientVfxCommands::status)))
-                .then(Commands.literal("blackhole")
-                        .then(Commands.literal("spawn")
-                                .executes(context -> spawnBlackHole(context, BlackHoleEffect.DEFAULT_DIAMETER))
-                                .then(Commands.argument("diameter", FloatArgumentType.floatArg(1.0F, 100.0F))
-                                        .executes(context -> spawnBlackHole(
-                                                context, FloatArgumentType.getFloat(context, "diameter")))))
-                        .then(Commands.literal("clear").executes(ClientVfxCommands::clearBlackHoles))));
+                                .executes(ClientVfxCommands::status))));
     }
 
     private static int help(CommandContext<CommandSourceStack> context) {
@@ -63,13 +65,14 @@ public final class ClientVfxCommands {
         source.sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos locales"), false);
         source.sendSuccess(() -> Component.literal("/vfx list — lista los efectos, categorías y estados"), false);
         source.sendSuccess(() -> Component.literal("/vfx enable <efecto> — activa un efecto"), false);
+        source.sendSuccess(() -> Component.literal("/vfx enable blackhole <tamaño> <x> <y> <z> — coloca un agujero negro en coordenadas exactas"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva un efecto"), false);
+        source.sendSuccess(() -> Component.literal("/vfx disable blackhole — elimina todos los agujeros negros colocados"), false);
         source.sendSuccess(() -> Component.literal("/vfx toggle <efecto> — alterna su estado"), false);
-        source.sendSuccess(() -> Component.literal("/vfx status <efecto> — consulta su estado"), false);
-        source.sendSuccess(() -> Component.literal("/vfx blackhole spawn [diámetro] — coloca un agujero negro (10 bloques por defecto)"), false);
-        source.sendSuccess(() -> Component.literal("/vfx blackhole clear — elimina los agujeros negros colocados"), false);
-        source.sendSuccess(() -> Component.literal("/vfx disable all — desactiva todos los VFX"), false);
-        source.sendSuccess(() -> Component.literal("El diámetro del agujero negro se ajusta entre 1 y 100 bloques."), false);
+        source.sendSuccess(() -> Component.literal("/vfx status <efecto> — consulta el estado"), false);
+        source.sendSuccess(() -> Component.literal("/vfx disable all — limpia todos los VFX locales"), false);
+        source.sendSuccess(() -> Component.literal("El tamaño es el diámetro en bloques (1 a 100); el valor normal es 10."), false);
+        source.sendSuccess(() -> Component.literal("Las coordenadas aceptan valores absolutos o relativos con ~."), false);
         return 1;
     }
 
@@ -90,27 +93,33 @@ public final class ClientVfxCommands {
                     + definition.displayName() + " (" + definition.id() + ")" + description;
             source.sendSuccess(() -> Component.literal(line), false);
         }
-        source.sendSuccess(() -> Component.literal("Usa /vfx enable <efecto>, /vfx disable <efecto> o /vfx toggle <efecto>."), false);
+        source.sendSuccess(() -> Component.literal("Usa /vfx enable <efecto> o /vfx disable <efecto>."), false);
         return definitions.size();
     }
 
-    private static int spawnBlackHole(CommandContext<CommandSourceStack> context, float diameter) {
+    private static int blackHoleUsage(CommandContext<CommandSourceStack> context) {
+        context.getSource().sendFailure(Component.literal(
+                "Uso: /vfx enable blackhole <tamaño> <x> <y> <z>. El tamaño es el diámetro en bloques."));
+        return 0;
+    }
+
+    private static int placeBlackHole(CommandContext<CommandSourceStack> context) {
+        float diameter = FloatArgumentType.getFloat(context, "diameter");
+        Vec3 position = Vec3Argument.getVec3(context, "position");
         if (Minecraft.getInstance().level == null || Minecraft.getInstance().player == null) {
             context.getSource().sendFailure(Component.literal("Entra en un mundo antes de colocar un agujero negro."));
             return 0;
         }
 
-        var instance = BlackHolePlacement.spawnAtAim(diameter);
+        var instance = BlackHolePlacement.placeAt(diameter, position);
         if (instance == null) {
             context.getSource().sendFailure(Component.literal("No se pudo colocar el agujero negro."));
             return 0;
         }
 
-        Vec3Holder position = new Vec3Holder(
-                instance.position().x, instance.position().y, instance.position().z);
         String message = String.format(Locale.ROOT,
                 "Agujero negro colocado: diámetro %.1f bloques en (%.1f, %.1f, %.1f).",
-                diameter, position.x(), position.y(), position.z());
+                diameter, position.x, position.y, position.z);
         context.getSource().sendSuccess(() -> Component.literal(message), false);
         return 1;
     }
@@ -119,8 +128,10 @@ public final class ClientVfxCommands {
         int count = ClientWorldVfxInstances.countByEffect(
                 BlackHoleEffect.ID, Minecraft.getInstance().level);
         ClientVfxManager.disable(BlackHoleEffect.ID);
-        context.getSource().sendSuccess(
-                () -> Component.literal("Se eliminaron " + count + " agujeros negros colocados."), false);
+        String message = count == 0
+                ? "No había agujeros negros colocados."
+                : "Se eliminaron " + count + " agujeros negros colocados.";
+        context.getSource().sendSuccess(() -> Component.literal(message), false);
         return count;
     }
 
@@ -136,6 +147,12 @@ public final class ClientVfxCommands {
         EffectId id = parsed.get();
         if (!EffectRegistry.ids().contains(id)) {
             source.sendFailure(Component.literal("No existe el efecto VFX " + id + ". Consulta /vfx list."));
+            return 0;
+        }
+        if (id.equals(BlackHoleEffect.ID) && action != Action.DISABLE) {
+            source.sendFailure(Component.literal(
+                    "Para colocar un agujero negro usa /vfx enable blackhole <tamaño> <x> <y> <z>."
+            ));
             return 0;
         }
 
@@ -191,7 +208,7 @@ public final class ClientVfxCommands {
 
     private static int disableAll(CommandContext<CommandSourceStack> context) {
         int count = ClientVfxManager.disableAll();
-        context.getSource().sendSuccess(() -> Component.literal("Se desactivaron " + count + " efectos VFX."), false);
+        context.getSource().sendSuccess(() -> Component.literal("Se limpiaron " + count + " efectos/instancias VFX."), false);
         return count;
     }
 
@@ -205,8 +222,5 @@ public final class ClientVfxCommands {
         ENABLE,
         DISABLE,
         TOGGLE
-    }
-
-    private record Vec3Holder(double x, double y, double z) {
     }
 }

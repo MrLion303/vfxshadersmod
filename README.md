@@ -2,49 +2,41 @@
 
 Motor independiente de efectos visuales en tiempo real para Minecraft Java Edition, orientado a Forge 1.20.1.
 
-El proyecto está diseñado para combinar shaders GLSL, geometría, partículas, animaciones, efectos ambientales, objetos visuales colocados en el mundo y posprocesamiento de cámara. No se limita a modificar el cielo: admite efectos cuya posición es fija en el mapa, como un agujero negro, y filtros que deforman visualmente los bloques y el paisaje a su alrededor.
+El proyecto combina shaders GLSL, geometría personalizada, partículas, animaciones, efectos ambientales, objetos colocados en coordenadas del mundo y posprocesamiento de cámara. No se limita a modificar el cielo: un agujero negro puede estar en cualquier punto del mapa, y la imagen de los bloques y del cielo se deforma a su alrededor.
 
-> Estado: las barras del horizonte y la aurora tienen ciclos geométricos continuos; se añadió un cielo arcoíris cambiante y un agujero negro con diámetro ajustable, disco de acreción y pase de lente gravitacional. La apariencia debe comprobarse en una sesión real de Minecraft; la compilación por sí sola no verifica el resultado visual ni la compatibilidad con todos los drivers.
+## Comandos
 
-## Comandos dentro del juego
-
-- /vfx list: lista los efectos registrados, sus categorías y estados.
-- /vfx enable <efecto>: activa uno.
-- /vfx disable <efecto>: desactiva uno.
+- /vfx list: muestra efectos, categorías y estados.
+- /vfx enable <efecto>: activa un efecto.
+- /vfx disable <efecto>: desactiva un efecto.
 - /vfx toggle <efecto>: alterna su estado.
-- /vfx status <efecto>: consulta su estado.
-- /vfx disable all: desactiva todos los efectos locales.
-- /vfx blackhole spawn: coloca un agujero negro de 10 bloques de diámetro.
-- /vfx blackhole spawn <diámetro>: lo coloca con un diámetro de 1 a 100 bloques.
-- /vfx blackhole clear: elimina los agujeros negros colocados.
-- /vfx help: muestra la ayuda.
+- /vfx status <efecto>: consulta el estado.
+- /vfx disable all: limpia los VFX locales.
+- /vfx enable blackhole <tamaño> <x> <y> <z>: coloca un agujero negro de 1 a 100 bloques de diámetro.
+- /vfx disable blackhole: elimina todos los agujeros negros colocados.
+- /vfx enable blackhole_sky: activa el agujero negro celeste.
+- /vfx disable blackhole_sky: desactiva el agujero negro celeste.
 
-Los comandos son locales al cliente y funcionan al jugar en un servidor sin requerir permisos de operador. Las acciones visuales no cambian los bloques reales ni se sincronizan todavía con otros jugadores.
+El tamaño de referencia del agujero negro situado en el mundo es de 10 bloques de diámetro. Las coordenadas admiten números absolutos o relativos con ~; por ejemplo: /vfx enable blackhole 10 100 64 -200.
 
-## VFX disponibles
+## VFX incluidos
 
-- Órbitas de demostración (demo_orbit): tres anillos de color alrededor del jugador local.
-- Barras musicales del horizonte (music_horizon_bars): barras de ecualizador animadas en un anillo alrededor del horizonte. Las frecuencias ahora se repiten exactamente al cerrar la vuelta; el movimiento es procedural y aún no analiza el audio real.
-- Aurora boreal arcoíris (rainbow_aurora): cortinas luminosas ondulantes con el color recorriendo el arcoíris. Las ondas se cierran sin una junta desigual.
-- Cielo arcoíris cambiante (rainbow_sky): una cúpula transparente que mezcla el cielo con colores que cambian gradualmente.
-- Agujero negro (black_hole): horizonte oscuro de 10 bloques de diámetro por defecto, disco de acreción animado y una lente gravitacional que distorsiona la imagen del paisaje cercano.
+- **Órbitas de demostración (demo_orbit):** anillos de color alrededor del jugador.
+- **Barras musicales del horizonte (music_horizon_bars):** barras animadas con una vuelta continua, sin una junta de ondas disparejas. El movimiento es procedural, no un analizador de audio.
+- **Aurora boreal arcoíris (rainbow_aurora):** cortinas luminosas con ondas que cierran de manera continua.
+- **Cielo arcoíris cambiante (rainbow_sky):** una cúpula translúcida de color que cambia lentamente a lo largo del espectro.
+- **Agujero negro (blackhole):** horizonte negro anclado a coordenadas exactas, disco de acreción y lente gravitacional sobre la imagen del mundo. Puedes caminar hacia él y atravesar su centro; al estar dentro del horizonte, se oculta la esfera opaca y aumenta la deformación.
+- **Agujero negro celeste (blackhole_sky):** un agujero negro situado visualmente en el cielo, con disco de acreción y lente gravitacional.
 
-El agujero negro se coloca en el punto al que se apunta; si no se apunta a nada, aparece a 16 bloques delante del jugador. El parámetro personalizado es el diámetro del horizonte, y el disco visual se extiende más allá de este.
+La lente gravitacional deforma la imagen renderizada, incluidos los bloques y el cielo que queden en su zona de influencia. No modifica la geometría real, no destruye bloques ni aplica fuerzas; es un efecto visual local a tu cliente.
 
 ## Arquitectura
 
-El catálogo central guarda identificador, nombre visible, descripción y categoría. Las definiciones de efectos y las instancias colocadas son conceptos separados: puede haber varios agujeros negros en coordenadas distintas sin anclarlos automáticamente al jugador.
+Las definiciones de efectos son independientes de las apariciones colocadas. Una definición puede tener varias instancias en distintas coordenadas y dimensiones. El renderizado espacial utiliza un registro de renderers; los pases de pantalla operan sobre la textura de la escena.
 
-- Núcleo: ciclo de vida, categorías e identificadores.
-- Instancias del mundo: dimensión, posición, rotación, escala, duración y parámetros por aparición.
-- Renderizado espacial: contexto de cámara y registro de renderers por etapa.
-- Shaders y materiales: VfxShaderLibrary y VfxRenderTypes.
-- Posprocesamiento: la lente gravitacional de agujeros negros proyecta las instancias a pantalla y deforma la textura de la escena.
-- Simulación y red: separación entre visuales locales y comportamiento autoritativo del mundo; la sincronización multijugador aún está pendiente.
+El catálogo central alimenta /vfx list y las sugerencias de comandos.
 
-La lente gravitacional es una distorsión de imagen. No cambia la geometría real, no destruye bloques y no ejerce fuerzas sobre entidades.
-
-## Plataforma y compilación
+## Plataforma
 
 - Minecraft Java Edition 1.20.1
 - Minecraft Forge 47.4.18
@@ -60,8 +52,8 @@ GitHub Actions compila en cada push a main y guarda el JAR como artefacto cuando
 - [Cómo crear un efecto nuevo](docs/CREAR_EFECTOS.md)
 - [Comandos VFX](docs/COMANDOS.md)
 
-## Qué falta
+## Estado y limitaciones
 
-La implementación visual todavía debe verificarse dentro de Minecraft y ajustarse si aparecen artefactos. También quedan materiales reutilizables más amplios, partículas avanzadas, estelas, sincronización de eventos multijugador, simulación física autoritativa y editor visual.
+La compilación valida Java y los JSON, pero la apariencia final debe comprobarse dentro del cliente de Minecraft y puede necesitar ajustes por diferencias de drivers o configuración gráfica. La sincronización visual multijugador y las mecánicas autoritativas de fuerzas siguen pendientes.
 
-Este proyecto es independiente y no modifica ni depende del repositorio shadermod. Todavía no se ha elegido una licencia; no debe asumirse que el código puede redistribuirse o reutilizarse libremente.
+El proyecto es independiente y no modifica ni depende del repositorio shadermod. Todavía no se ha elegido una licencia, así que no debe asumirse que el código puede redistribuirse o reutilizarse libremente.

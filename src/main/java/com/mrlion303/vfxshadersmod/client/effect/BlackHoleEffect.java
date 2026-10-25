@@ -1,23 +1,19 @@
 package com.mrlion303.vfxshadersmod.client.effect;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
-import com.mrlion303.vfxshadersmod.client.ClientWorldVfxInstances;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffect;
-import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
-
-import java.util.UUID;
 
 /**
- * Definición activable del agujero negro. Al activarla coloca una instancia
- * de tamaño predeterminado; la instancia y el renderer espacial son independientes.
+ * Definición de agujero negro situado en coordenadas del mundo.
+ * Las apariciones concretas se crean con /vfx enable blackhole <tamaño> <x> <y> <z>.
  */
 public final class BlackHoleEffect implements VfxEffect {
-    public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "black_hole");
+    public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "blackhole");
     public static final float DEFAULT_DIAMETER = 10.0F;
-
-    private UUID instanceId;
+    public static final float MIN_DIAMETER = 1.0F;
+    public static final float MAX_DIAMETER = 100.0F;
 
     @Override
     public EffectId id() {
@@ -25,21 +21,7 @@ public final class BlackHoleEffect implements VfxEffect {
     }
 
     @Override
-    public void onStart(EffectContext context) {
-        WorldVfxInstance instance = BlackHolePlacement.spawnAtAim(DEFAULT_DIAMETER);
-        instanceId = instance == null ? null : instance.instanceId();
-    }
-
-    @Override
     public void tick(EffectContext context) {
-        // La evolución visual y el campo de distorsión se calculan en el renderer.
-    }
-
-    @Override
-    public void onStop(EffectContext context) {
-        if (instanceId != null) {
-            ClientWorldVfxInstances.remove(instanceId);
-            instanceId = null;
-        }
+        // La geometría y la distorsión se calculan con las coordenadas de cada instancia.
     }
 }
