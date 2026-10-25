@@ -29,6 +29,20 @@ jobs:
         with:
           gradle-version: '8.1.1'
 
+
+      - name: Validar JSON de recursos
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          files = sorted(Path("src/main/resources").rglob("*.json"))
+          for file in files:
+              with file.open(encoding="utf-8") as stream:
+                  json.load(stream)
+              print(f"JSON válido: {file}")
+          PY
+
       - name: Compilar
         run: gradle build
 
