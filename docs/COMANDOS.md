@@ -18,15 +18,19 @@ Los argumentos sugieren los identificadores registrados al pulsar Tab. También 
 
 ## Efecto de prueba
 
-- `demo_orbit`: tres anillos de color alrededor del jugador local. Se incluye para comprobar el registro, el ciclo de vida, el renderizado y los comandos; no pretende ser uno de los VFX cinematográficos finales.
+- `demo_orbit`: tres anillos de color alrededor del jugador local. Es un efecto de prueba del motor.
+- `music_horizon_bars`: un ecualizador panorámico de neón que cambia de altura y color alrededor del horizonte. La animación es procedural y todavía no analiza el audio que se está reproduciendo.
+- `rainbow_aurora`: cortinas semitransparentes ondulantes alrededor del cielo, con el color arcoíris desplazándose con el tiempo.
 
 Ejemplo:
 
 ```text
 /vfx list
 /vfx enable demo_orbit
-/vfx status demo_orbit
-/vfx toggle demo_orbit
+/vfx enable music_horizon_bars
+/vfx enable rainbow_aurora
+/vfx status rainbow_aurora
+/vfx toggle music_horizon_bars
 /vfx disable all
 ```
 

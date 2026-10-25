@@ -8,6 +8,9 @@ La prioridad es construir un motor gráfico fiable y ampliarlo con componentes r
 - [x] Contrato inicial, registro con metadatos y runtime local.
 - [x] Comandos locales `/vfx list`, `enable`, `disable`, `toggle`, `status` y `disable all`.
 - [x] Primer VFX de prueba con geometría de líneas.
+- [x] Barras musicales de horizonte con animación procedural.
+- [x] Aurora arcoíris en capas de geometría semitransparente.
+- [ ] Probar ambos efectos visualmente en cliente y ajustar su apariencia.
 - [x] Shader GLSL básico registrado y tipo de renderizado reutilizable.
 - [x] Compilación Gradle verificada en CI para el código actual.
 - [ ] Validar visualmente el shader y los comandos dentro del cliente de Minecraft.

@@ -26,23 +26,23 @@ public final class ClientVfxCommands {
                 .then(Commands.literal("enable")
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
+                                        EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
                                 .executes(context -> change(context, Action.ENABLE))))
                 .then(Commands.literal("disable")
                         .then(Commands.literal("all").executes(ClientVfxCommands::disableAll))
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
+                                        EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
                                 .executes(context -> change(context, Action.DISABLE))))
                 .then(Commands.literal("toggle")
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
+                                        EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
                                 .executes(context -> change(context, Action.TOGGLE))))
                 .then(Commands.literal("status")
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
+                                        EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
                                 .executes(ClientVfxCommands::status))));
     }
 

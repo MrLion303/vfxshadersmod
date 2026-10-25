@@ -22,7 +22,11 @@ Los comandos son del cliente y solo afectan los efectos visuales de tu instancia
 
 ### VFX incluido como prueba
 
-- **Órbitas de demostración** (`demo_orbit`): tres anillos de color alrededor del jugador local. Está para probar el registro, la activación, el ciclo de vida y el renderizado; no es uno de los efectos cinematográficos finales.
+- **Órbitas de demostración** (`demo_orbit`): tres anillos de color alrededor del jugador local, usados como prueba del motor.
+- **Barras musicales del horizonte** (`music_horizon_bars`): barras de ecualizador animadas en un anillo alrededor del horizonte.
+- **Aurora boreal arcoíris** (`rainbow_aurora`): cortinas de luz ondulantes con colores que recorren el arcoíris.
+
+Ambos efectos se pueden activar juntos. Las barras usan una animación procedural; todavía no reciben el audio real del juego o del sistema.
 
 Consulta la [guía de comandos](docs/COMANDOS.md).
 
