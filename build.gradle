@@ -83,7 +83,7 @@ tasks.named('jar').configure {
                 'Specification-Vendor'    : mod_authors,
                 'Specification-Version'   : '1',
                 'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Version'  : project.version.toString(),
                 'Implementation-Vendor'   : mod_authors
         ])
     }
