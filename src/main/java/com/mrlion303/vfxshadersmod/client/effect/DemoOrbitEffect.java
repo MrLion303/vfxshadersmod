@@ -81,11 +81,11 @@ public final class DemoOrbitEffect implements VfxEffect, ClientVfxRenderer {
             float blue
     ) {
         final int segments = 96;
-        Vec3 previous = ringPoint(centerX, centerY, centerZ, radius, phase, 0, plane);
+        Vec3 previous = ringPoint(centerX, centerY, centerZ, radius, phase, plane);
 
         for (int i = 1; i <= segments; i++) {
             double angle = (Math.PI * 2.0D * i / segments) + phase;
-            Vec3 current = ringPoint(centerX, centerY, centerZ, radius, angle, 0, plane);
+            Vec3 current = ringPoint(centerX, centerY, centerZ, radius, angle, plane);
             vertex(vertices, pose, previous, red, green, blue);
             vertex(vertices, pose, current, red, green, blue);
             previous = current;
@@ -98,7 +98,6 @@ public final class DemoOrbitEffect implements VfxEffect, ClientVfxRenderer {
             double centerZ,
             double radius,
             double angle,
-            int ignored,
             int plane
     ) {
         double cosine = Math.cos(angle) * radius;
