@@ -26,54 +26,60 @@ public final class ClientVfxCommands {
                 .then(Commands.literal("enable")
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString), builder))
+                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
                                 .executes(context -> change(context, Action.ENABLE))))
                 .then(Commands.literal("disable")
                         .then(Commands.literal("all").executes(ClientVfxCommands::disableAll))
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString), builder))
+                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
                                 .executes(context -> change(context, Action.DISABLE))))
                 .then(Commands.literal("toggle")
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString), builder))
+                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
                                 .executes(context -> change(context, Action.TOGGLE))))
                 .then(Commands.literal("status")
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        EffectRegistry.ids().stream().map(EffectId::toString), builder))
+                                        EffectRegistry.ids().stream().map(EffectId::toString).toList(), builder))
                                 .executes(ClientVfxCommands::status))));
     }
 
     private static int help(CommandContext<CommandSourceStack> context) {
         var source = context.getSource();
         source.sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos locales"), false);
-        source.sendSuccess(() -> Component.literal("/vfx list — lista todos los efectos disponibles y su estado"), false);
+        source.sendSuccess(() -> Component.literal("/vfx list — lista los efectos disponibles y su estado"), false);
         source.sendSuccess(() -> Component.literal("/vfx enable <efecto> — activa un efecto"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva un efecto"), false);
         source.sendSuccess(() -> Component.literal("/vfx toggle <efecto> — alterna su estado"), false);
         source.sendSuccess(() -> Component.literal("/vfx status <efecto> — consulta su estado"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable all — desactiva todos los efectos"), false);
-        source.sendSuccess(() -> Component.literal("Puedes usar el nombre corto, por ejemplo demo_orbit, o el identificador completo."), false);
+        source.sendSuccess(() -> Component.literal("Puedes usar el nombre corto (demo_orbit) o el identificador completo."), false);
         return 1;
     }
 
     private static int list(CommandContext<CommandSourceStack> context) {
         var source = context.getSource();
-        var ids = EffectRegistry.ids();
-        if (ids.isEmpty()) {
+        var definitions = EffectRegistry.definitions();
+        if (definitions.isEmpty()) {
             source.sendSuccess(() -> Component.literal("No hay efectos VFX registrados."), false);
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("Efectos VFX disponibles (" + ids.size() + "):"), false);
-        for (EffectId id : ids) {
-            String state = ClientVfxManager.isActive(id) ? "ACTIVO" : "INACTIVO";
-            source.sendSuccess(() -> Component.literal("[" + state + "] " + id), false);
+        source.sendSuccess(() -> Component.literal("Efectos VFX disponibles (" + definitions.size() + "):"), false);
+        for (EffectRegistry.Definition definition : definitions) {
+            boolean active = ClientVfxManager.isActive(definition.id());
+            String state = active ? "ACTIVO" : "INACTIVO";
+            String description = definition.description().isBlank()
+                    ? ""
+                    : " — " + definition.description();
+            String line = "[" + state + "] " + definition.displayName()
+                    + " (" + definition.id() + ")" + description;
+            source.sendSuccess(() -> Component.literal(line), false);
         }
         source.sendSuccess(() -> Component.literal("Usa /vfx enable <efecto>, /vfx disable <efecto> o /vfx toggle <efecto>."), false);
-        return ids.size();
+        return definitions.size();
     }
 
     private static int change(CommandContext<CommandSourceStack> context, Action action) {
@@ -100,7 +106,9 @@ public final class ClientVfxCommands {
         switch (result) {
             case SUCCESS -> {
                 boolean active = ClientVfxManager.isActive(id);
-                source.sendSuccess(() -> Component.literal(id + (active ? " activado." : " desactivado.")), false);
+                String state = active ? "activado" : "desactivado";
+                String label = EffectRegistry.definition(id).map(EffectRegistry.Definition::displayName).orElse(id.toString());
+                source.sendSuccess(() -> Component.literal(label + " (" + id + ") " + state + "."), false);
                 return 1;
             }
             case ALREADY_ACTIVE -> {
@@ -134,7 +142,8 @@ public final class ClientVfxCommands {
 
         EffectId id = parsed.get();
         boolean active = ClientVfxManager.isActive(id);
-        source.sendSuccess(() -> Component.literal(id + ": " + (active ? "ACTIVO" : "INACTIVO")), false);
+        String label = EffectRegistry.definition(id).map(EffectRegistry.Definition::displayName).orElse(id.toString());
+        source.sendSuccess(() -> Component.literal(label + " (" + id + "): " + (active ? "ACTIVO" : "INACTIVO")), false);
         return 1;
     }
 
