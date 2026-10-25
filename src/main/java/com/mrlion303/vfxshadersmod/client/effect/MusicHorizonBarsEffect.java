@@ -17,8 +17,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
 /**
- * Anillo de barras de estilo ecualizador alrededor del horizonte. La altura
- * oscila de forma procedural para dar movimiento rítmico sin capturar audio.
+ * Anillo de barras de estilo ecualizador. Las ondas usan armónicos enteros
+ * del ángulo para que el último sector coincida con el primero sin un salto.
  */
 public final class MusicHorizonBarsEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "music_horizon_bars");
@@ -64,13 +64,14 @@ public final class MusicHorizonBarsEffect implements VfxEffect, ClientVfxRendere
 
         for (int i = 0; i < BAR_COUNT; i++) {
             double angle = Math.PI * 2.0D * i / BAR_COUNT;
-            double waveA = 0.5D + 0.5D * Math.sin(i * 0.19D + time * 0.13D);
-            double waveB = 0.5D + 0.5D * Math.sin(i * 0.071D - time * 0.091D + 1.4D);
-            double waveC = 0.5D + 0.5D * Math.sin(i * 0.37D + time * 0.061D);
+            // Frecuencias enteras de la vuelta completa: no hay discontinuidad en el cierre.
+            double waveA = 0.5D + 0.5D * Math.sin(angle * 4.0D + time * 0.13D);
+            double waveB = 0.5D + 0.5D * Math.sin(angle * 7.0D - time * 0.091D + 1.4D);
+            double waveC = 0.5D + 0.5D * Math.sin(angle * 13.0D + time * 0.061D);
             double pulse = Math.pow(0.5D + 0.5D * Math.sin(time * 0.095D), 8.0D);
             double height = 0.75D + 3.5D * waveA + 2.2D * waveB + 1.2D * waveC + pulse * 1.2D;
 
-            float hue = (float) i / BAR_COUNT + (float) time * 0.0012F;
+            float hue = (float) (angle / (Math.PI * 2.0D)) + (float) time * 0.0012F;
             int rgb = VfxGeometry.rainbowRgb(hue);
 
             drawBar(vertices, pose, centerX, centerY, centerZ, angle, height, rgb, 1.85D, 0.02F, 0.12F);

@@ -1,8 +1,12 @@
 package com.mrlion303.vfxshadersmod.client;
 
+import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
 import com.mrlion303.vfxshadersmod.client.effect.DemoOrbitEffect;
 import com.mrlion303.vfxshadersmod.client.effect.MusicHorizonBarsEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraEffect;
+import com.mrlion303.vfxshadersmod.client.effect.RainbowSkyEffect;
+import com.mrlion303.vfxshadersmod.client.render.BlackHoleVfxRenderer;
+import com.mrlion303.vfxshadersmod.client.render.ClientWorldVfxRendererRegistry;
 import com.mrlion303.vfxshadersmod.core.effect.EffectRegistry;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffectCategory;
 
@@ -35,10 +39,26 @@ public final class ClientVfxCatalog {
         EffectRegistry.register(
                 RainbowAuroraEffect.ID,
                 "Aurora boreal arcoíris",
-                "Cortinas de luz ondulantes que recorren el espectro arcoíris alrededor del cielo.",
+                "Cortinas de luz ondulantes que recorren el espectro arcoíris alrededor del cielo, con cierre continuo.",
                 VfxEffectCategory.ENVIRONMENT,
                 RainbowAuroraEffect::new
         );
+        EffectRegistry.register(
+                RainbowSkyEffect.ID,
+                "Cielo arcoíris cambiante",
+                "Tiñe el cielo con una cúpula translúcida cuyos colores recorren lentamente el arcoíris.",
+                VfxEffectCategory.ENVIRONMENT,
+                RainbowSkyEffect::new
+        );
+        EffectRegistry.register(
+                BlackHoleEffect.ID,
+                "Agujero negro",
+                "Horizonte negro de tamaño ajustable, disco de acreción y lente gravitacional sobre la escena.",
+                VfxEffectCategory.WORLD_ANCHORED,
+                BlackHoleEffect::new
+        );
+
+        ClientWorldVfxRendererRegistry.register(BlackHoleEffect.ID, new BlackHoleVfxRenderer());
         registered = true;
     }
 }

@@ -1,47 +1,48 @@
 # VFX Shaders Mod
 
-Motor independiente de efectos visuales en tiempo real para Minecraft Java Edition, orientado a **Forge 1.20.1**.
+Motor independiente de efectos visuales en tiempo real para Minecraft Java Edition, orientado a Forge 1.20.1.
 
-El objetivo no es añadir solamente una lista de efectos prefabricados. Queremos una base extensible para combinar shaders GLSL, geometría personalizada, partículas, animaciones, posprocesamiento y comportamiento del mundo. La meta es crear escenas cinematográficas —meteoritos con humo, portales, anomalías gravitacionales, supernovas y cielos dinámicos— sin rehacer el sistema para cada efecto nuevo.
+El proyecto está diseñado para combinar shaders GLSL, geometría, partículas, animaciones, efectos ambientales, objetos visuales colocados en el mundo y posprocesamiento de cámara. No se limita a modificar el cielo: admite efectos cuya posición es fija en el mapa, como un agujero negro, y filtros que deforman visualmente los bloques y el paisaje a su alrededor.
 
-> **Estado:** infraestructura base y contratos ampliados para efectos ambientales, efectos colocados en el mundo y futuros pases de pantalla. Los efectos cinematográficos complejos, el posprocesamiento activo y el editor visual todavía están pendientes.
+> Estado: las barras del horizonte y la aurora tienen ciclos geométricos continuos; se añadió un cielo arcoíris cambiante y un agujero negro con diámetro ajustable, disco de acreción y pase de lente gravitacional. La apariencia debe comprobarse en una sesión real de Minecraft; la compilación por sí sola no verifica el resultado visual ni la compatibilidad con todos los drivers.
 
 ## Comandos dentro del juego
 
-- **/vfx list**: lista todos los efectos registrados, sus categorías y estados.
-- **/vfx enable <efecto>**: activa uno.
-- **/vfx disable <efecto>**: desactiva uno.
-- **/vfx toggle <efecto>**: alterna su estado.
-- **/vfx status <efecto>**: consulta su estado.
-- **/vfx disable all**: desactiva todos.
-- **/vfx help**: muestra la ayuda.
+- /vfx list: lista los efectos registrados, sus categorías y estados.
+- /vfx enable <efecto>: activa uno.
+- /vfx disable <efecto>: desactiva uno.
+- /vfx toggle <efecto>: alterna su estado.
+- /vfx status <efecto>: consulta su estado.
+- /vfx disable all: desactiva todos los efectos locales.
+- /vfx blackhole spawn: coloca un agujero negro de 10 bloques de diámetro.
+- /vfx blackhole spawn <diámetro>: lo coloca con un diámetro de 1 a 100 bloques.
+- /vfx blackhole clear: elimina los agujeros negros colocados.
+- /vfx help: muestra la ayuda.
 
-Los argumentos tienen autocompletado con Tab. Puedes escribir demo_orbit o el identificador completo vfxshadersmod:demo_orbit.
+Los comandos son locales al cliente y funcionan al jugar en un servidor sin requerir permisos de operador. Las acciones visuales no cambian los bloques reales ni se sincronizan todavía con otros jugadores.
 
-Los comandos son del cliente y solo afectan los efectos visuales de tu instancia; funcionan también al jugar en un servidor sin requerir permisos de operador. Las mecánicas que alteren jugadores, criaturas o bloques deberán ejecutarse y validarse en el servidor.
+## VFX disponibles
 
-### VFX incluido como prueba
+- Órbitas de demostración (demo_orbit): tres anillos de color alrededor del jugador local.
+- Barras musicales del horizonte (music_horizon_bars): barras de ecualizador animadas en un anillo alrededor del horizonte. Las frecuencias ahora se repiten exactamente al cerrar la vuelta; el movimiento es procedural y aún no analiza el audio real.
+- Aurora boreal arcoíris (rainbow_aurora): cortinas luminosas ondulantes con el color recorriendo el arcoíris. Las ondas se cierran sin una junta desigual.
+- Cielo arcoíris cambiante (rainbow_sky): una cúpula transparente que mezcla el cielo con colores que cambian gradualmente.
+- Agujero negro (black_hole): horizonte oscuro de 10 bloques de diámetro por defecto, disco de acreción animado y una lente gravitacional que distorsiona la imagen del paisaje cercano.
 
-- **Órbitas de demostración** (demo_orbit): tres anillos de color alrededor del jugador local, usados como prueba del motor.
-- **Barras musicales del horizonte** (music_horizon_bars): barras de ecualizador animadas en un anillo alrededor del horizonte.
-- **Aurora boreal arcoíris** (rainbow_aurora): cortinas de luz ondulantes con colores que recorren el arcoíris.
-
-Las barras usan una animación procedural; todavía no reciben el audio real del juego o del sistema.
-
-Consulta la [guía de comandos](docs/COMANDOS.md).
+El agujero negro se coloca en el punto al que se apunta; si no se apunta a nada, aparece a 16 bloques delante del jugador. El parámetro personalizado es el diámetro del horizonte, y el disco visual se extiende más allá de este.
 
 ## Arquitectura
 
-El catálogo central guarda identificador, nombre visible, descripción y categoría. Las definiciones de los efectos y sus instancias son conceptos separados: una definición puede tener muchas apariciones situadas en coordenadas diferentes.
+El catálogo central guarda identificador, nombre visible, descripción y categoría. Las definiciones de efectos y las instancias colocadas son conceptos separados: puede haber varios agujeros negros en coordenadas distintas sin anclarlos automáticamente al jugador.
 
-- **Núcleo:** ciclo de vida, categorías e identificadores.
-- **Instancias del mundo:** dimensión, posición, rotación, escala, duración y parámetros por aparición.
-- **Renderizado espacial:** contexto compartido de cámara y registro de renderers por etapa.
-- **Shaders y materiales:** VfxShaderLibrary y VfxRenderTypes mantienen la base GLSL existente.
-- **Posprocesamiento:** contratos y orden de pases preparados, pero el enlace al framebuffer todavía está pendiente.
-- **Simulación y red:** separación entre visuales locales y comportamiento autoritativo del mundo; la sincronización multijugador aún está pendiente.
+- Núcleo: ciclo de vida, categorías e identificadores.
+- Instancias del mundo: dimensión, posición, rotación, escala, duración y parámetros por aparición.
+- Renderizado espacial: contexto de cámara y registro de renderers por etapa.
+- Shaders y materiales: VfxShaderLibrary y VfxRenderTypes.
+- Posprocesamiento: la lente gravitacional de agujeros negros proyecta las instancias a pantalla y deforma la textura de la escena.
+- Simulación y red: separación entre visuales locales y comportamiento autoritativo del mundo; la sincronización multijugador aún está pendiente.
 
-Una deformación visual de la imagen y un cambio real de bloques son mecanismos diferentes. La primera pertenece al renderizado o al posprocesamiento; la segunda requiere una implementación de simulación y, en multijugador, autoridad del servidor.
+La lente gravitacional es una distorsión de imagen. No cambia la geometría real, no destruye bloques y no ejerce fuerzas sobre entidades.
 
 ## Plataforma y compilación
 
@@ -50,9 +51,7 @@ Una deformación visual de la imagen y un cambio real de bloques son mecanismos 
 - Java 17
 - Gradle 8.1.1
 
-Se necesita un JDK 17 y Gradle 8.1.1 instalado.
-
-El JAR se genera en build/libs/. GitHub Actions compila en cada push a main y guarda el JAR como artefacto al terminar correctamente.
+GitHub Actions compila en cada push a main y guarda el JAR como artefacto cuando termina correctamente.
 
 ## Documentación
 
@@ -63,10 +62,6 @@ El JAR se genera en build/libs/. GitHub Actions compila en cada push a main y gu
 
 ## Qué falta
 
-Todavía se deben probar visualmente los efectos dentro de Minecraft. También faltan el pipeline activo de posprocesamiento, materiales reutilizables, partículas avanzadas, estelas, sincronización de eventos multijugador y el editor visual. El modelo de instancias y los contratos de renderizado son infraestructura; no significan que un agujero negro o una deformación de bloques ya estén implementados.
+La implementación visual todavía debe verificarse dentro de Minecraft y ajustarse si aparecen artefactos. También quedan materiales reutilizables más amplios, partículas avanzadas, estelas, sincronización de eventos multijugador, simulación física autoritativa y editor visual.
 
-## Independencia y licencia
-
-Este proyecto es independiente y no modifica ni depende del repositorio shadermod.
-
-Todavía no se ha elegido una licencia. Hasta que se añada una, no se debe asumir que el código puede redistribuirse o reutilizarse libremente.
+Este proyecto es independiente y no modifica ni depende del repositorio shadermod. Todavía no se ha elegido una licencia; no debe asumirse que el código puede redistribuirse o reutilizarse libremente.

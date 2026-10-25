@@ -1,0 +1,69 @@
+{
+  "vertex": "vfxshadersmod:vfx/black_hole_lensing",
+  "fragment": "vfxshadersmod:vfx/black_hole_lensing",
+  "attributes": [
+    "Position",
+    "UV0"
+  ],
+  "samplers": [
+    {
+      "name": "DiffuseSampler"
+    }
+  ],
+  "uniforms": [
+    {
+      "name": "ScreenSize",
+      "type": "float",
+      "count": 2,
+      "values": [1920.0, 1080.0]
+    },
+    {
+      "name": "Hole0",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    },
+    {
+      "name": "Hole1",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    },
+    {
+      "name": "Hole2",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    },
+    {
+      "name": "Hole3",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    },
+    {
+      "name": "Hole4",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    },
+    {
+      "name": "Hole5",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    },
+    {
+      "name": "Hole6",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    },
+    {
+      "name": "Hole7",
+      "type": "float",
+      "count": 4,
+      "values": [-10.0, -10.0, 0.0, 0.0]
+    }
+  ]
+}

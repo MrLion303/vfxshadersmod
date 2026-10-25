@@ -4,64 +4,58 @@
 
 Construir un motor de efectos visuales en tiempo real para Forge 1.20.1 que combine shaders GLSL, geometría, materiales, partículas, estelas, animación temporal, posprocesamiento y efectos ligados al mundo.
 
-No todos los efectos son efectos de cielo ni todos se resuelven con un único shader. El motor distingue entre geometría del mundo, instancias colocadas en coordenadas, efectos ligados a entidades, simulación de mundo y filtros que modifican la imagen de la cámara.
+No todos los efectos son efectos de cielo ni todos se resuelven con un solo shader. El motor distingue entre geometría del mundo, instancias colocadas en coordenadas, efectos ligados a entidades, simulación de mundo y filtros que modifican la imagen de la cámara.
 
 ## Capas
 
-### Núcleo común
+### Núcleo y catálogo
 
-Responsable de identificadores, categorías, definición, ciclo de vida y datos de cada instancia. No debe importar clases exclusivas del cliente, como cámaras, matrices de renderizado o buffers gráficos.
+VfxEffectCategory clasifica los efectos según su papel: ambiente, anclado al mundo, ligado a entidad, pantalla/cámara, partículas, simulación del mundo, audio-reactivo o compuesto. EffectRegistry mantiene fábricas, metadatos y categorías; ClientVfxCatalog registra los VFX incluidos.
 
-VfxEffectCategory separa los tipos de efecto por intención: ambiente, anclado al mundo, ligado a entidad, pantalla/cámara, partículas, simulación del mundo, audio-reactivo y compuesto.
+WorldVfxInstance representa una aparición concreta: identificador único, tipo de efecto, dimensión, posición, rotación, escala, duración y parámetros. Una misma definición puede tener muchas instancias en distintos lugares. Esta estructura describe una aparición visual; no modifica por sí sola bloques ni entidades.
 
-WorldVfxInstance representa una aparición concreta: identificador único de instancia, tipo de efecto, dimensión, posición, rotación, escala, duración y parámetros numéricos. Una misma definición puede tener muchas instancias en distintos lugares. Este objeto describe una aparición visual, no modifica por sí solo bloques ni entidades.
-
-### Catálogo central
-
-EffectRegistry mantiene las fábricas y metadatos (identificador, nombre visible, descripción y categoría). ClientVfxCatalog registra los VFX incluidos. Los comandos y sugerencias se derivan de este registro; no se mantiene una lista paralela en cada sistema.
-
-### Runtime y simulación
+### Runtime
 
 ClientVfxManager controla los efectos locales activados con /vfx. ClientWorldVfxInstances administra las apariciones colocadas en el mundo de manera independiente. Ambas capas se actualizan en el hilo del cliente y se limpian al abandonar la sesión.
 
-Un renderer asociado a un tipo puede dibujar muchas apariciones de esa definición. Los efectos globales y los efectos colocados no deben compartir un único estado de activación, porque necesitan ciclos de vida distintos.
+Un renderer asociado a un tipo puede dibujar varias apariciones de esa definición. Los efectos globales y los efectos colocados no comparten un único estado de activación.
 
-Cuando un efecto influya en jugadores, entidades o bloques, esa lógica debe tener una política clara de autoridad del servidor y validación multijugador. La activación por comando del cliente no debe utilizarse para cambiar el mundo de forma autoritativa.
+Cuando un efecto influya en jugadores, entidades o bloques reales, esa lógica debe tener autoridad del servidor y validación multijugador. La activación por comando del cliente no cambia el mundo de forma autoritativa.
 
-### Renderizado del cliente
+### Renderizado espacial
 
-ClientVfxRenderer es el contrato sencillo que ya utilizan los efectos globales. VfxRenderContext da a los renderers de mundo una vista común de nivel, cámara, posición de cámara, matrices, etapa y tiempo parcial del fotograma. Incluye una utilidad para convertir coordenadas absolutas del mundo a coordenadas relativas a cámara.
+ClientVfxRenderer es el contrato de renderizado para efectos globales. VfxRenderContext da a los renderers de mundo una vista común de nivel, cámara, posición de cámara, matrices, etapa y tiempo parcial del fotograma.
 
-ClientWorldVfxRenderer dibuja una WorldVfxInstance, y ClientWorldVfxRendererRegistry enlaza cada tipo con su renderer y filtra por etapa. Esta ruta permite, por ejemplo, varios fenómenos gravitacionales fijos en diferentes coordenadas sin anclarlos automáticamente al jugador.
+ClientWorldVfxRenderer dibuja una WorldVfxInstance y ClientWorldVfxRendererRegistry enlaza cada tipo con su renderer y filtra por etapa. Esto permite varios fenómenos gravitacionales fijos en coordenadas diferentes sin anclarlos automáticamente al jugador.
 
 ### Shaders y materiales
 
-VfxShaderLibrary registra shaders durante RegisterShadersEvent y conserva sus instancias tras la carga de recursos. VfxRenderTypes centraliza estados de renderizado reutilizables.
+VfxShaderLibrary registra shaders durante RegisterShadersEvent y conserva sus instancias tras la carga de recursos. VfxRenderTypes centraliza estados reutilizables para geometría translúcida y opaca.
 
-El recurso GLSL assets/vfxshadersmod/shaders/core/vfx/basic_color es un shader de color por vértice. Sirve como punto de partida para geometría personalizada, pero no implementa por sí solo bloom, distorsión de pantalla ni iluminación volumétrica.
+El shader basic_color es un shader de color por vértice. El shader black_hole_lensing usa la textura renderizada del mundo y coordenadas de pantalla para deformar la imagen alrededor de los agujeros negros proyectados.
 
-### Posprocesamiento
+### Posprocesamiento y lente gravitacional
 
-ClientVfxPostProcessor, VfxPostProcessContext y ClientVfxPostProcessRegistry definen pases ordenables con superficies de entrada y salida separadas. El contexto distingue el origen y el destino para poder organizar un flujo de ping-pong, necesario cuando se encadenan varios filtros.
+BlackHoleLensingPass se ejecuta después del renderizado del nivel. Ordena las instancias visibles por distancia, proyecta sus posiciones y radios a coordenadas de pantalla y procesa hasta ocho agujeros negros visibles en un pase GLSL. La textura original se dibuja en un target auxiliar y el resultado se copia al target principal para no muestrear y escribir en la misma textura a la vez.
 
-**Pendiente:** todavía falta conectar el registro con el ciclo de framebuffer de Minecraft, gestionar targets al cambiar la resolución y recargar recursos, e implementar pases concretos como distorsión, gradación de color o bloom. Los contratos no significan que el posprocesamiento ya se ejecute en el juego.
+El pase de lente curva la imagen de bloques y paisaje alrededor del agujero. **Es una deformación visual de pantalla**: no cambia la geometría del mundo, no destruye bloques ni aplica fuerzas. Otros efectos de pantalla necesitarán sus propios pases.
 
 ### Línea de tiempo
 
-Coordina fases y curvas temporales: preparación, aparición, intensidad máxima, transición y salida. Las animaciones deberían poder usar curvas normalizadas y valores reproducibles a partir del tiempo transcurrido.
+Los efectos usan el tiempo de juego y el tiempo parcial de fotograma para animar geometría y color. Las próximas etapas permitirán fases, curvas temporales y transiciones más complejas.
 
 ### Red y autoridad
 
-El modelo de instancia lleva identificador de dimensión, posición, rotación, escala y parámetros, datos aptos para construir mensajes de sincronización más adelante. La capa de red aún no está conectada. El servidor deberá autorizar los eventos compartidos; cada cliente hará su propio renderizado. Nunca se enviarán buffers gráficos y el cliente no será la autoridad de mecánicas que afecten al mundo.
+La capa de red todavía no está conectada. El servidor deberá autorizar los eventos visuales compartidos; cada cliente hará su propio renderizado. Nunca se enviarán buffers gráficos y el cliente no será la autoridad de mecánicas que afecten al mundo.
 
 ## Flujo de un efecto
 
 1. El catálogo registra el tipo de efecto, su categoría, fábrica y metadatos.
-2. /vfx enable <id> crea una instancia global para el cliente; las apariciones situadas se gestionan de forma independiente mediante ClientWorldVfxInstances.
+2. /vfx enable <id> activa el efecto global; las apariciones colocadas se crean de forma independiente.
 3. El runtime actualiza el estado y el tiempo de vida.
-4. El renderer transforma estado y coordenadas del mundo en geometría o parámetros de shader.
-5. Si se necesita modificar la imagen completa, el efecto se integra como pase de posprocesamiento, no como geometría ubicada en el mundo.
-6. Al terminar o abandonar el mundo, el runtime retira las instancias y libera sus recursos.
+4. El renderer transforma el estado y las coordenadas del mundo en geometría.
+5. Los pases de pantalla se ejecutan tras el renderizado de nivel y procesan la imagen renderizada.
+6. Al terminar o abandonar el mundo, el runtime retira las instancias y libera los targets auxiliares.
 
 ## Reglas para mantener el proyecto sano
 
@@ -75,6 +69,6 @@ El modelo de instancia lleva identificador de dimensión, posición, rotación, 
 
 ## Estado de la implementación
 
-**Implementado:** configuración Forge, registro con categorías, runtime local, comandos, efectos de prueba, shader GLSL básico, modelo de instancias colocadas, almacén local de apariciones, contexto de renderizado espacial, registro de renderers anclados y contratos/registro ordenado de posprocesadores.
+Implementado: registro y categorías, runtime local, comandos, efectos de prueba, shaders GLSL, instancias colocadas, registro de renderers espaciales, cielo arcoíris cambiante, anillos continuos y agujero negro configurable con pase de lente gravitacional.
 
-**Pendiente:** asociar un efecto concreto al nuevo renderer de instancias, conectar el pipeline de posprocesamiento al framebuffer, validar el renderizado en el cliente real, implementar materiales y partículas avanzadas y añadir sincronización de eventos multijugador.
+Pendiente: pruebas visuales en cliente real, validación de rendimiento y compatibilidad del pase con distintas configuraciones gráficas, materiales más generales, partículas y estelas avanzadas y sincronización multijugador.

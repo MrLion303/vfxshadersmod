@@ -8,10 +8,7 @@ import net.minecraft.client.renderer.RenderType;
 
 import java.util.OptionalDouble;
 
-/**
- * Tipos de renderizado compartidos por los VFX. Los efectos usan estos estados
- * comunes en lugar de configurar una canalización distinta para cada dibujo.
- */
+/** Tipos de renderizado compartidos por los VFX. */
 public final class VfxRenderTypes extends RenderType {
     private static final RenderType COLOR_LINES = RenderType.create(
             VfxShadersMod.MOD_ID + ":color_lines",
@@ -48,6 +45,23 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType COLOR_OPAQUE_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":color_opaque_quads",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS,
+            16384,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(NO_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_DEPTH_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private VfxRenderTypes() {
         super(
                 VfxShadersMod.MOD_ID + ":internal",
@@ -65,11 +79,13 @@ public final class VfxRenderTypes extends RenderType {
         return COLOR_LINES;
     }
 
-    /**
-     * Quads translúcidos que respetan la profundidad, pero no escriben en ella.
-     * Esto permite superponer capas de brillo y cortinas semitransparentes.
-     */
+    /** Quads translúcidos que respetan la profundidad sin escribirla. */
     public static RenderType colorQuads() {
         return COLOR_QUADS;
+    }
+
+    /** Quads opacos que escriben profundidad, usados para el horizonte del agujero negro. */
+    public static RenderType colorOpaqueQuads() {
+        return COLOR_OPAQUE_QUADS;
     }
 }

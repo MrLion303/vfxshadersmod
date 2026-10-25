@@ -1,6 +1,7 @@
 package com.mrlion303.vfxshadersmod.client;
 
 import com.mojang.logging.LogUtils;
+import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.ClientWorldVfxRendererRegistry;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
@@ -19,10 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Runtime de efectos visuales activados localmente. Las definiciones activadas
- * con /vfx son independientes de las apariciones colocadas en el mundo.
- */
+/** Runtime de efectos globales. Las apariciones colocadas se administran por separado. */
 public final class ClientVfxManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<EffectId, VfxEffect> ACTIVE = new LinkedHashMap<>();
@@ -42,7 +40,7 @@ public final class ClientVfxManager {
         if (!EffectRegistry.ids().contains(id)) {
             return Result.UNKNOWN_EFFECT;
         }
-        if (ACTIVE.containsKey(id)) {
+        if (isActive(id)) {
             return Result.ALREADY_ACTIVE;
         }
 
@@ -69,17 +67,18 @@ public final class ClientVfxManager {
 
     public static Result disable(EffectId id) {
         VfxEffect effect = ACTIVE.remove(id);
-        if (effect == null) {
-            return Result.NOT_ACTIVE;
-        }
-
         Level level = Minecraft.getInstance().level;
-        if (level != null) {
+        if (effect != null && level != null) {
             try {
                 effect.onStop(EffectContext.fromLevel(level));
             } catch (RuntimeException exception) {
                 LOGGER.error("Error al detener el efecto VFX {}", id, exception);
             }
+        }
+
+        int removedInstances = ClientWorldVfxInstances.removeByEffect(id);
+        if (effect == null && removedInstances == 0) {
+            return Result.NOT_ACTIVE;
         }
         return Result.SUCCESS;
     }
@@ -88,16 +87,16 @@ public final class ClientVfxManager {
         if (!EffectRegistry.ids().contains(id)) {
             return Result.UNKNOWN_EFFECT;
         }
-        return ACTIVE.containsKey(id) ? disable(id) : enable(id);
+        return isActive(id) ? disable(id) : enable(id);
     }
 
     public static int disableAll() {
-        int count = ACTIVE.size();
+        int count = ACTIVE.size() + ClientWorldVfxInstances.size();
         clear();
         return count;
     }
 
-    /** Limpia el runtime de efectos y las apariciones locales al abandonar el mundo. */
+    /** Limpia los efectos y libera buffers auxiliares al abandonar el mundo. */
     public static void clear() {
         Level level = Minecraft.getInstance().level;
         if (level != null) {
@@ -112,6 +111,7 @@ public final class ClientVfxManager {
         }
         ACTIVE.clear();
         ClientWorldVfxInstances.clear();
+        BlackHoleLensingPass.releaseTarget();
     }
 
     public static void tick(Level level) {
@@ -155,13 +155,11 @@ public final class ClientVfxManager {
             }
         }
 
-        // Una aparición colocada tiene su propio ciclo de vida y se dibuja
-        // aunque no haya efectos globales activados con /vfx.
         ClientWorldVfxRendererRegistry.render(event);
     }
 
     public static boolean isActive(EffectId id) {
-        return ACTIVE.containsKey(id);
+        return ACTIVE.containsKey(id) || ClientWorldVfxInstances.hasInstances(id);
     }
 
     public static int activeCount() {
@@ -169,6 +167,12 @@ public final class ClientVfxManager {
     }
 
     public static Set<EffectId> activeIds() {
-        return Collections.unmodifiableSet(new LinkedHashSet<>(ACTIVE.keySet()));
+        Set<EffectId> ids = new LinkedHashSet<>(ACTIVE.keySet());
+        for (EffectRegistry.Definition definition : EffectRegistry.definitions()) {
+            if (ClientWorldVfxInstances.hasInstances(definition.id())) {
+                ids.add(definition.id());
+            }
+        }
+        return Collections.unmodifiableSet(ids);
     }
 }

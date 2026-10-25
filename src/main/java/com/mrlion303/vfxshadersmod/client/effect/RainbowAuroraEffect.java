@@ -17,8 +17,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
 /**
- * Cortinas de aurora semitransparentes que rodean el horizonte. Las ondulaciones
- * se deforman continuamente y el matiz recorre un ciclo arcoíris.
+ * Cortinas de aurora semitransparentes que rodean el horizonte. Los armónicos
+ * geométricos usan ciclos enteros, de modo que el último segmento coincide
+ * con el primero y no aparece una junta al cerrar la vuelta.
  */
 public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "rainbow_aurora");
@@ -89,10 +90,11 @@ public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
                     double mid = (f0 + f1) * 0.5D;
 
                     float fold = (float) (0.78D + 0.22D * (0.5D
-                            + 0.5D * Math.sin(angleA * 10.5D + time * 0.045D + layer * 1.3D)));
+                            + 0.5D * Math.sin(angleA * 10.0D + time * 0.045D + layer * 1.3D)));
                     float alpha = (float) (0.018D + 0.46D * Math.pow(Math.sin(mid * Math.PI), 1.45D))
                             * layerAlpha * fold;
-                    float hue = (float) (i / (double) SEGMENTS + time * 0.00145D + layer * 0.105D + mid * 0.045D);
+                    float hue = (float) (angleA / (Math.PI * 2.0D)
+                            + time * 0.00145D + layer * 0.105D + mid * 0.045D);
                     int rgb = VfxGeometry.rainbowRgb(hue);
 
                     double xA = centerX + Math.cos(angleA) * radiusA;
@@ -117,20 +119,20 @@ public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
 
     private static double bottomWave(double angle, double time, int layer) {
         return 9.0D
-                + Math.sin(angle * 3.7D + time * 0.021D + layer * 1.1D) * 2.0D
-                + Math.sin(angle * 8.9D - time * 0.032D + layer * 0.7D) * 0.85D;
+                + Math.sin(angle * 4.0D + time * 0.021D + layer * 1.1D) * 2.0D
+                + Math.sin(angle * 9.0D - time * 0.032D + layer * 0.7D) * 0.85D;
     }
 
     private static double topWave(double angle, double time, int layer, double bottom) {
         double height = 21.0D
-                + Math.sin(angle * 2.5D - time * 0.016D + layer * 1.7D) * 4.2D
-                + Math.sin(angle * 7.7D + time * 0.027D + layer) * 2.5D;
+                + Math.sin(angle * 3.0D - time * 0.016D + layer * 1.7D) * 4.2D
+                + Math.sin(angle * 8.0D + time * 0.027D + layer) * 2.5D;
         return Math.max(bottom + 9.0D, height);
     }
 
     private static double radialWave(double angle, double time, int layer) {
-        return Math.sin(angle * 6.4D + time * 0.024D + layer * 1.5D) * 1.15D
-                + Math.sin(angle * 11.7D - time * 0.031D + layer) * 0.42D;
+        return Math.sin(angle * 6.0D + time * 0.024D + layer * 1.5D) * 1.15D
+                + Math.sin(angle * 12.0D - time * 0.031D + layer) * 0.42D;
     }
 
     private static double interpolate(double a, double b, double amount) {

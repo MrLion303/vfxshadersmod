@@ -1,6 +1,7 @@
 package com.mrlion303.vfxshadersmod.client;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
+import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
@@ -43,6 +44,9 @@ public final class ClientVfxEvents {
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         ClientVfxManager.render(event);
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            BlackHoleLensingPass.render(event);
+        }
     }
 
     @SubscribeEvent

@@ -60,6 +60,31 @@ public final class ClientWorldVfxInstances {
         return INSTANCES.remove(instanceId) != null;
     }
 
+    public static int removeByEffect(EffectId effectId) {
+        int before = INSTANCES.size();
+        INSTANCES.values().removeIf(instance -> instance.effectId().equals(effectId));
+        return before - INSTANCES.size();
+    }
+
+    public static boolean hasInstances(EffectId effectId) {
+        Level level = Minecraft.getInstance().level;
+        return level != null && INSTANCES.values().stream()
+                .anyMatch(instance -> instance.effectId().equals(effectId)
+                        && instance.belongsTo(level)
+                        && !instance.isExpired(level.getGameTime()));
+    }
+
+    public static int countByEffect(EffectId effectId, Level level) {
+        if (level == null) {
+            return 0;
+        }
+        return (int) INSTANCES.values().stream()
+                .filter(instance -> instance.effectId().equals(effectId))
+                .filter(instance -> instance.belongsTo(level))
+                .filter(instance -> !instance.isExpired(level.getGameTime()))
+                .count();
+    }
+
     public static List<WorldVfxInstance> forLevel(Level level) {
         if (level == null) {
             return List.of();

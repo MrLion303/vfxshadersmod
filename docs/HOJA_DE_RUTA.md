@@ -6,18 +6,22 @@ La prioridad es construir un motor gráfico fiable y ampliarlo con componentes r
 - [x] Proyecto Forge 1.20.1 con Java 17.
 - [x] Compilación automática en GitHub Actions.
 - [x] Contrato inicial, registro con metadatos y runtime local.
-- [x] Categorías funcionales para distinguir ambiente, instancias colocadas, entidades, pantalla, partículas, audio y simulación.
+- [x] Categorías funcionales para ambiente, instancias colocadas, entidades, pantalla, partículas, audio y simulación.
 - [x] Comandos locales /vfx list, enable, disable, toggle, status y disable all.
 - [x] Primer VFX de prueba con geometría de líneas.
 - [x] Barras musicales de horizonte con animación procedural.
+- [x] Cierre geométrico continuo para las barras musicales y la aurora.
 - [x] Aurora arcoíris en capas de geometría semitransparente.
-- [x] Shader GLSL básico registrado y tipo de renderizado reutilizable.
+- [x] VFX de cielo arcoíris cambiante.
 - [x] Modelo de instancias colocadas con dimensión, posición, orientación, escala, duración y parámetros.
 - [x] Almacén que permite múltiples instancias del mismo tipo y las limpia al abandonar la sesión.
 - [x] Contexto común de cámara y registro de renderers de mundo por etapa.
-- [x] Contratos y registro ordenado para futuros pases de posprocesamiento.
-- [ ] Probar los efectos existentes visualmente en cliente y ajustar su apariencia.
-- [ ] Validar visualmente el shader y los comandos dentro del cliente de Minecraft.
+- [x] Shader GLSL básico y tipos de renderizado reutilizables.
+- [x] Agujero negro con horizonte negro, disco de acreción y tamaño personalizable de 1 a 100 bloques.
+- [x] Comando para colocar agujeros negros de 10 bloques por defecto o elegir otro diámetro.
+- [x] Pase de lente gravitacional que deforma la imagen del mundo alrededor de cada agujero negro visible.
+- [ ] Probar visualmente todos los efectos dentro del cliente y ajustar su apariencia.
+- [ ] Verificar el pase de lente en distintos drivers, resoluciones y modos de renderizado.
 - [ ] Probar el arranque en servidor dedicado.
 
 ## Fase 2 — Renderizado propio
@@ -25,7 +29,6 @@ La prioridad es construir un motor gráfico fiable y ampliarlo con componentes r
 - [ ] Crear materiales básicos con emisión, opacidad, desplazamiento y control de color.
 - [ ] Gestionar recarga y liberación de todos los recursos gráficos.
 - [ ] Añadir herramientas de diagnóstico cuando un shader no compile o falten recursos.
-- [ ] Registrar un efecto real de ejemplo usando el almacén de instancias colocadas.
 
 ## Fase 3 — Herramientas de VFX
 - [ ] API de materiales y parámetros reutilizables.
@@ -35,15 +38,15 @@ La prioridad es construir un motor gráfico fiable y ampliarlo con componentes r
 - [ ] Carga de definiciones externas para efectos compuestos sencillos.
 
 ## Fase 4 — Posprocesamiento
-- [x] Contrato de procesador, contexto con targets separados y registro por prioridad.
-- [ ] Conectar el pipeline al framebuffer de Minecraft y gestionar targets de forma segura.
-- [ ] Implementar pases para distorsión, gradación de color y bloom.
+- [x] Contexto de framebuffer y pase GLSL usado para la lente gravitacional.
+- [x] Gestionar el target auxiliar ante cambios de resolución y recargas de shaders.
+- [ ] Implementar pases adicionales para gradación de color, aberración cromática y bloom.
 - [ ] Ajustes de calidad y comportamiento seguro si un pase no está disponible.
 
 ## Fase 5 — Primeras demostraciones
 - [ ] Meteorito con núcleo incandescente, estela y humo.
 - [ ] Portal con anillos, distorsión y salida de una entidad visual.
-- [ ] Fenómeno de agujero negro con disco de acreción, anclaje en cualquier posición y lente gravitacional.
+- [x] Fenómeno de agujero negro con disco de acreción, anclaje en coordenadas y lente gravitacional.
 - [ ] Supernova con fases temporales y variación del cielo.
 - [ ] Secuencias de cielo: auroras, nubes y cuerpos celestes.
 
