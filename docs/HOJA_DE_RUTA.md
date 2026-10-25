@@ -5,25 +5,26 @@ La prioridad es construir un motor gráfico fiable y ampliarlo con componentes r
 ## Fase 1 — Proyecto y control de efectos
 - [x] Proyecto Forge 1.20.1 con Java 17.
 - [x] Compilación automática en GitHub Actions.
-- [x] Contrato inicial, registro de fábricas y runtime.
+- [x] Contrato inicial, registro con metadatos y runtime local.
 - [x] Comandos locales `/vfx list`, `enable`, `disable`, `toggle`, `status` y `disable all`.
 - [x] Primer VFX de prueba con geometría de líneas.
-- [ ] Verificar el resultado de la compilación de CI.
-- [ ] Probar en Minecraft cliente y servidor dedicado.
+- [x] Shader GLSL básico registrado y tipo de renderizado reutilizable.
+- [x] Compilación Gradle verificada en CI para el código actual.
+- [ ] Validar visualmente el shader y los comandos dentro del cliente de Minecraft.
+- [ ] Probar el arranque en servidor dedicado.
 
 ## Fase 2 — Renderizado propio
-- [ ] Establecer un contrato de renderizado por etapa del mundo.
-- [ ] Dibujar mallas personalizadas y objetos orientados hacia cámara.
-- [ ] Crear materiales básicos con color, opacidad y emisión.
-- [ ] Gestionar recarga y liberación de recursos.
+- [ ] Establecer componentes reutilizables para mallas y objetos orientados a cámara.
+- [ ] Crear materiales básicos con emisión, opacidad, desplazamiento y control de color.
+- [ ] Gestionar recarga y liberación de todos los recursos gráficos.
+- [ ] Añadir herramientas de diagnóstico cuando un shader no compile o falten recursos.
 
 ## Fase 3 — Herramientas de VFX
-- [ ] Cargador y registro de shaders GLSL.
+- [ ] API de materiales y parámetros reutilizables.
 - [ ] Componentes de partículas y emisores.
 - [ ] Estelas con control de longitud, anchura y transparencia.
 - [ ] Curvas de animación, fases y transiciones.
-- [ ] Parámetros ajustables por efecto.
-- [ ] Diagnóstico legible si un shader no compila o faltan recursos.
+- [ ] Carga de definiciones externas para efectos compuestos sencillos.
 
 ## Fase 4 — Posprocesamiento
 - [ ] Prototipo aislado de un pase de pantalla.
@@ -38,10 +39,9 @@ La prioridad es construir un motor gráfico fiable y ampliarlo con componentes r
 - [ ] Secuencias de cielo: auroras, nubes y cuerpos celestes.
 
 ## Fase 6 — Autoría y multijugador
-- [ ] Definiciones externas para efectos compuestos sencillos.
-- [ ] API de componentes que otros efectos puedan reutilizar.
+- [ ] API de componentes para que otros efectos puedan reutilizarse.
 - [ ] Mensajes de red para eventos visuales sincronizados.
-- [ ] Mecánicas autoritativas de servidor para fuerzas, daño o cambios de mundo.
+- [ ] Mecánicas autoritativas del servidor para fuerzas, daño o cambios del mundo.
 - [ ] Herramientas de depuración, perfilado y documentación para creadores.
 - [ ] Editor visual de composición de efectos.
 
