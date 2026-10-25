@@ -15,13 +15,11 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.Collection;
 
-/**
- * Comandos de movimiento que alteran la velocidad de los jugadores desde el servidor.
- */
+/** Comandos de movimiento que alteran la velocidad de los jugadores desde el servidor. */
 @Mod.EventBusSubscriber(modid = VfxShadersMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class VfxMoveCommands {
     private static final double EMPUJON_HORIZONTAL = 1.65D;
-    private static final double EMPUJON_VERTICAL = 0.78D;
+    private static final double EMPUJON_VERTICAL = 1.0D;
 
     private VfxMoveCommands() {
     }

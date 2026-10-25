@@ -14,6 +14,7 @@ import com.mrlion303.vfxshadersmod.client.ClientVfxManager;
 import com.mrlion303.vfxshadersmod.client.ClientWorldVfxInstances;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
+import com.mrlion303.vfxshadersmod.client.effect.RainbowSkyEffect;
 import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
 import net.minecraft.client.Camera;
@@ -32,9 +33,9 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Deforma la imagen del nivel alrededor de agujeros negros colocados en el mundo
- * y del agujero negro celeste. Al operar sobre la textura completa afecta tanto
- * a bloques como al cielo que aparezcan en la zona de influencia de pantalla.
+ * Aplica una lente gravitacional fuerte, una sombra negra y el disco brillante
+ * alrededor de los agujeros negros. El mismo pase tiñe el cielo y las nubes
+ * cuando está activo rainbow_sky.
  */
 public final class BlackHoleLensingPass {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -54,15 +55,17 @@ public final class BlackHoleLensingPass {
         }
 
         boolean skyHoleActive = ClientVfxManager.isActive(BlackHoleSkyEffect.ID);
+        boolean rainbowSkyActive = ClientVfxManager.isActive(RainbowSkyEffect.ID);
         List<WorldVfxInstance> holes = ClientWorldVfxInstances.forLevel(minecraft.level).stream()
                 .filter(instance -> instance.effectId().equals(BlackHoleEffect.ID))
-                .filter(instance -> instance.position().distanceToSqr(event.getCamera().getPosition()) <= 192.0D * 192.0D)
+                .filter(instance -> instance.position().distanceToSqr(event.getCamera().getPosition())
+                        <= 192.0D * 192.0D)
                 .sorted(Comparator.comparingDouble(instance ->
                         instance.position().distanceToSqr(event.getCamera().getPosition())))
                 .limit(MAX_HOLES - (skyHoleActive ? 1 : 0))
                 .toList();
 
-        if (holes.isEmpty() && !skyHoleActive) {
+        if (holes.isEmpty() && !skyHoleActive && !rainbowSkyActive) {
             releaseTarget();
             return;
         }
@@ -85,8 +88,8 @@ public final class BlackHoleLensingPass {
             Vec3 cameraPosition = camera.getPosition();
             Vector3f cameraLeft = camera.getLeftVector();
 
-            // Se reserva una entrada para el agujero celeste. Su distancia es fija
-            // para evitar paralaje y el renderizador usa exactamente este mismo centro.
+            // La posición del agujero celeste es un vector fijo del mundo, no el ángulo
+            // de la cámara cuando se activa. Su altura es de 50 grados sobre el horizonte.
             if (skyHoleActive) {
                 double radius = BlackHoleSkyEffect.SKY_DIAMETER * 0.5D;
                 Vec3 skyCenter = cameraPosition.add(BlackHoleSkyEffect.centerOffset());
@@ -95,13 +98,13 @@ public final class BlackHoleLensingPass {
                         cameraLeft.y * radius,
                         cameraLeft.z * radius
                 );
-                float[] center = project(skyCenter, cameraPosition, event);
-                float[] edge = project(skyEdge, cameraPosition, event);
+                float[] center = project(skyCenter, camera, event);
+                float[] edge = project(skyEdge, camera, event);
                 if (center != null && edge != null) {
                     float dx = (edge[0] - center[0]) * aspect;
                     float dy = edge[1] - center[1];
-                    float projectedRadius = Math.max(0.0012F, (float) Math.sqrt(dx * dx + dy * dy));
-                    screenHoles.add(new float[]{center[0], center[1], projectedRadius, 0.42F});
+                    float projectedRadius = Math.max(0.012F, (float) Math.sqrt(dx * dx + dy * dy));
+                    screenHoles.add(new float[]{center[0], center[1], projectedRadius, 1.55F});
                 }
             }
 
@@ -111,41 +114,46 @@ public final class BlackHoleLensingPass {
                 double radius = Math.max(0.5D, diameter * 0.5D);
                 double distance = hole.position().distanceTo(cameraPosition);
 
-                // Dentro del horizonte, el agujero ocupa el centro de la vista y
-                // la distorsión crece para permitir atravesar el centro sin una esfera-collider.
+                // Al entrar en el horizonte se mantiene la distorsión en pantalla,
+                // en lugar de perderla por la proyección de un punto demasiado cercano.
                 if (distance <= radius) {
                     float spread = (float) Math.min(0.62D,
-                            0.22D + 0.38D * (1.0D - distance / radius));
-                    float strength = (float) Math.min(1.0D, 0.78D + 0.22D * (1.0D - distance / radius));
-                    screenHoles.add(new float[]{0.5F, 0.5F, spread, strength});
+                            0.22D + 0.40D * (1.0D - distance / radius));
+                    screenHoles.add(new float[]{0.5F, 0.5F, spread, 2.2F});
                     continue;
                 }
 
-                float[] center = project(hole.position(), cameraPosition, event);
+                float[] center = project(hole.position(), camera, event);
                 Vec3 edgePosition = hole.position().add(
                         cameraLeft.x * radius,
                         cameraLeft.y * radius,
                         cameraLeft.z * radius
                 );
-                float[] edge = project(edgePosition, cameraPosition, event);
+                float[] edge = project(edgePosition, camera, event);
                 if (center == null || edge == null) {
                     continue;
                 }
 
                 float dx = (edge[0] - center[0]) * aspect;
                 float dy = edge[1] - center[1];
-                float projectedRadius = Math.max(0.0012F, (float) Math.sqrt(dx * dx + dy * dy));
-                float strength = (float) (0.24D + 0.48D * Math.max(0.0D, 1.0D - distance / 150.0D));
+                float projectedRadius = Math.max(0.006F, (float) Math.sqrt(dx * dx + dy * dy));
+                float strength = (float) (1.35D + 0.65D * Math.max(0.0D, 1.0D - distance / 160.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
             }
 
-            if (screenHoles.isEmpty()) {
-                releaseTarget();
-                return;
-            }
-
             shader.setSampler("DiffuseSampler", (java.util.function.IntSupplier) main::getColorTextureId);
+            shader.setSampler("DepthSampler", (java.util.function.IntSupplier) main::getDepthTextureId);
             setUniform(shader, "ScreenSize", new float[]{main.width, main.height});
+            setUniform(shader, "RainbowSkyActive", new float[]{rainbowSkyActive ? 1.0F : 0.0F});
+
+            int rgb = RainbowSkyEffect.currentColorRgb();
+            setUniform(shader, "RainbowSkyColor", new float[]{
+                    ((rgb >> 16) & 0xFF) / 255.0F,
+                    ((rgb >> 8) & 0xFF) / 255.0F,
+                    (rgb & 0xFF) / 255.0F,
+                    1.0F
+            });
+
             for (int i = 0; i < MAX_HOLES; i++) {
                 float[] data = i < screenHoles.size()
                         ? screenHoles.get(i)
@@ -182,7 +190,7 @@ public final class BlackHoleLensingPass {
             loggedFailure = false;
         } catch (RuntimeException exception) {
             if (!loggedFailure) {
-                LOGGER.error("No se pudo aplicar la lente gravitacional VFX; se mantiene el renderizado normal.", exception);
+                LOGGER.error("No se pudo aplicar el pase de lente/graduación de cielo; se mantiene el renderizado normal.", exception);
                 loggedFailure = true;
             }
         } finally {
@@ -197,12 +205,30 @@ public final class BlackHoleLensingPass {
         }
     }
 
-    private static float[] project(Vec3 worldPosition, Vec3 cameraPosition, RenderLevelStageEvent event) {
-        Vec3 relative = worldPosition.subtract(cameraPosition);
-        Vector4f point = new Vector4f((float) relative.x, (float) relative.y, (float) relative.z, 1.0F);
-        event.getPoseStack().last().pose().transform(point);
-        event.getProjectionMatrix().transform(point);
+    /**
+     * Proyección mediante los vectores reales de la cámara. Evita aplicar por
+     * duplicado la rotación/matriz del pose stack, causa típica de centros inválidos.
+     */
+    private static float[] project(
+            Vec3 worldPosition, Camera camera, RenderLevelStageEvent event
+    ) {
+        Vec3 relative = worldPosition.subtract(camera.getPosition());
+        Vector3f left = camera.getLeftVector();
+        Vector3f up = camera.getUpVector();
+        Vector3f look = camera.getLookVector();
 
+        Vec3 leftVector = new Vec3(left.x, left.y, left.z);
+        Vec3 upVector = new Vec3(up.x, up.y, up.z);
+        Vec3 lookVector = new Vec3(look.x, look.y, look.z);
+        double depth = relative.dot(lookVector);
+        if (depth <= 0.01D) {
+            return null;
+        }
+
+        float cameraX = (float) -relative.dot(leftVector);
+        float cameraY = (float) relative.dot(upVector);
+        Vector4f point = new Vector4f(cameraX, cameraY, (float) -depth, 1.0F);
+        event.getProjectionMatrix().transform(point);
         if (point.w <= 0.0001F) {
             return null;
         }

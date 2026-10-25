@@ -62,12 +62,15 @@ public final class ClientVfxCommands {
 
     private static int help(CommandContext<CommandSourceStack> context) {
         var source = context.getSource();
-        source.sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos locales"), false);
+        source.sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos"), false);
         source.sendSuccess(() -> Component.literal("/vfx list — lista los efectos, categorías y estados"), false);
         source.sendSuccess(() -> Component.literal("/vfx enable <efecto> — activa un efecto"), false);
         source.sendSuccess(() -> Component.literal("/vfx enable blackhole <tamaño> <x> <y> <z> — coloca un agujero negro en coordenadas exactas"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva un efecto"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable blackhole — elimina todos los agujeros negros colocados"), false);
+        source.sendSuccess(() -> Component.literal("/vfx enable blackhole_sky — activa el agujero celeste gigante a 50 grados sobre el horizonte"), false);
+        source.sendSuccess(() -> Component.literal("/vfx enable rainbow_sky — cambia todo el cielo y las nubes por colores uniformes del arcoíris"), false);
+        source.sendSuccess(() -> Component.literal("Los bloques de comandos también pueden ejecutar /vfx; las órdenes se replican a los clientes de la dimensión."), false);
         source.sendSuccess(() -> Component.literal("/vfx toggle <efecto> — alterna su estado"), false);
         source.sendSuccess(() -> Component.literal("/vfx status <efecto> — consulta el estado"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable all — limpia todos los VFX locales"), false);

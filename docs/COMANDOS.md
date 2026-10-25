@@ -1,34 +1,33 @@
 # Comandos del mod
 
-## Comandos VFX locales
+## Comandos VFX
 
-Los comandos /vfx se registran localmente en el cliente. Los VFX visuales son locales a esa instancia y todavía no se sincronizan con otros jugadores.
-
-| Comando | Función |
-|---|---|
-| /vfx o /vfx help | Muestra la ayuda |
-| /vfx list | Enumera los VFX, categorías y estados |
-| /vfx enable <efecto> | Activa un efecto global |
-| /vfx disable <efecto> | Desactiva un efecto |
-| /vfx toggle <efecto> | Alterna su estado |
-| /vfx status <efecto> | Consulta el estado de un efecto |
-| /vfx disable all | Limpia todos los VFX locales |
-| /vfx enable blackhole <tamaño> <x> <y> <z> | Coloca un agujero negro en coordenadas del mundo |
-| /vfx disable blackhole | Elimina todos los agujeros negros colocados |
-| /vfx enable blackhole_sky | Activa el agujero negro celeste |
-| /vfx disable blackhole_sky | Desactiva el agujero negro celeste |
-
-El tamaño del agujero negro del mundo representa el diámetro de su horizonte en bloques, de 1 a 100. El valor de referencia es 10 bloques. Las coordenadas admiten valores absolutos y relativos con ~.
-
-## Comando de movimiento del servidor
+Los comandos `/vfx` se pueden usar en el chat y desde bloques de comandos. Los bloques ejecutan la versión del servidor, que envía cada orden a todos los clientes que estén en la misma dimensión. Para eso, el mod debe estar instalado en el servidor y en cada cliente. Requieren permiso de operador de nivel 2.
 
 | Comando | Función |
 |---|---|
-| /vfxmove empujon <jugadores> | Impulsa a los jugadores seleccionados hacia atrás y hacia arriba |
+| `/vfx list` | Enumera los VFX incluidos |
+| `/vfx enable <efecto>` | Activa un efecto |
+| `/vfx disable <efecto>` | Desactiva un efecto |
+| `/vfx toggle <efecto>` | Alterna su estado |
+| `/vfx status <efecto>` | Muestra el estado de la última orden del servidor |
+| `/vfx disable all` | Limpia los efectos activos y las instancias colocadas |
+| `/vfx enable blackhole <tamaño> <x> <y> <z>` | Coloca un agujero negro en coordenadas del mundo |
+| `/vfx disable blackhole` | Elimina todos los agujeros negros colocados |
+| `/vfx enable blackhole_sky` | Activa el agujero negro celeste gigante |
+| `/vfx disable blackhole_sky` | Desactiva el agujero celeste |
+| `/vfx enable rainbow_sky` | Colorea uniformemente el cielo y las nubes |
+| `/vfx disable rainbow_sky` | Desactiva el cielo de colores |
 
-Este comando se ejecuta en el servidor y requiere permisos de operador de nivel 2. Para cada jugador seleccionado, calcula el empujón en sentido contrario a su mirada horizontal y añade un impulso vertical moderado. Esto produce un salto con trayectoria parabólica sin depender de dónde se encuentre el jugador ni de hacia dónde mire el ejecutor del comando.
+El tamaño del agujero negro del mundo es el diámetro de su horizonte en bloques (de 1 a 100). Las coordenadas aceptan números absolutos o relativos con `~`.
 
-Los argumentos aceptan nombres de jugadores y selectores estándar de Minecraft.
+## Agujero negro celeste
+
+`blackhole_sky` no utiliza la mirada de quien ejecuta el comando. Se coloca en una dirección fija del mundo, a 50° sobre el horizonte (0° = horizonte; 90° = cenit), con un diámetro aparente gigantesco. Usa disco blanco-dorado y halos de luz inspirados en la apariencia cinematográfica de Gargantúa en *Interstellar*.
+
+## Impulso de jugadores
+
+`/vfxmove empujon <jugadores>` se ejecuta en el servidor. El impulso horizontal se mantiene y la componente vertical se incrementó para crear un salto parabólico más alto.
 
 Ejemplos:
 
@@ -39,36 +38,26 @@ Ejemplos:
 /vfxmove empujon @a[distance=..10]
 ```
 
-## Ejemplos VFX
+## Ejemplos para bloques de comandos
 
 ```text
-/vfx enable blackhole 10 100 64 -200
-/vfx enable blackhole 24 ~ ~5 ~-12
+/vfx enable blackhole 80 120 170 -300
 /vfx disable blackhole
 /vfx enable blackhole_sky
 /vfx disable blackhole_sky
 /vfx enable rainbow_sky
-/vfx enable rainbow_aurora
-/vfx enable music_horizon_bars
-/vfx disable all
+/vfx disable rainbow_sky
+/vfxmove empujon @a
 ```
 
-## VFX incluidos
+Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no buffers gráficos. El código GLSL aplica una distorsión cinematográfica de pantalla y no modifica la geometría ni la física de los bloques.
 
-- demo_orbit: tres anillos de color alrededor del jugador local. Es un efecto de prueba del motor.
-- music_horizon_bars: barras de ecualizador animadas alrededor del horizonte. Sus ondas usan frecuencias periódicas que cierran exactamente el círculo; el movimiento aún no analiza audio real.
-- rainbow_aurora: cortinas semitransparentes ondulantes alrededor del cielo, con cierre continuo y colores arcoíris.
-- rainbow_sky: una cúpula translúcida que tiñe el cielo y recorre gradualmente el arcoíris.
-- blackhole: una aparición fija en las coordenadas indicadas, con horizonte negro, disco de acreción y lente gravitacional. Puedes acercarte o atravesar su centro; al entrar en el horizonte deja de dibujarse la esfera opaca y aumenta la deformación de la escena.
-- blackhole_sky: un agujero negro celeste con disco de acreción y lente gravitacional que afecta la imagen del cielo y del mundo alrededor de su posición proyectada.
+## Efectos incluidos
 
-La lente gravitacional modifica la imagen que ve el cliente. No altera las coordenadas reales de los bloques ni aplica fuerzas físicas, y todavía no se replica a otros jugadores.
+- `demo_orbit`: anillos de demostración alrededor del jugador local.
+- `music_horizon_bars`: barras de neón alrededor del horizonte.
+- `rainbow_aurora`: cortinas de luz arcoíris.
+- `rainbow_sky`: cielo de color uniforme, alternando tonos del arcoíris, con cenit cerrado y nubes teñidas.
+- `blackhole`: agujero negro en coordenadas del mundo, disco de acreción y distorsión fuerte del fondo.
+- `blackhole_sky`: agujero negro celeste gigante, fijo a 50° sobre el horizonte, con disco y lente gravitacional.
 
-## Cómo añadir otro efecto
-
-1. Crear una implementación de VfxEffect.
-2. Elegir una categoría en VfxEffectCategory.
-3. Registrar la definición en ClientVfxCatalog.
-4. Si es un objeto colocado, enlazarlo a un ClientWorldVfxRenderer.
-5. Si deforma la imagen completa, conectar el pase GLSL al pipeline de pantalla.
-6. Probar el efecto dentro de Minecraft; una compilación correcta no garantiza su apariencia en todos los drivers.

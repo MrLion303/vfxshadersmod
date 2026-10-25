@@ -1,42 +1,25 @@
 # Arquitectura del motor VFX
 
-## Objetivo
+## Catálogo y runtime
 
-Motor de efectos visuales en tiempo real para Forge 1.20.1. El motor admite efectos ambientales, geometría colocada en coordenadas del mundo, efectos ligados a entidades y pases que deforman la imagen completa de la cámara.
+`EffectRegistry` guarda identificadores, categorías y fábricas de efectos. `ClientVfxManager` ejecuta los efectos en el hilo gráfico del cliente. Las apariciones colocadas en el mundo viven en `WorldVfxInstance`, con dimensión, coordenadas, escala, duración y parámetros.
 
-## Definiciones e instancias
+## Agujeros negros
 
-EffectRegistry mantiene las fábricas, categorías y metadatos. Una definición describe el tipo de VFX. WorldVfxInstance representa una aparición concreta con su identificador, dimensión, posición, rotación, escala, duración y parámetros numéricos. Una definición puede tener muchas apariciones simultáneas.
+`blackhole` se ancla a coordenadas absolutas del mundo y tiene tamaño en bloques. El renderer dibuja una sombra negra, un disco de acreción cálido casi horizontal y halos. `BlackHoleLensingPass` calcula centros y radios aparentes con los vectores de orientación de la cámara, proyecta las ubicaciones y modifica la textura de la escena con un shader GLSL. El shader crea una deformación fuerte y amplia del fondo, una región central negra y una banda luminosa blanco-dorada. Esta representación es una aproximación cinematográfica; no es una simulación física relativista.
 
-El agujero negro blackhole usa el diámetro (en bloques) y las coordenadas recibidas por el comando. No se mueve automáticamente con el jugador. Al entrar dentro del radio de su horizonte, el renderer deja de dibujar la esfera opaca para no bloquear la vista como una pared sólida.
+`blackhole_sky` utiliza una dirección fija de mundo a 50° sobre el horizonte (cenit = 90°), en lugar de capturar la dirección de mirada al activarse. Su escala es mucho mayor para poder funcionar como evento de cielo desde lejos.
 
-## Renderizado espacial
+## Cielo arcoíris
 
-ClientWorldVfxRenderer dibuja instancias concretas con VfxRenderContext, que contiene el nivel, la cámara, las coordenadas relativas, el pose stack, la etapa y el tiempo parcial. ClientWorldVfxRendererRegistry enlaza los tipos colocados con su renderer.
+`rainbow_sky` utiliza una cúpula que cubre el cielo entero hasta el cenit. El color se mantiene uniforme por etapa: azul, rojo, naranja, amarillo, verde, cian, índigo y violeta, con transiciones suaves entre tonos. El pase de pantalla usa la textura de profundidad para teñir el cielo y las nubes mientras conserva los bloques cercanos.
 
-## Posprocesamiento
+## Comandos y red
 
-BlackHoleLensingPass proyecta agujeros negros colocados y el agujero negro celeste a coordenadas de pantalla. El shader GLSL deforma las UV de la textura renderizada y procesa el cielo y los bloques juntos. La escena se renderiza en un target auxiliar y luego se copia al target principal para no leer y escribir sobre la misma textura a la vez.
+Los comandos escritos en el cliente pueden controlar los efectos locales. `VfxServerCommands` registra también `/vfx` en el servidor para ejecución por bloques de comandos. `VfxNetwork` y `VfxCommandPacket` envían las órdenes de activación, desactivación y colocación a los clientes de la misma dimensión; `ClientVfxNetworkHandler` aplica la orden en el hilo del cliente.
 
-Los dos VFX tienen funciones distintas:
+`/vfxmove empujon` es mecánico y se ejecuta en servidor. Conserva la componente horizontal solicitada y usa una componente vertical más alta para una trayectoria parabólica más pronunciada.
 
-- blackhole: anclado a coordenadas del mundo, con tamaño en bloques y posición configurables.
-- blackhole_sky: efecto ambiental ubicado en una dirección celeste; su posición se elige al activarlo y permanece en esa dirección visual.
+## Estado y limitaciones
 
-La lente es una distorsión de imagen local al cliente: no cambia bloques reales, colisiones ni fuerzas físicas.
-
-## Otros efectos
-
-music_horizon_bars y rainbow_aurora usan ondas con frecuencias enteras en relación con la vuelta completa del círculo para que los extremos sean continuos. rainbow_sky dibuja una cúpula translúcida cuyo matiz cambia gradualmente.
-
-## Comandos y autoridad
-
-Los comandos /vfx pertenecen al cliente y controlan efectos visuales locales. En cambio, /vfxmove empujon se registra en el servidor, requiere nivel de permiso 2 y aplica un cambio real de velocidad a cada jugador seleccionado. El impulso horizontal va en sentido contrario a la mirada de cada objetivo y se combina con un impulso vertical moderado.
-
-La sincronización de instancias visuales con otros clientes aún está pendiente. Las acciones físicas que alteran jugadores deben ejecutarse desde el servidor.
-
-## Estado de implementación
-
-Implementado: registro y categorías, runtime local, comandos VFX, efectos de cielo, instancia espacial de agujero negro, lente gravitacional GLSL, agujero negro celeste y comando de empujón de jugadores.
-
-Pendiente: pruebas visuales dentro del cliente, ajuste de la deformación y rendimiento, materiales generales, partículas y estelas avanzadas, sincronización multijugador de VFX.
+La compilación valida Java y recursos, pero no sustituye la prueba dentro del cliente. El resultado visual del shader puede variar por drivers y configuración gráfica. La lente es de pantalla, no modifica bloques ni simula de forma física el espacio-tiempo. El comando de eventos visuales requiere el mod en servidor y clientes para que todos vean el mismo VFX.
