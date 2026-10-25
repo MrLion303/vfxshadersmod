@@ -8,9 +8,6 @@
   "samplers": [
     {
       "name": "DiffuseSampler"
-    },
-    {
-      "name": "DepthSampler"
     }
   ],
   "uniforms": [
@@ -18,67 +15,98 @@
       "name": "ScreenSize",
       "type": "float",
       "count": 2,
-      "values": [1920.0, 1080.0]
-    },
-    {
-      "name": "RainbowSkyActive",
-      "type": "float",
-      "count": 1,
-      "values": [0.0]
-    },
-    {
-      "name": "RainbowSkyColor",
-      "type": "float",
-      "count": 4,
-      "values": [0.1059, 0.3333, 1.0, 1.0]
+      "values": [
+        1920,
+        1080
+      ]
     },
     {
       "name": "Hole0",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     },
     {
       "name": "Hole1",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     },
     {
       "name": "Hole2",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     },
     {
       "name": "Hole3",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     },
     {
       "name": "Hole4",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     },
     {
       "name": "Hole5",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     },
     {
       "name": "Hole6",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     },
     {
       "name": "Hole7",
       "type": "float",
       "count": 4,
-      "values": [-10.0, -10.0, 0.0, 0.0]
+      "values": [
+        -10,
+        -10,
+        0,
+        0
+      ]
     }
   ]
 }
