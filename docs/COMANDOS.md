@@ -1,8 +1,8 @@
-# Comandos de VFX
+# Comandos del mod
 
-Los comandos se registran localmente en el cliente. Los VFX visuales son locales a esa instancia y todavía no se sincronizan con otros jugadores.
+## Comandos VFX locales
 
-## Comandos disponibles
+Los comandos /vfx se registran localmente en el cliente. Los VFX visuales son locales a esa instancia y todavía no se sincronizan con otros jugadores.
 
 | Comando | Función |
 |---|---|
@@ -20,9 +20,28 @@ Los comandos se registran localmente en el cliente. Los VFX visuales son locales
 
 El tamaño del agujero negro del mundo representa el diámetro de su horizonte en bloques, de 1 a 100. El valor de referencia es 10 bloques. Las coordenadas admiten valores absolutos y relativos con ~.
 
+## Comando de movimiento del servidor
+
+| Comando | Función |
+|---|---|
+| /vfxmove empujon <jugadores> | Impulsa a los jugadores seleccionados hacia atrás y hacia arriba |
+
+Este comando se ejecuta en el servidor y requiere permisos de operador de nivel 2. Para cada jugador seleccionado, calcula el empujón en sentido contrario a su mirada horizontal y añade un impulso vertical moderado. Esto produce un salto con trayectoria parabólica sin depender de dónde se encuentre el jugador ni de hacia dónde mire el ejecutor del comando.
+
+Los argumentos aceptan nombres de jugadores y selectores estándar de Minecraft.
+
 Ejemplos:
 
-\`\`\`text
+```text
+/vfxmove empujon @a
+/vfxmove empujon @p
+/vfxmove empujon LAYONv
+/vfxmove empujon @a[distance=..10]
+```
+
+## Ejemplos VFX
+
+```text
 /vfx enable blackhole 10 100 64 -200
 /vfx enable blackhole 24 ~ ~5 ~-12
 /vfx disable blackhole
@@ -32,7 +51,7 @@ Ejemplos:
 /vfx enable rainbow_aurora
 /vfx enable music_horizon_bars
 /vfx disable all
-\`\`\`
+```
 
 ## VFX incluidos
 

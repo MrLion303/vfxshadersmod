@@ -16,6 +16,9 @@ El proyecto combina shaders GLSL, geometría personalizada, partículas, animaci
 - /vfx disable blackhole: elimina todos los agujeros negros colocados.
 - /vfx enable blackhole_sky: activa el agujero negro celeste.
 - /vfx disable blackhole_sky: desactiva el agujero negro celeste.
+- /vfxmove empujon <jugadores>: lanza a los jugadores seleccionados hacia atrás y hacia arriba. Acepta nombres y selectores como @p, @a o @a[distance=..10].
+
+El comando /vfxmove empujon modifica la velocidad desde el servidor, así que afecta al movimiento real de los jugadores y requiere permisos de operador (nivel 2). El impulso se calcula en dirección opuesta a la mirada horizontal de cada jugador, con una elevación moderada.
 
 El tamaño de referencia del agujero negro situado en el mundo es de 10 bloques de diámetro. Las coordenadas admiten números absolutos o relativos con ~; por ejemplo: /vfx enable blackhole 10 100 64 -200.
 
@@ -34,7 +37,7 @@ La lente gravitacional deforma la imagen renderizada, incluidos los bloques y el
 
 Las definiciones de efectos son independientes de las apariciones colocadas. Una definición puede tener varias instancias en distintas coordenadas y dimensiones. El renderizado espacial utiliza un registro de renderers; los pases de pantalla operan sobre la textura de la escena.
 
-El catálogo central alimenta /vfx list y las sugerencias de comandos.
+El catálogo central alimenta /vfx list y las sugerencias de comandos. El comando /vfxmove empujon se registra en el servidor y aplica la velocidad a los jugadores seleccionados.
 
 ## Plataforma
 
@@ -54,6 +57,6 @@ GitHub Actions compila en cada push a main y guarda el JAR como artefacto cuando
 
 ## Estado y limitaciones
 
-La compilación valida Java y los JSON, pero la apariencia final debe comprobarse dentro del cliente de Minecraft y puede necesitar ajustes por diferencias de drivers o configuración gráfica. La sincronización visual multijugador y las mecánicas autoritativas de fuerzas siguen pendientes.
+La compilación valida Java y los JSON, pero la apariencia final debe comprobarse dentro del cliente de Minecraft y puede necesitar ajustes por diferencias de drivers o configuración gráfica. La sincronización visual multijugador de los VFX sigue pendiente; el comando de empujón sí aplica movimiento real desde el servidor.
 
 El proyecto es independiente y no modifica ni depende del repositorio shadermod. Todavía no se ha elegido una licencia, así que no debe asumirse que el código puede redistribuirse o reutilizarse libremente.

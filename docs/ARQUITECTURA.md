@@ -29,12 +29,14 @@ La lente es una distorsión de imagen local al cliente: no cambia bloques reales
 
 music_horizon_bars y rainbow_aurora usan ondas con frecuencias enteras en relación con la vuelta completa del círculo para que los extremos sean continuos. rainbow_sky dibuja una cúpula translúcida cuyo matiz cambia gradualmente.
 
-## Autoridad y red
+## Comandos y autoridad
 
-La sincronización de instancias con otros clientes aún está pendiente. Los efectos locales no deben utilizarse como autoridad para alterar entidades, jugadores o bloques. Cualquier simulación de mundo tendrá que validarse en el servidor.
+Los comandos /vfx pertenecen al cliente y controlan efectos visuales locales. En cambio, /vfxmove empujon se registra en el servidor, requiere nivel de permiso 2 y aplica un cambio real de velocidad a cada jugador seleccionado. El impulso horizontal va en sentido contrario a la mirada de cada objetivo y se combina con un impulso vertical moderado.
+
+La sincronización de instancias visuales con otros clientes aún está pendiente. Las acciones físicas que alteran jugadores deben ejecutarse desde el servidor.
 
 ## Estado de implementación
 
-Implementado: registro y categorías, runtime local, comandos, efectos de cielo, instancia espacial de agujero negro, lente gravitacional GLSL y modelo separado para agujero negro celeste.
+Implementado: registro y categorías, runtime local, comandos VFX, efectos de cielo, instancia espacial de agujero negro, lente gravitacional GLSL, agujero negro celeste y comando de empujón de jugadores.
 
-Pendiente: pruebas visuales dentro del cliente, ajuste de la deformación y rendimiento, materiales generales, partículas y estelas avanzadas, sincronización multijugador y simulación física autoritativa.
+Pendiente: pruebas visuales dentro del cliente, ajuste de la deformación y rendimiento, materiales generales, partículas y estelas avanzadas, sincronización multijugador de VFX.
