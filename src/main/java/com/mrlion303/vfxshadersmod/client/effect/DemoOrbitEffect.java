@@ -2,6 +2,7 @@ package com.mrlion303.vfxshadersmod.client.effect;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
+import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffect;
@@ -53,7 +54,7 @@ public final class DemoOrbitEffect implements VfxEffect, ClientVfxRenderer {
         double phase = (age + partialTick) * 0.045D;
 
         PoseStack.Pose pose = event.getPoseStack().last();
-        RenderType lineType = RenderType.lines();
+        RenderType lineType = VfxRenderTypes.colorLines();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         VertexConsumer vertices = buffers.getBuffer(lineType);
 
@@ -119,7 +120,6 @@ public final class DemoOrbitEffect implements VfxEffect, ClientVfxRenderer {
     ) {
         consumer.vertex(pose.pose(), (float) point.x, (float) point.y, (float) point.z)
                 .color(red, green, blue, 1.0F)
-                .normal(pose.normal(), 0.0F, 1.0F, 0.0F)
                 .endVertex();
     }
 }
