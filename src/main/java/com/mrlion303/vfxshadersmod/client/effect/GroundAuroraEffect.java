@@ -105,6 +105,6 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
             return originY + 0.2D;
         }
         int height = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
-        return Math.max(originY, height) + 0.15D;
+        return height + 0.15D;
     }
 }
