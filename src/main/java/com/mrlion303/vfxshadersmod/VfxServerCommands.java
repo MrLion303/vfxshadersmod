@@ -35,7 +35,12 @@ public final class VfxServerCommands {
             "rainbow_aurora",
             "rainbow_sky",
             "blackhole",
-            "blackhole_sky"
+            "blackhole_sky",
+            "cloud_vortex",
+            "starsspeed",
+            "ground_aurora",
+            "falling_stars",
+            "sky_portal"
     );
     private static final Map<ResourceKey<Level>, Set<String>> ACTIVE_BY_DIMENSION = new HashMap<>();
 
@@ -54,6 +59,21 @@ public final class VfxServerCommands {
                                 .then(Commands.argument("diameter", FloatArgumentType.floatArg(1.0F, 100.0F))
                                         .then(Commands.argument("position", Vec3Argument.vec3())
                                                 .executes(VfxServerCommands::placeBlackHole))))
+                        .then(Commands.literal("starsspeed")
+                                .executes(context -> enableConfigured(context, "starsspeed", "blue", Vec3.ZERO))
+                                .then(Commands.argument("color", StringArgumentType.word())
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                                com.mrlion303.vfxshadersmod.util.VfxColors.names(), builder))
+                                        .executes(context -> enableConfigured(context, "starsspeed",
+                                                StringArgumentType.getString(context, "color"), Vec3.ZERO))))
+                        .then(Commands.literal("ground_aurora")
+                                .then(Commands.argument("position", Vec3Argument.vec3())
+                                        .then(Commands.argument("color", StringArgumentType.word())
+                                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                                        com.mrlion303.vfxshadersmod.util.VfxColors.names(), builder))
+                                                .executes(context -> enableConfigured(context, "ground_aurora",
+                                                        StringArgumentType.getString(context, "color"),
+                                                        Vec3Argument.getVec3(context, "position"))))))
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) ->
                                         SharedSuggestionProvider.suggest(EFFECTS.stream()
@@ -87,6 +107,11 @@ public final class VfxServerCommands {
         context.getSource().sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva el efecto"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx disable blackhole — elimina los agujeros negros colocados"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx disable all — limpia todos los VFX"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfx enable starsspeed <color> — cielo teñido con estrellas rápidas"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfx enable ground_aurora <x> <y> <z> <color> — ondas sobre el terreno"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfxonce scan <x> <y> <z> <color> — escaneo de un solo uso"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfxmove moonjump enable|disable <jugadores>"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfxmove waterwalk enable|disable <jugadores>"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfxmove empujon <jugadores> — impulsa a los jugadores seleccionados"), false);
         return 1;
     }
@@ -116,6 +141,27 @@ public final class VfxServerCommands {
         send(context.getSource().getLevel(), VfxCommandPacket.ENABLE, effect, 0.0F, Vec3.ZERO);
         active(context.getSource().getLevel()).add(effect);
         context.getSource().sendSuccess(() -> Component.literal("Se activó " + effect + " en los clientes de esta dimensión."), true);
+        return 1;
+    }
+
+    private static int enableConfigured(
+            CommandContext<CommandSourceStack> context, String effect, String colorName, Vec3 position
+    ) {
+        Integer rgb = com.mrlion303.vfxshadersmod.util.VfxColors.parse(colorName);
+        if (rgb == null) {
+            context.getSource().sendFailure(Component.literal(
+                    "Color inválido. " + com.mrlion303.vfxshadersmod.util.VfxColors.describeOptions()));
+            return 0;
+        }
+        if (!isSupported(effect)) {
+            context.getSource().sendFailure(Component.literal("Efecto no soportado: " + effect));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        send(level, VfxCommandPacket.ENABLE_CONFIGURED, effect, 0.0F, position, colorName);
+        active(level).add(effect);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "Se activó " + effect + " con color " + colorName + " en los clientes de esta dimensión."), true);
         return 1;
     }
 
@@ -205,7 +251,11 @@ public final class VfxServerCommands {
     }
 
     private static void send(ServerLevel level, String operation, String effect, float diameter, Vec3 position) {
+        send(level, operation, effect, diameter, position, "");
+    }
+
+    private static void send(ServerLevel level, String operation, String effect, float diameter, Vec3 position, String option) {
         VfxNetwork.sendToDimension(level, new VfxCommandPacket(
-                operation, effect, level.dimension().location(), diameter, position));
+                operation, effect, level.dimension().location(), diameter, position, option));
     }
 }
