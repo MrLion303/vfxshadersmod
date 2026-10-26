@@ -61,3 +61,27 @@ Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no b
 - `blackhole`: agujero negro en coordenadas del mundo, disco de acreción y distorsión fuerte del fondo.
 - `blackhole_sky`: agujero negro celeste gigante, fijo a 50° sobre el horizonte, con disco y lente gravitacional.
 
+
+
+## Movimiento por jugador
+
+- `/vfxmove moonjump enable <jugadores>`: reduce la gravedad efectiva para conseguir saltos altos y caídas lentas.
+- `/vfxmove moonjump disable <jugadores>`: restaura el movimiento normal.
+- `/vfxmove waterwalk enable <jugadores>`: permite desplazarse sobre la superficie del agua sin hundirse.
+- `/vfxmove waterwalk disable <jugadores>`: desactiva el efecto. `caminar_agua` es un alias.
+- `<jugadores>` acepta nombres o selectores como `@a`, `@p` y `@s`.
+
+## Efectos nuevos
+
+- `/vfx enable cloud_vortex` y `/vfx disable cloud_vortex`: vórtice celeste naranja rojizo que gira sobre su eje.
+- `/vfx enable starsspeed <color>`: cielo de color uniforme con estelas rápidas y luz en el horizonte. El color es opcional; por defecto, azul.
+- `/vfx enable ground_aurora <x> <y> <z> <color>`: ondas de aurora sobre el terreno que se expanden desde el punto indicado.
+- `/vfx enable falling_stars` y `/vfx disable falling_stars`: lluvia de estrellas arcoíris diagonales.
+- `/vfx enable sky_portal` y `/vfx disable sky_portal`: portal cinematográfico en el cielo.
+
+## Efectos de un solo uso
+
+`/vfxonce scan <x> <y> <z> <color>` inicia un aro de escaneo desde las coordenadas indicadas. El aro se adapta al relieve del terreno cargado y termina solo; no hace falta ejecutar otro comando para detenerlo.
+
+Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amarillo`, `verde`, `morado`, `rosa` y `blanco`. También se acepta hexadecimal con el formato `#RRGGBB`.
+
