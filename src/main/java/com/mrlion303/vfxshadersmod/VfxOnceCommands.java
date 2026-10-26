@@ -1,6 +1,5 @@
 package com.mrlion303.vfxshadersmod;
 
-import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
 import com.mrlion303.vfxshadersmod.network.VfxCommandPacket;
 import com.mrlion303.vfxshadersmod.network.VfxNetwork;
 import com.mrlion303.vfxshadersmod.util.VfxColors;
