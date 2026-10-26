@@ -29,6 +29,7 @@ public record VfxCommandPacket(
     public static final String CLEAR_BLACKHOLES = "clear_blackholes";
     public static final String ENABLE_CONFIGURED = "enable_configured";
     public static final String SCAN_ONCE = "scan_once";
+    public static final String PLAYER_EFFECT = "player_effect";
 
     public VfxCommandPacket(
             String operation,

@@ -1,11 +1,23 @@
 {
-  "vertex": "vfxshadersmod:vfx/black_hole_lensing",
+  "vertex": "vfxshadersmod:vfx/portal_window",
   "fragment": "vfxshadersmod:vfx/portal_window",
   "attributes": ["Position", "UV0"],
   "samplers": [
     { "name": "DiffuseSampler" }
   ],
   "uniforms": [
+    {
+      "name": "ModelViewMat",
+      "type": "matrix4x4",
+      "count": 16,
+      "values": [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    },
+    {
+      "name": "ProjMat",
+      "type": "matrix4x4",
+      "count": 16,
+      "values": [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    },
     { "name": "UseTexture", "type": "float", "count": 1, "values": [0.0] },
     { "name": "PortalTime", "type": "float", "count": 1, "values": [0.0] }
   ]

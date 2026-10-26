@@ -2,6 +2,7 @@ package com.mrlion303.vfxshadersmod.client.effect;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
+import com.mrlion303.vfxshadersmod.client.render.VfxGeometry;
 import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
@@ -17,9 +18,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
-/** Efecto de un solo uso: un anillo de escaneo que recorre el relieve del mundo. */
+/** Escaneo de un solo uso que recorre la superficie cargada del terreno. */
 public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "scan");
+    private static final int SEGMENTS = 220;
+    private static final long LIFETIME = 184L;
     private static volatile Vec3 requestedOrigin = Vec3.ZERO;
     private static volatile int requestedColor = 0x3478FF;
 
@@ -51,7 +54,7 @@ public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
 
     @Override
     public boolean isFinished() {
-        return age >= 228L;
+        return age >= LIFETIME;
     }
 
     @Override
@@ -65,57 +68,56 @@ public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 camera = event.getCamera().getPosition();
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        RenderType type = VfxRenderTypes.colorLines();
-        VertexConsumer lines = buffers.getBuffer(type);
-        double radius = Math.min(260.0D, (age + partialTick) * 1.15D);
-        float fade = (float) Math.min(1.0D, (228.0D - age - partialTick) / 24.0D);
+        RenderType type = VfxRenderTypes.colorQuads();
+        VertexConsumer vertices = buffers.getBuffer(type);
+
+        double time = age + partialTick;
+        double radius = Math.min(260.0D, 0.5D + time * 1.48D);
+        float fade = (float) Math.min(1.0D, (LIFETIME - time) / 15.0D);
         if (fade <= 0.0F) {
             buffers.endBatch(type);
             return;
         }
 
-        Vec3[] points = new Vec3[160];
-        for (int i = 0; i < points.length; i++) {
-            double angle = Math.PI * 2.0D * i / points.length;
-            double x = origin.x + Math.cos(angle) * radius;
-            double z = origin.z + Math.sin(angle) * radius;
-            BlockPos sample = BlockPos.containing(x, origin.y, z);
-            if (!level.hasChunkAt(sample)) {
-                continue;
-            }
-            int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) Math.floor(x), (int) Math.floor(z));
-            double ripple = Math.sin(angle * 12.0D + age * 0.075D) * 0.10D;
-            points[i] = new Vec3(x - camera.x, surface + 0.12D - camera.y + ripple,
-                    z - camera.z);
-        }
-
-        for (int i = 0; i < points.length; i++) {
-            Vec3 a = points[i];
-            Vec3 b = points[(i + 1) % points.length];
-            if (a == null || b == null) {
-                continue;
-            }
-            emit(lines, pose, a, color, fade * 0.44F);
-            emit(lines, pose, b, color, fade * 0.44F);
-        }
-        // Un borde interior más claro refuerza el aspecto de escáner sin cubrir los bloques.
-        for (int i = 0; i < points.length; i++) {
-            Vec3 a = points[i];
-            Vec3 b = points[(i + 1) % points.length];
-            if (a == null || b == null) {
-                continue;
-            }
-            emit(lines, pose, a.add(0.0D, 0.055D, 0.0D), 0xFFFFFF, fade * 0.78F);
-            emit(lines, pose, b.add(0.0D, 0.055D, 0.0D), 0xFFFFFF, fade * 0.78F);
-        }
+        // Un halo ancho lo hace visible; el borde blanco da la sensación de un escáner energético.
+        drawBand(vertices, pose, level, camera, radius, 1.05D, color, fade * 0.20F, time);
+        drawBand(vertices, pose, level, camera, radius, 0.42D, color, fade * 0.88F, time);
+        drawBand(vertices, pose, level, camera, radius, 0.075D, 0xFFFFFF, fade * 0.95F, time);
         buffers.endBatch(type);
     }
 
-    private static void emit(VertexConsumer consumer, PoseStack.Pose pose, Vec3 point, int rgb, float alpha) {
-        float r = ((rgb >> 16) & 255) / 255.0F;
-        float g = ((rgb >> 8) & 255) / 255.0F;
-        float b = (rgb & 255) / 255.0F;
-        consumer.vertex(pose.pose(), (float) point.x, (float) point.y, (float) point.z)
-                .color(r, g, b, alpha).endVertex();
+    private void drawBand(
+            VertexConsumer vertices, PoseStack.Pose pose, Level level, Vec3 camera,
+            double radius, double width, int rgb, float alpha, double time
+    ) {
+        for (int i = 0; i < SEGMENTS; i++) {
+            double a = Math.PI * 2.0D * i / SEGMENTS;
+            double b = Math.PI * 2.0D * (i + 1) / SEGMENTS;
+            double rippleA = Math.sin(a * 10.0D - time * 0.09D) * 0.11D;
+            double rippleB = Math.sin(b * 10.0D - time * 0.09D) * 0.11D;
+
+            Vec3 p0 = surfacePoint(level, camera, a, radius - width + rippleA);
+            Vec3 p1 = surfacePoint(level, camera, a, radius + width + rippleA);
+            Vec3 p2 = surfacePoint(level, camera, b, radius + width + rippleB);
+            Vec3 p3 = surfacePoint(level, camera, b, radius - width + rippleB);
+            VfxGeometry.quad(vertices, pose,
+                    p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
+                    p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, alpha);
+        }
+    }
+
+    private Vec3 surfacePoint(Level level, Vec3 camera, double angle, double radius) {
+        double x = origin.x + Math.cos(angle) * Math.max(0.05D, radius);
+        double z = origin.z + Math.sin(angle) * Math.max(0.05D, radius);
+        int minY = level.getMinBuildHeight();
+        int maxY = level.getMaxBuildHeight() - 1;
+        int sampleY = (int) Math.max(minY, Math.min(maxY, origin.y));
+        BlockPos sample = BlockPos.containing(x, sampleY, z);
+        double y = origin.y + 0.2D;
+        if (level.hasChunkAt(sample)) {
+            y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) Math.floor(x), (int) Math.floor(z)) + 0.16D;
+        }
+        // La altura se consulta en cada vértice: el aro sube por las montañas en vez de atravesarlas.
+        return new Vec3(x - camera.x, y - camera.y, z - camera.z);
     }
 }

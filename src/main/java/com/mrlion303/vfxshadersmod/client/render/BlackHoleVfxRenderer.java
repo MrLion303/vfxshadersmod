@@ -32,8 +32,10 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
 
         double diameter = instance.parameters().getOrDefault(
                 "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
-        double radius = Math.max(0.5D, diameter * 0.5D);
+        double requestedRadius = Math.max(0.5D, diameter * 0.5D);
         double distanceToCenter = instance.position().distanceTo(context.cameraPosition());
+        // Limita el tamaño angular del horizonte para que una aparición cercana no cubra toda la vista.
+        double radius = Math.min(requestedRadius, Math.max(0.025D, distanceToCenter * 0.40D));
         Vec3 center = context.toCameraRelative(instance.position());
         Vec3 direction = instance.position().subtract(context.cameraPosition());
         if (direction.lengthSqr() < 1.0E-6D) {
@@ -51,8 +53,8 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         PoseStack.Pose pose = context.poseStack().last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
 
-        // El horizonte no bloquea la vista al atravesarlo.
-        if (distanceToCenter > radius) {
+        // El horizonte conserva un tamaño angular limitado incluso cuando la cámara se acerca.
+        if (distanceToCenter > 0.05D) {
             RenderType coreType = VfxRenderTypes.colorOpaqueQuads();
             VertexConsumer core = buffers.getBuffer(coreType);
             drawSphere(core, pose, center, radius);
@@ -145,8 +147,8 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     ) {
         return center.add(
                 screenRight.scale(Math.cos(angle) * radius)
-                        .add(direction.scale(Math.sin(angle) * radius))
-                        .add(screenUp.scale(wobble))
+                        .add(screenUp.scale(Math.sin(angle) * radius))
+                        .add(direction.scale(wobble))
         );
     }
 

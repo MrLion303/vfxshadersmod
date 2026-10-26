@@ -12,12 +12,12 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraft.client.renderer.ShaderInstance;
 
-/** Portal cinematográfico en el cielo, con una grieta cian y un interior de galaxia. */
+/** Portal circular que se abre desde una grieta cian y revela la galaxia del proyecto. */
 public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "sky_portal");
     private static final ResourceLocation PORTAL_TEXTURE =
@@ -64,9 +64,10 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
 
-        double progress = Math.min(1.0D, (age + partialTick) / 72.0D);
+        // Se abre en poco más de dos segundos y después permanece abierto hasta desactivarse.
+        double progress = Math.min(1.0D, (age + partialTick) / 48.0D);
         double eased = 1.0D - Math.pow(1.0D - progress, 3.0D);
-        double radius = 0.45D + eased * 20.5D;
+        double radius = 0.35D + eased * 24.0D;
         double time = age + partialTick;
 
         boolean hasOverlay = minecraft.getResourceManager().getResource(PORTAL_TEXTURE).isPresent();
@@ -79,7 +80,6 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
             shader.getUniform("PortalTime").set((float) time);
         }
 
-        // El cuadrado se recorta en el shader en forma de disco, así que no hay esquinas ni una caja visible.
         RenderType portalType = VfxRenderTypes.portalQuads();
         VertexConsumer portal = buffers.getBuffer(portalType);
         Vec3 p0 = point(center, right, screenUp, -radius, -radius);
@@ -92,52 +92,46 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         portal.vertex(pose.pose(), (float) p3.x, (float) p3.y, (float) p3.z).uv(0.0F, 1.0F).endVertex();
         buffers.endBatch(portalType);
 
-        // La grieta se abre antes que el portal; después quedan bordes fracturados y ramificaciones de energía.
-        RenderType lineType = VfxRenderTypes.colorLines();
+        // Grieta inicial y fracturas brillantes que rodean el disco abierto.
+        RenderType lineType = VfxRenderTypes.skyLines();
         VertexConsumer cracks = buffers.getBuffer(lineType);
-        float crackAlpha = (float) (0.78D + 0.17D * Math.sin(time * 0.09D));
+        float crackAlpha = (float) (0.80D + 0.16D * Math.sin(time * 0.09D));
         if (progress < 0.72D) {
-            double slit = radius * 1.25D;
-            for (int i = 0; i < 18; i++) {
-                double f0 = (double) i / 18.0D;
-                double f1 = (double) (i + 1) / 18.0D;
-                double y0 = -slit + 2.0D * slit * f0;
-                double y1 = -slit + 2.0D * slit * f1;
-                double x0 = Math.sin(y0 * 0.47D + time * 0.025D) * radius * 0.055D;
-                double x1 = Math.sin(y1 * 0.53D + time * 0.025D) * radius * 0.055D;
-                emit(cracks, pose, point(center, right, screenUp, x0, y0), 0xB4F3FF, crackAlpha);
-                emit(cracks, pose, point(center, right, screenUp, x1, y1), 0xB4F3FF, crackAlpha);
+            double slit = radius * 1.3D;
+            for (int i = 0; i < 36; i++) {
+                double y = -slit + 2.0D * slit * i / 35.0D;
+                double x = Math.sin(y * 0.47D + time * 0.025D) * radius * 0.075D;
+                emit(cracks, pose, point(center, right, screenUp, x, y), 0xB4F3FF, crackAlpha);
+                if (i % 3 == 0) {
+                    double branchX = x + Math.sin(i * 2.17D + time * 0.03D) * radius * 0.32D;
+                    double branchY = y + Math.cos(i * 1.31D) * radius * 0.18D;
+                    emit(cracks, pose, point(center, right, screenUp, x, y), 0xB4F3FF, crackAlpha);
+                    emit(cracks, pose, point(center, right, screenUp, branchX, branchY), 0x6FE6FF, crackAlpha * 0.7F);
+                }
             }
         }
 
-        final int segments = 144;
+        final int segments = 180;
         for (int i = 0; i < segments; i++) {
             double a = Math.PI * 2.0D * i / segments;
             double b = Math.PI * 2.0D * (i + 1) / segments;
-            double wobbleA = Math.sin(a * 13.0D + time * 0.035D) * 0.58D;
-            double wobbleB = Math.sin(b * 13.0D + time * 0.035D) * 0.58D;
-            Vec3 a0 = point(center, right, screenUp, Math.cos(a) * radius, Math.sin(a) * radius);
-            Vec3 a1 = point(center, right, screenUp, Math.cos(a) * (radius + wobbleA), Math.sin(a) * (radius + wobbleA));
-            Vec3 b0 = point(center, right, screenUp, Math.cos(b) * radius, Math.sin(b) * radius);
-            Vec3 b1 = point(center, right, screenUp, Math.cos(b) * (radius + wobbleB), Math.sin(b) * (radius + wobbleB));
-            emit(cracks, pose, a0, 0x6FE6FF, crackAlpha);
-            emit(cracks, pose, a1, 0xC7F8FF, crackAlpha);
-            emit(cracks, pose, a1, 0x6FE6FF, crackAlpha * 0.8F);
-            emit(cracks, pose, b1, 0x6FE6FF, crackAlpha * 0.8F);
+            double wobbleA = Math.sin(a * 13.0D + time * 0.035D) * 0.62D;
+            double wobbleB = Math.sin(b * 13.0D + time * 0.035D) * 0.62D;
+            Vec3 outerA = point(center, right, screenUp, Math.cos(a) * (radius + wobbleA), Math.sin(a) * (radius + wobbleA));
+            Vec3 outerB = point(center, right, screenUp, Math.cos(b) * (radius + wobbleB), Math.sin(b) * (radius + wobbleB));
+            emit(cracks, pose, outerA, 0xC7F8FF, crackAlpha);
+            emit(cracks, pose, outerB, 0x6FE6FF, crackAlpha * 0.82F);
         }
 
-        for (int i = 0; i < 22; i++) {
-            double angle = Math.PI * 2.0D * i / 22.0D + Math.sin(time * 0.025D + i) * 0.04D;
-            double r0 = radius * (0.97D + 0.025D * Math.sin(i * 2.1D));
-            double r1 = radius * (1.10D + 0.11D * (0.5D + 0.5D * Math.sin(i * 1.7D + time * 0.04D)));
+        for (int i = 0; i < 28; i++) {
+            double angle = Math.PI * 2.0D * i / 28.0D + Math.sin(time * 0.025D + i) * 0.04D;
+            double r0 = radius * (0.98D + 0.025D * Math.sin(i * 2.1D));
+            double r1 = radius * (1.10D + 0.14D * (0.5D + 0.5D * Math.sin(i * 1.7D + time * 0.04D)));
             double rm = r0 + (r1 - r0) * 0.52D;
             Vec3 c0 = point(center, right, screenUp, Math.cos(angle) * r0, Math.sin(angle) * r0);
-            Vec3 cm = point(center, right, screenUp,
-                    Math.cos(angle + 0.045D) * rm, Math.sin(angle + 0.045D) * rm);
-            Vec3 c1 = point(center, right, screenUp,
-                    Math.cos(angle - 0.025D) * r1, Math.sin(angle - 0.025D) * r1);
+            Vec3 cm = point(center, right, screenUp, Math.cos(angle + 0.045D) * rm, Math.sin(angle + 0.045D) * rm);
+            Vec3 c1 = point(center, right, screenUp, Math.cos(angle - 0.025D) * r1, Math.sin(angle - 0.025D) * r1);
             emit(cracks, pose, c0, 0xB4F3FF, crackAlpha);
-            emit(cracks, pose, cm, 0x6FE6FF, crackAlpha * 0.9F);
             emit(cracks, pose, cm, 0x6FE6FF, crackAlpha * 0.9F);
             emit(cracks, pose, c1, 0xB4F3FF, crackAlpha * 0.65F);
         }

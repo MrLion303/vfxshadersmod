@@ -92,9 +92,9 @@ public final class BlackHoleLensingPass {
                 // Al entrar en el horizonte se mantiene la distorsión en pantalla,
                 // en lugar de perderla por la proyección de un punto demasiado cercano.
                 if (distance <= radius) {
-                    float spread = (float) Math.min(0.25D,
-                            0.025D + 0.12D * (1.0D - distance / radius));
-                    screenHoles.add(new float[]{0.5F, 0.5F, spread, 1.2F});
+                    float spread = (float) Math.min(0.07D,
+                            0.012D + 0.045D * (1.0D - distance / radius));
+                    screenHoles.add(new float[]{0.5F, 0.5F, spread, 0.95F});
                     continue;
                 }
 
@@ -111,8 +111,9 @@ public final class BlackHoleLensingPass {
 
                 float dx = (edge[0] - center[0]) * aspect;
                 float dy = edge[1] - center[1];
-                float projectedRadius = Math.max(0.006F, (float) Math.sqrt(dx * dx + dy * dy));
-                float strength = (float) (0.85D + 0.35D * Math.max(0.0D, 1.0D - distance / 160.0D));
+                float projectedRadius = Math.min(0.07F,
+                        Math.max(0.004F, (float) Math.sqrt(dx * dx + dy * dy)));
+                float strength = (float) (0.70D + 0.25D * Math.max(0.0D, 1.0D - distance / 160.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
             }
 

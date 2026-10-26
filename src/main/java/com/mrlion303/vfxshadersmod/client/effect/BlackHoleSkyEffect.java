@@ -99,12 +99,12 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
         drawSphere(core, pose, center, radius);
         buffers.endBatch(coreType);
 
-        RenderType diskType = VfxRenderTypes.colorQuads();
+        RenderType diskType = VfxRenderTypes.skyQuads();
         VertexConsumer disk = buffers.getBuffer(diskType);
         drawAccretionDisk(disk, pose, center, radius, time);
         buffers.endBatch(diskType);
 
-        RenderType linesType = VfxRenderTypes.colorLines();
+        RenderType linesType = VfxRenderTypes.skyLines();
         VertexConsumer lines = buffers.getBuffer(linesType);
         drawLensingArcs(lines, pose, center, radius, time);
         buffers.endBatch(linesType);
@@ -140,8 +140,8 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
     }
 
     /**
-     * Disco casi de canto: el eje radial se extiende hacia y desde la cámara,
-     * por lo que se ve como la franja luminosa horizontal de Gargantúa.
+     * Disco de acreción colocado en el plano visible del cielo; los dos ejes tangentes
+     * conservan el contorno circular y evitan que el disco se colapse en una línea.
      */
     private static void drawAccretionDisk(
             VertexConsumer vertices, PoseStack.Pose pose, Vec3 center, double coreRadius, double time
@@ -190,8 +190,8 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
     private static Vec3 diskPoint(Vec3 center, double radius, double angle, double wobble) {
         return center.add(
                 planeRight.scale(Math.cos(angle) * radius)
-                        .add(direction.scale(Math.sin(angle) * radius))
-                        .add(planeUp.scale(wobble))
+                        .add(planeUp.scale(Math.sin(angle) * radius))
+                        .add(direction.scale(wobble))
         );
     }
 

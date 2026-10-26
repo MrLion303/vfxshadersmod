@@ -2,6 +2,8 @@ package com.mrlion303.vfxshadersmod;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+import com.mrlion303.vfxshadersmod.network.VfxCommandPacket;
+import com.mrlion303.vfxshadersmod.network.VfxNetwork;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -17,6 +19,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -28,6 +31,7 @@ import java.util.UUID;
 public final class VfxMoveCommands {
     private static final double EMPUJON_HORIZONTAL = 1.65D;
     private static final double EMPUJON_VERTICAL = 1.0D;
+    private static final double GRAVEDAD_LUNAR_COMPENSACION = 0.052D;
     private static final Set<UUID> MOONJUMP = new HashSet<>();
     private static final Set<UUID> WATER_WALK = new HashSet<>();
 
@@ -116,9 +120,10 @@ public final class VfxMoveCommands {
                 selected.add(player.getUUID());
             } else {
                 selected.remove(player.getUUID());
-                if (!moonjump) {
-                    player.fallDistance = 0.0F;
-                }
+            }
+            sendClientState(player, moonjump ? "moonjump" : "waterwalk", enabled);
+            if (!enabled && !moonjump) {
+                player.fallDistance = 0.0F;
             }
         }
 
@@ -133,6 +138,20 @@ public final class VfxMoveCommands {
         return count;
     }
 
+    private static void sendClientState(ServerPlayer player, String effect, boolean enabled) {
+        VfxNetwork.CHANNEL.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new VfxCommandPacket(
+                        VfxCommandPacket.PLAYER_EFFECT,
+                        effect,
+                        player.level().dimension().location(),
+                        0.0F,
+                        player.position(),
+                        enabled ? "enable" : "disable"
+                )
+        );
+    }
+
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
@@ -144,11 +163,12 @@ public final class VfxMoveCommands {
         if (MOONJUMP.contains(id) && !player.getAbilities().flying && !player.isFallFlying()
                 && !player.onGround()) {
             Vec3 velocity = player.getDeltaMovement();
-            // Compensa parte de la gravedad normal para ampliar el salto y ralentizar la caída.
-            double adjustedY = velocity.y + (velocity.y < 0.0D ? 0.055D : 0.045D);
-            player.setDeltaMovement(velocity.x, adjustedY, velocity.z);
-            player.fallDistance *= 0.94F;
-            player.hurtMarked = true;
+            // Solo se modifica el eje vertical. No se fuerza una actualización de velocidad cada tick.
+            player.setDeltaMovement(
+                    velocity.x,
+                    velocity.y + GRAVEDAD_LUNAR_COMPENSACION,
+                    velocity.z
+            );
         }
 
         if (WATER_WALK.contains(id)) {
@@ -156,12 +176,16 @@ public final class VfxMoveCommands {
         }
     }
 
-    /** Mantiene los pies justo encima de la superficie y elimina el hundimiento del agua. */
+    /** Mantiene los pies en la superficie sin cancelar el salto ni reiniciar la velocidad horizontal. */
     private static void keepPlayerOnWater(ServerPlayer player) {
-        BlockPos feet = BlockPos.containing(player.getX(), player.getY() + 0.08D, player.getZ());
+        Vec3 motion = player.getDeltaMovement();
+        if (motion.y > 0.06D) {
+            return;
+        }
+
+        BlockPos feet = BlockPos.containing(player.getX(), player.getY() + 0.02D, player.getZ());
         BlockPos waterPos = feet;
         FluidState fluid = player.level().getFluidState(waterPos);
-
         if (!fluid.is(FluidTags.WATER)) {
             waterPos = feet.below();
             fluid = player.level().getFluidState(waterPos);
@@ -171,16 +195,19 @@ public final class VfxMoveCommands {
         }
 
         double surfaceY = waterPos.getY() + fluid.getHeight(player.level(), waterPos);
-        if (player.getY() < waterPos.getY() - 0.15D || player.getY() > surfaceY + 0.42D) {
+        if (player.getY() > surfaceY + 0.025D || player.getY() < waterPos.getY() - 0.15D) {
             return;
         }
 
-        player.setPos(player.getX(), surfaceY + 0.035D, player.getZ());
-        Vec3 motion = player.getDeltaMovement();
-        player.setDeltaMovement(motion.x, 0.0D, motion.z);
+        // Corrige solo el hundimiento; si ya está sobre la superficie no lo teletransporta cada tick.
+        if (player.getY() < surfaceY - 0.025D) {
+            player.setPos(player.getX(), surfaceY, player.getZ());
+        }
+        if (motion.y < 0.0D) {
+            player.setDeltaMovement(motion.x, 0.0D, motion.z);
+        }
         player.setOnGround(true);
         player.fallDistance = 0.0F;
-        player.hurtMarked = true;
     }
 
     @SubscribeEvent

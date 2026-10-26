@@ -19,11 +19,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
-/** Lluvia de estrellas diagonales con colores arcoíris y desvanecimiento al tocar el suelo. */
+/** Lluvia de estrellas diagonales con estelas visibles y colores arcoíris suaves. */
 public final class FallingStarsEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "falling_stars");
-    private static final int STAR_COUNT = 260;
-    private static final int LIFE_TICKS = 84;
+    private static final int STAR_COUNT = 320;
+    private static final int LIFE_TICKS = 88;
     private long age;
 
     @Override
@@ -58,53 +58,61 @@ public final class FallingStarsEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 camera = event.getCamera().getPosition();
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
-        RenderType type = VfxRenderTypes.colorLines();
-        VertexConsumer lines = buffers.getBuffer(type);
+        RenderType type = VfxRenderTypes.colorQuads();
+        VertexConsumer stars = buffers.getBuffer(type);
 
         for (int i = 0; i < STAR_COUNT; i++) {
             int localAge = (int) Math.floorMod(age + i * 29L, LIFE_TICKS);
             double progress = (double) localAge / LIFE_TICKS;
             double seedX = fract(Math.sin((i + 4) * 127.1D) * 43758.5453D);
             double seedZ = fract(Math.sin((i + 13) * 311.7D) * 24634.6345D);
-            double startX = playerPosition.x + (seedX - 0.5D) * 88.0D;
-            double startZ = playerPosition.z + (seedZ - 0.5D) * 88.0D;
-            double x = startX + progress * 16.0D;
-            double z = startZ - progress * 9.0D;
+            double startX = playerPosition.x + (seedX - 0.5D) * 94.0D;
+            double startZ = playerPosition.z + (seedZ - 0.5D) * 94.0D;
+            double x = startX + progress * 14.0D;
+            double z = startZ - progress * 8.0D;
             int bx = (int) Math.floor(x);
             int bz = (int) Math.floor(z);
             BlockPos sample = BlockPos.containing(x, playerPosition.y, z);
             if (!level.hasChunkAt(sample)) {
                 continue;
             }
-            double groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz) + 0.18D;
-            double y = groundY + 52.0D * (1.0D - progress);
 
-            float fadeIn = (float) Math.min(1.0D, progress / 0.07D);
-            float fadeOut = (float) Math.min(1.0D, (1.0D - progress) / 0.20D);
-            float alpha = Math.max(0.0F, Math.min(fadeIn, fadeOut)) * 0.94F;
-            if (alpha < 0.025F) {
+            double groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz) + 0.12D;
+            double y = groundY + 68.0D * (1.0D - progress);
+            float fadeIn = (float) Math.min(1.0D, progress / 0.05D);
+            float fadeOut = (float) Math.min(1.0D, (1.0D - progress) / 0.12D);
+            float alpha = Math.max(0.0F, Math.min(fadeIn, fadeOut)) * 0.96F;
+            if (alpha < 0.02F) {
                 continue;
             }
 
-            float hue = (float) (i * 0.61803398875D + (age + partialTick) * 0.0045D);
+            float hue = (float) (i / (double) STAR_COUNT + (age + partialTick) * 0.0032D);
             int rgb = VfxGeometry.rainbowRgb(hue);
-            Vec3 tail = new Vec3(x - camera.x - 0.82D, y - camera.y + 2.5D, z - camera.z + 0.45D);
+            Vec3 tail = new Vec3(x - camera.x - 1.1D, y - camera.y + 1.85D, z - camera.z + 0.68D);
             Vec3 head = new Vec3(x - camera.x, y - camera.y, z - camera.z);
-            emit(lines, pose, tail, rgb, alpha);
-            emit(lines, pose, head, rgb, alpha);
+            Vec3 side = new Vec3(-0.18D, 0.0D, -0.18D);
+
+            // Halo ancho y cola más brillante: cada estrella se distingue sin convertir la lluvia en líneas de un píxel.
+            emitStreak(stars, pose, tail, head, side.scale(2.6D), rgb, alpha * 0.17F);
+            emitStreak(stars, pose, tail, head, side, rgb, alpha);
         }
         buffers.endBatch(type);
     }
 
-    private static double fract(double value) {
-        return value - Math.floor(value);
+    private static void emitStreak(
+            VertexConsumer vertices, PoseStack.Pose pose, Vec3 tail, Vec3 head,
+            Vec3 side, int rgb, float alpha
+    ) {
+        Vec3 p0 = tail.subtract(side);
+        Vec3 p1 = tail.add(side);
+        Vec3 p2 = head.add(side.scale(0.42D));
+        Vec3 p3 = head.subtract(side.scale(0.42D));
+        VfxGeometry.quad(vertices, pose,
+                p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
+                p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, alpha);
     }
 
-    private static void emit(VertexConsumer consumer, PoseStack.Pose pose, Vec3 point, int rgb, float alpha) {
-        float r = ((rgb >> 16) & 255) / 255.0F;
-        float g = ((rgb >> 8) & 255) / 255.0F;
-        float b = (rgb & 255) / 255.0F;
-        consumer.vertex(pose.pose(), (float) point.x, (float) point.y, (float) point.z)
-                .color(r, g, b, alpha).endVertex();
+    private static double fract(double value) {
+        return value - Math.floor(value);
     }
 }

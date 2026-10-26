@@ -15,12 +15,12 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
-/** Cielo teñido con estelas estelares rápidas y un resplandor que nace en el horizonte. */
+/** Cielo uniforme con estelas rápidas y un resplandor amplio en el horizonte. */
 public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "starsspeed");
-    private static final int SEGMENTS = 96;
-    private static final int BANDS = 38;
-    private static final int STAR_COUNT = 210;
+    private static final int SEGMENTS = 112;
+    private static final int BANDS = 46;
+    private static final int STAR_COUNT = 440;
     private static final double SKY_RADIUS = 176.0D;
     private static volatile int requestedColor = 0x3478FF;
 
@@ -57,10 +57,10 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         Minecraft minecraft = Minecraft.getInstance();
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
-        RenderType quadsType = VfxRenderTypes.colorQuads();
-        VertexConsumer sky = buffers.getBuffer(quadsType);
+        RenderType skyType = VfxRenderTypes.skyQuads();
+        VertexConsumer sky = buffers.getBuffer(skyType);
 
-        // La cúpula conserva un único color en todas las direcciones del cielo.
+        // Cúpula uniforme: no introduce ningún degradado cromático entre lados del cielo.
         for (int band = 0; band < BANDS; band++) {
             double f0 = (double) band / BANDS;
             double f1 = (double) (band + 1) / BANDS;
@@ -69,54 +69,56 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
             for (int segment = 0; segment < SEGMENTS; segment++) {
                 double a = Math.PI * 2.0D * segment / SEGMENTS;
                 double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
-                Vec3 p0 = point(a, latA, SKY_RADIUS);
-                Vec3 p1 = point(b, latA, SKY_RADIUS);
-                Vec3 p2 = point(b, latB, SKY_RADIUS);
-                Vec3 p3 = point(a, latB, SKY_RADIUS);
-                VfxGeometry.quad(sky, pose,
-                        p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
-                        p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, color, 0.94F);
+                emitQuad(sky, pose,
+                        point(a, latA, SKY_RADIUS), point(b, latA, SKY_RADIUS),
+                        point(b, latB, SKY_RADIUS), point(a, latB, SKY_RADIUS),
+                        color, 0.98F);
             }
         }
-        buffers.endBatch(quadsType);
+        buffers.endBatch(skyType);
 
-        // Bandas luminosas en el horizonte: el centro se aclara y se desvanece hacia arriba.
-        VertexConsumer glow = buffers.getBuffer(quadsType);
-        int bright = brighten(color, 0.76F);
-        for (int band = 0; band < 14; band++) {
-            double latA = -0.035D + band * 0.018D;
+        // Glow de gran tamaño que nace en el horizonte y se desvanece hacia el cenit.
+        VertexConsumer glow = buffers.getBuffer(skyType);
+        int bright = brighten(color, 0.42F);
+        for (int band = 0; band < 40; band++) {
+            double latA = -0.10D + band * 0.018D;
             double latB = latA + 0.021D;
-            float alpha = 0.12F * (1.0F - band / 17.0F);
-            int rgb = band < 4 ? bright : color;
+            double mid = (latA + latB) * 0.5D;
+            double profile = Math.exp(-Math.pow((mid - 0.025D) / 0.34D, 2.0D));
+            float alpha = (float) (0.50D * profile);
+            int rgb = band < 22 ? bright : color;
             for (int segment = 0; segment < SEGMENTS; segment++) {
                 double a = Math.PI * 2.0D * segment / SEGMENTS;
                 double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
-                Vec3 p0 = point(a, latA, SKY_RADIUS - 0.35D);
-                Vec3 p1 = point(b, latA, SKY_RADIUS - 0.35D);
-                Vec3 p2 = point(b, latB, SKY_RADIUS - 0.35D);
-                Vec3 p3 = point(a, latB, SKY_RADIUS - 0.35D);
-                VfxGeometry.quad(glow, pose,
-                        p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
-                        p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, alpha);
+                emitQuad(glow, pose,
+                        point(a, latA, SKY_RADIUS - 0.25D), point(b, latA, SKY_RADIUS - 0.25D),
+                        point(b, latB, SKY_RADIUS - 0.25D), point(a, latB, SKY_RADIUS - 0.25D),
+                        rgb, alpha);
             }
         }
-        buffers.endBatch(quadsType);
+        buffers.endBatch(skyType);
 
-        // Las estrellas se mueven sobre una esfera celeste; las estelas se alargan en el sentido del viaje.
-        RenderType lineType = VfxRenderTypes.colorLines();
-        VertexConsumer lines = buffers.getBuffer(lineType);
+        // Estrellas como estelas gruesas y brillantes; giran por toda la esfera celeste.
+        VertexConsumer stars = buffers.getBuffer(skyType);
         double time = age + partialTick;
         for (int i = 0; i < STAR_COUNT; i++) {
             double seed = fract(Math.sin((i + 1) * 127.1D) * 43758.5453D);
             double seed2 = fract(Math.sin((i + 1) * 311.7D) * 24634.6345D);
-            double latitude = -0.06D + seed2 * 1.57D;
-            double angle = seed * Math.PI * 2.0D + time * (0.028D + seed * 0.012D);
-            Vec3 tail = point(angle - 0.055D, latitude + 0.012D, SKY_RADIUS * 0.995D);
-            Vec3 head = point(angle, latitude, SKY_RADIUS * 0.995D);
-            emit(lines, pose, tail, 0xFFFFFF, 0.78F);
-            emit(lines, pose, head, 0xFFFFFF, 0.92F);
+            double latitude = -0.045D + seed2 * 1.52D;
+            double speed = 0.075D + seed * 0.055D;
+            double angle = seed * Math.PI * 2.0D + time * speed;
+            double trailLength = 0.065D + seed * 0.045D;
+            Vec3 tail = point(angle - trailLength, latitude + 0.014D, SKY_RADIUS * 0.992D);
+            Vec3 head = point(angle, latitude, SKY_RADIUS * 0.992D);
+            Vec3 side = new Vec3(-Math.sin(angle), 0.0D, Math.cos(angle))
+                    .scale(0.22D + seed * 0.28D);
+
+            emitQuad(stars, pose, tail.subtract(side.scale(2.6D)), tail.add(side.scale(2.6D)),
+                    head.add(side.scale(0.9D)), head.subtract(side.scale(0.9D)), 0xFFFFFF, 0.20F);
+            emitQuad(stars, pose, tail.subtract(side), tail.add(side),
+                    head.add(side.scale(0.24D)), head.subtract(side.scale(0.24D)), 0xFFFFFF, 0.98F);
         }
-        buffers.endBatch(lineType);
+        buffers.endBatch(skyType);
     }
 
     private static Vec3 point(double azimuth, double latitude, double radius) {
@@ -124,6 +126,15 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         return new Vec3(Math.cos(azimuth) * horizontal,
                 Math.sin(latitude) * radius,
                 Math.sin(azimuth) * horizontal);
+    }
+
+    private static void emitQuad(
+            VertexConsumer consumer, PoseStack.Pose pose,
+            Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, int rgb, float alpha
+    ) {
+        VfxGeometry.quad(consumer, pose,
+                p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
+                p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, alpha);
     }
 
     private static double fract(double value) {
@@ -135,13 +146,5 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         int green = Math.min(255, Math.round(((rgb >> 8) & 255) + (255 - ((rgb >> 8) & 255)) * amount));
         int blue = Math.min(255, Math.round((rgb & 255) + (255 - (rgb & 255)) * amount));
         return (red << 16) | (green << 8) | blue;
-    }
-
-    private static void emit(VertexConsumer consumer, PoseStack.Pose pose, Vec3 point, int rgb, float alpha) {
-        float r = ((rgb >> 16) & 255) / 255.0F;
-        float g = ((rgb >> 8) & 255) / 255.0F;
-        float b = (rgb & 255) / 255.0F;
-        consumer.vertex(pose.pose(), (float) point.x, (float) point.y, (float) point.z)
-                .color(r, g, b, alpha).endVertex();
     }
 }

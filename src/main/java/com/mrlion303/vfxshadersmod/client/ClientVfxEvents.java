@@ -3,6 +3,7 @@ package com.mrlion303.vfxshadersmod.client;
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -25,6 +26,13 @@ public final class ClientVfxEvents {
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         ClientVfxCatalog.registerDefaults();
         ClientVfxCommands.register(event.getDispatcher());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && event.player instanceof LocalPlayer player) {
+            ClientPlayerMovementEffects.tick(player);
+        }
     }
 
     @SubscribeEvent

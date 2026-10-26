@@ -62,6 +62,58 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType SKY_LINES = RenderType.create(
+            VfxShadersMod.MOD_ID + ":sky_lines",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.LINES,
+            8192,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(NO_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setLineState(new LineStateShard(OptionalDouble.of(2.5D)))
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
+    private static final RenderType SKY_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":sky_quads",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS,
+            32768,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(NO_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
+    private static final RenderType CLOUD_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":cloud_vortex_quads",
+            DefaultVertexFormat.POSITION_TEX,
+            VertexFormat.Mode.QUADS,
+            4096,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::cloudVortex))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(NO_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private static final RenderType PORTAL_QUADS = RenderType.create(
             VfxShadersMod.MOD_ID + ":portal_quads",
             DefaultVertexFormat.POSITION_TEX,
@@ -73,7 +125,7 @@ public final class VfxRenderTypes extends RenderType {
                     .setShaderState(new ShaderStateShard(VfxShaderLibrary::portalWindow))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setCullState(NO_CULL)
-                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setDepthTestState(NO_DEPTH_TEST)
                     .setWriteMaskState(COLOR_WRITE)
                     .setOutputState(MAIN_TARGET)
                     .createCompositeState(false)
@@ -109,5 +161,20 @@ public final class VfxRenderTypes extends RenderType {
     /** Plano texturizado del portal con recorte circular en su shader. */
     public static RenderType portalQuads() {
         return PORTAL_QUADS;
+    }
+
+    /** Geometría luminosa del cielo sin z-fighting contra la capa del firmamento. */
+    public static RenderType skyLines() {
+        return SKY_LINES;
+    }
+
+    /** Cúpulas y estelas celestes que no escriben profundidad. */
+    public static RenderType skyQuads() {
+        return SKY_QUADS;
+    }
+
+    /** Plano texturizado con nubes procedurales giratorias. */
+    public static RenderType cloudQuads() {
+        return CLOUD_QUADS;
     }
 }

@@ -26,6 +26,8 @@ public final class ClientVfxNetworkHandler {
 
         ClientVfxCatalog.registerDefaults();
         switch (packet.operation()) {
+            case VfxCommandPacket.PLAYER_EFFECT -> ClientPlayerMovementEffects.setEnabled(
+                    packet.effect(), "enable".equalsIgnoreCase(packet.option()));
             case VfxCommandPacket.ENABLE -> ClientVfxManager.enable(effectId(packet.effect()));
             case VfxCommandPacket.DISABLE -> ClientVfxManager.disable(effectId(packet.effect()));
             case VfxCommandPacket.TOGGLE -> ClientVfxManager.toggle(effectId(packet.effect()));

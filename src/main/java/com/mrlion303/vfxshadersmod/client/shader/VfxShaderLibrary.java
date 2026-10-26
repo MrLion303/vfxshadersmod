@@ -22,6 +22,7 @@ public final class VfxShaderLibrary {
     private static ShaderInstance basicColor;
     private static ShaderInstance blackHoleLensing;
     private static ShaderInstance portalWindow;
+    private static ShaderInstance cloudVortex;
 
     private VfxShaderLibrary() {
     }
@@ -45,6 +46,12 @@ public final class VfxShaderLibrary {
                 shader -> portalWindow = shader
         );
 
+        ResourceLocation vortexId = new ResourceLocation(VfxShadersMod.MOD_ID, "vfx/cloud_vortex");
+        event.registerShader(
+                new ShaderInstance(event.getResourceProvider(), vortexId, DefaultVertexFormat.POSITION_TEX),
+                shader -> cloudVortex = shader
+        );
+
         BlackHoleLensingPass.releaseTarget();
     }
 
@@ -61,5 +68,10 @@ public final class VfxShaderLibrary {
     /** Shader que recorta el interior del portal como un disco y dibuja la galaxia. */
     public static ShaderInstance portalWindow() {
         return portalWindow;
+    }
+
+    /** Shader de ruido fractal para crear las nubes en espiral del vórtice. */
+    public static ShaderInstance cloudVortex() {
+        return cloudVortex;
     }
 }
