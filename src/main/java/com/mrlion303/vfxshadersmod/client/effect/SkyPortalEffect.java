@@ -71,7 +71,7 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
 
         boolean hasOverlay = minecraft.getResourceManager().getResource(PORTAL_TEXTURE).isPresent();
         int textureId = minecraft.getTextureManager().getTexture(PORTAL_TEXTURE).getId();
-        shader.setSampler("DiffuseSampler", () -> textureId);
+        shader.setSampler("DiffuseSampler", (java.util.function.IntSupplier) () -> textureId);
         if (shader.getUniform("UseTexture") != null) {
             shader.getUniform("UseTexture").set(hasOverlay ? 1.0F : 0.0F);
         }
