@@ -105,14 +105,13 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 orbitRight = new Vec3(1.0D, 0.0D, 0.0D);
 
         VertexConsumer stars = buffers.getBuffer(skyType);
-        double time = age + partialTick;
         int haloColor = brighten(color, 0.82F);
         for (int i = 0; i < STAR_COUNT; i++) {
             double seed = fract(Math.sin((i + 1) * 127.1D) * 43758.5453D);
             double seed2 = fract(Math.sin((i + 1) * 311.7D) * 24634.6345D);
             double polar = 0.075D + seed2 * 1.38D;
-            double speed = 0.105D + seed * 0.105D;
-            double angle = seed * Math.PI * 2.0D + time * speed;
+            // Coordenadas deterministas: las estelas no orbitan ni cambian de sitio con el tiempo.
+            double angle = seed * Math.PI * 2.0D;
             double trailAngle = 0.12D + seed * 0.30D;
             double tailAngle = angle - trailAngle;
 
