@@ -1,0 +1,12 @@
+{
+  "vertex": "vfxshadersmod:vfx/black_hole_lensing",
+  "fragment": "vfxshadersmod:vfx/portal_window",
+  "attributes": ["Position", "UV0"],
+  "samplers": [
+    { "name": "DiffuseSampler" }
+  ],
+  "uniforms": [
+    { "name": "UseTexture", "type": "float", "count": 1, "values": [0.0] },
+    { "name": "PortalTime", "type": "float", "count": 1, "values": [0.0] }
+  ]
+}
