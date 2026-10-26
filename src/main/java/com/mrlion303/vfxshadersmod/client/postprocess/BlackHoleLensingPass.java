@@ -11,9 +11,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mrlion303.vfxshadersmod.client.ClientWorldVfxInstances;
-import com.mrlion303.vfxshadersmod.client.ClientVfxManager;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
-import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
 import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
 import net.minecraft.client.Camera;
@@ -61,9 +59,9 @@ public final class BlackHoleLensingPass {
                         instance.position().distanceToSqr(event.getCamera().getPosition())))
                 .limit(MAX_HOLES)
                 .toList();
-        boolean skyHoleActive = ClientVfxManager.isActive(BlackHoleSkyEffect.ID);
-
-        if (holes.isEmpty() && !skyHoleActive) {
+        // El pase de pantalla se reserva para agujeros colocados en el mundo.
+        // El agujero del cielo aplica su lente dentro del propio shader para no teñir la pantalla. 
+        if (holes.isEmpty()) {
             releaseTarget();
             return;
         }
@@ -85,27 +83,6 @@ public final class BlackHoleLensingPass {
             Camera camera = event.getCamera();
             Vec3 cameraPosition = camera.getPosition();
             Vector3f cameraLeft = camera.getLeftVector();
-
-            // El agujero del cielo también curva la escena real que ya dibujó Minecraft.
-            if (skyHoleActive) {
-                Vec3 skyCenter = cameraPosition.add(BlackHoleSkyEffect.centerOffset());
-                float[] center = project(skyCenter, camera, event);
-                double eventHorizonWorldRadius = BlackHoleSkyEffect.SKY_DIAMETER * 0.90D * 0.158D;
-                Vec3 planeRight = BlackHoleSkyEffect.planeRight();
-                Vec3 edgePosition = skyCenter.add(
-                        planeRight.x * eventHorizonWorldRadius,
-                        planeRight.y * eventHorizonWorldRadius,
-                        planeRight.z * eventHorizonWorldRadius
-                );
-                float[] edge = project(edgePosition, camera, event);
-                if (center != null && edge != null) {
-                    float dx = (edge[0] - center[0]) * aspect;
-                    float dy = edge[1] - center[1];
-                    float projectedRadius = Math.min(0.07F,
-                            Math.max(0.0015F, (float) Math.sqrt(dx * dx + dy * dy)));
-                    screenHoles.add(new float[]{center[0], center[1], projectedRadius, 1.08F});
-                }
-            }
 
             for (WorldVfxInstance hole : holes) {
                 if (screenHoles.size() >= MAX_HOLES) {

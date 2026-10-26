@@ -71,7 +71,8 @@ void main() {
             + starLayer(lensed + vec2(9.3, 1.7), 39.0, 0.86, 0.017) * 0.72
             + starLayer(lensed + vec2(-2.4, 7.1), 61.0, 0.93, 0.012) * 0.56;
     vec3 color = background + vec3(0.67, 0.76, 1.0) * stars;
-    float alpha = 0.16 + nebula * 0.10 + clamp(stars * 0.84, 0.0, 0.9);
+    // Fondo cósmico translúcido: no oscurece la escena completa detrás del plano.
+    float alpha = 0.035 + nebula * 0.045 + clamp(stars * 0.84, 0.0, 0.9);
 
     // Accretion gas: domain-warped turbulent flow and irregular filaments, computed per pixel.
     float angle = atan(p.y * 3.2, p.x);
@@ -123,8 +124,8 @@ void main() {
 
     // Soft, noisy silhouette fades into the Minecraft sky instead of revealing a rectangle.
     float edgeNoise = fbm2(p * 2.6 + vec2(2.1, -time * 0.11));
-    float silhouette = 1.0 - smoothstep(0.94 + (edgeNoise - 0.5) * 0.12,
-                                         1.29 + (edgeNoise - 0.5) * 0.08, length(p));
+    float silhouette = 1.0 - smoothstep(0.86 + (edgeNoise - 0.5) * 0.10,
+                                         1.075 + (edgeNoise - 0.5) * 0.055, length(p));
     alpha *= silhouette;
     if (alpha < 0.012) {
         discard;

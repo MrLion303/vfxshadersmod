@@ -44,7 +44,7 @@ float fbm3(vec3 p) {
 float cloudDensity(vec3 p, out float broad, out float detail) {
     float radius = length(p.xy);
     float angle = atan(p.y, p.x);
-    float twist = angle + radius * 4.15 - VortexTime * 0.010 + p.z * 0.34;
+    float twist = angle + radius * 5.65 - VortexTime * 0.010 + p.z * 0.46;
     vec2 swirl = vec2(cos(twist), sin(twist)) * radius;
     vec3 flow = vec3(swirl * 1.45, p.z * 1.35);
 
@@ -58,11 +58,11 @@ float cloudDensity(vec3 p, out float broad, out float detail) {
     float billows = vfxNoise3(q * 7.6 + vec3(4.0, -2.0, VortexTime * 0.006));
     detail = vfxNoise3(q * 15.2 + vec3(-3.0, 9.0, -VortexTime * 0.008));
 
-    float shape = smoothstep(0.405, 0.665,
-            broad + (billows - 0.5) * 0.35 - (detail - 0.5) * 0.15);
+    float shape = smoothstep(0.385, 0.655,
+            broad + (billows - 0.5) * 0.43 - (detail - 0.5) * 0.19);
     float irregularRadius = radius + (billows - 0.5) * 0.12 + (detail - 0.5) * 0.045;
-    float edge = 1.0 - smoothstep(0.79, 1.36, irregularRadius);
-    float verticalProfile = 1.0 - smoothstep(0.68, 1.22, abs(p.z));
+    float edge = 1.0 - smoothstep(0.69, 1.015, irregularRadius);
+    float verticalProfile = 1.0 - smoothstep(0.64, 1.08, abs(p.z));
     float centralFlow = smoothstep(0.025, 0.15, radius + (billows - 0.5) * 0.025);
     return shape * edge * verticalProfile * centralFlow;
 }
@@ -127,14 +127,15 @@ void main() {
     // Núcleo incandescente irregular que emerge del flujo de las nubes.
     float coreNoise = fbm3(vec3(uv * 8.0, time * 0.35));
     float coreRadius = length(uv + vec2(coreNoise - 0.5, 0.5 - coreNoise) * 0.035);
-    float ember = exp(-coreRadius * 7.2) * 0.24;
-    float hotCore = exp(-coreRadius * 15.5) * 0.78;
-    color += vec3(1.0, 0.115, 0.018) * ember;
-    color = mix(color, vec3(1.0, 0.54, 0.22), hotCore * 0.62);
-    alpha = max(alpha, clamp(ember + hotCore * 0.42, 0.0, 0.84));
+    float ember = exp(-coreRadius * 5.8) * 0.32;
+    float hotCore = exp(-coreRadius * 14.0) * 0.92;
+    color = mix(color, vec3(1.0, 0.19, 0.035), clamp(ember * 1.65, 0.0, 0.76));
+    color = mix(color, vec3(1.0, 0.67, 0.31), clamp(hotCore * 0.84, 0.0, 0.92));
+    alpha = max(alpha, clamp(ember + hotCore * 0.44, 0.0, 0.88));
 
     float fringe = fbm3(vec3(uv * 4.5, 0.6));
-    float perimeter = 1.0 - smoothstep(0.88 + (fringe - 0.5) * 0.24, 1.30, radius);
+    float perimeter = 1.0 - smoothstep(0.79 + (fringe - 0.5) * 0.14,
+            1.035 + (fringe - 0.5) * 0.055, radius);
     alpha *= perimeter;
     if (alpha < 0.012) {
         discard;

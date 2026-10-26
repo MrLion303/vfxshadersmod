@@ -99,19 +99,10 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         }
         buffers.endBatch(skyType);
 
-        // El centro de rotación se alinea con el horizonte, no con el cenit.
-        var look = event.getCamera().getLookVector();
-        Vec3 horizonForward = new Vec3(look.x, 0.0D, look.z);
-        if (horizonForward.lengthSqr() < 1.0E-5D) {
-            horizonForward = new Vec3(0.0D, 0.0D, -1.0D);
-        } else {
-            horizonForward = horizonForward.normalize();
-        }
+        // Eje fijo de mundo: girar la cámara no reorienta el campo de estrellas.
+        Vec3 horizonForward = new Vec3(0.0D, 0.0D, -1.0D);
         Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
-        Vec3 orbitRight = horizonForward.cross(worldUp).normalize();
-        if (orbitRight.lengthSqr() < 1.0E-5D) {
-            orbitRight = new Vec3(1.0D, 0.0D, 0.0D);
-        }
+        Vec3 orbitRight = new Vec3(1.0D, 0.0D, 0.0D);
 
         VertexConsumer stars = buffers.getBuffer(skyType);
         double time = age + partialTick;

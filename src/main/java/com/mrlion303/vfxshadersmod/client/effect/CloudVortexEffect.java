@@ -57,12 +57,15 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
             shader.getUniform("VortexTime").set((float) time);
         }
 
-        Vec3 center = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).scale(SKY_DISTANCE);
-        var camera = event.getCamera();
-        var cameraLeft = camera.getLeftVector();
-        var cameraUp = camera.getUpVector();
-        Vec3 right = new Vec3(-cameraLeft.x, -cameraLeft.y, -cameraLeft.z).normalize();
-        Vec3 up = new Vec3(cameraUp.x, cameraUp.y, cameraUp.z).normalize();
+        // El vórtice ocupa una dirección fija del cielo; no gira para seguir la cámara.
+        Vec3 direction = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
+        Vec3 center = direction.scale(SKY_DISTANCE);
+        Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
+        Vec3 right = direction.cross(worldUp).normalize();
+        if (right.lengthSqr() < 1.0E-6D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D);
+        }
+        Vec3 up = right.cross(direction).normalize();
 
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
