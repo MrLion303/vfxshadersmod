@@ -53,7 +53,8 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         var camera = event.getCamera();
-        Vec3 forward = camera.getLookVector().normalize();
+        var cameraLook = camera.getLookVector();
+        Vec3 forward = new Vec3(cameraLook.x, cameraLook.y, cameraLook.z).normalize();
         var cameraLeft = camera.getLeftVector();
         Vec3 right = new Vec3(-cameraLeft.x, -cameraLeft.y, -cameraLeft.z).normalize();
         var cameraUp = camera.getUpVector();
