@@ -47,7 +47,7 @@ jobs:
             esac
             echo "Validando shader: $shader"
             glslangValidator -S "$stage" "$shader"
-          done < <(find src/main/resources/assets/vfxshadersmod/shaders/core/vfx -type f \\( -name '*.fsh' -o -name '*.vsh' \\) -print0)
+          done < <(find src/main/resources/assets/vfxshadersmod/shaders/core/vfx -type f \( -name '*.fsh' -o -name '*.vsh' \) -print0)
 
       - name: Validar JSON de recursos
         run: |
