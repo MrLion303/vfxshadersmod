@@ -10,7 +10,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -63,7 +62,7 @@ public final class VfxMoveCommands {
                                         .executes(context -> setEffect(context, false, true))))
                         .then(Commands.literal("disable")
                                 .then(Commands.argument("targets", EntityArgument.players())
-                                        .executes(context -> setEffect(context, false, false)))));
+                                        .executes(context -> setEffect(context, false, false))))));
     }
 
     private static int empujon(CommandContext<CommandSourceStack> context) {
@@ -177,6 +176,7 @@ public final class VfxMoveCommands {
         player.setPos(player.getX(), surfaceY + 0.035D, player.getZ());
         Vec3 motion = player.getDeltaMovement();
         player.setDeltaMovement(motion.x, 0.0D, motion.z);
+        player.setOnGround(true);
         player.fallDistance = 0.0F;
         player.hurtMarked = true;
     }
