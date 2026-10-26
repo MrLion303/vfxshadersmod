@@ -62,6 +62,23 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType PORTAL_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":portal_quads",
+            DefaultVertexFormat.POSITION_TEX,
+            VertexFormat.Mode.QUADS,
+            4096,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::portalWindow))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private VfxRenderTypes() {
         super(
                 VfxShadersMod.MOD_ID + ":internal",
@@ -87,5 +104,10 @@ public final class VfxRenderTypes extends RenderType {
     /** Quads opacos que escriben profundidad, usados para el horizonte del agujero negro. */
     public static RenderType colorOpaqueQuads() {
         return COLOR_OPAQUE_QUADS;
+    }
+
+    /** Plano texturizado del portal con recorte circular en su shader. */
+    public static RenderType portalQuads() {
+        return PORTAL_QUADS;
     }
 }
