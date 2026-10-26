@@ -114,6 +114,40 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType BLACK_HOLE_SKY_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":black_hole_sky_quads",
+            DefaultVertexFormat.POSITION_TEX,
+            VertexFormat.Mode.QUADS,
+            4096,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::blackHoleSurface))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(NO_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
+    private static final RenderType BLACK_HOLE_WORLD_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":black_hole_world_quads",
+            DefaultVertexFormat.POSITION_TEX,
+            VertexFormat.Mode.QUADS,
+            4096,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::blackHoleSurface))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private static final RenderType PORTAL_QUADS = RenderType.create(
             VfxShadersMod.MOD_ID + ":portal_quads",
             DefaultVertexFormat.POSITION_TEX,
@@ -158,7 +192,17 @@ public final class VfxRenderTypes extends RenderType {
         return COLOR_OPAQUE_QUADS;
     }
 
-    /** Plano texturizado del portal con recorte circular en su shader. */
+    /** Superficie procedural del agujero negro celeste, sin texturas externas. */
+    public static RenderType blackHoleSkyQuads() {
+        return BLACK_HOLE_SKY_QUADS;
+    }
+
+    /** Superficie procedural del agujero negro colocado en el mundo. */
+    public static RenderType blackHoleWorldQuads() {
+        return BLACK_HOLE_WORLD_QUADS;
+    }
+
+    /** Plano del portal con recorte en shader. */
     public static RenderType portalQuads() {
         return PORTAL_QUADS;
     }

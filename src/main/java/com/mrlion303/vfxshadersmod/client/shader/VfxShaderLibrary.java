@@ -23,6 +23,7 @@ public final class VfxShaderLibrary {
     private static ShaderInstance blackHoleLensing;
     private static ShaderInstance portalWindow;
     private static ShaderInstance cloudVortex;
+    private static ShaderInstance blackHoleSurface;
 
     private VfxShaderLibrary() {
     }
@@ -52,6 +53,12 @@ public final class VfxShaderLibrary {
                 shader -> cloudVortex = shader
         );
 
+        ResourceLocation blackHoleSurfaceId = new ResourceLocation(VfxShadersMod.MOD_ID, "vfx/black_hole_surface");
+        event.registerShader(
+                new ShaderInstance(event.getResourceProvider(), blackHoleSurfaceId, DefaultVertexFormat.POSITION_TEX),
+                shader -> blackHoleSurface = shader
+        );
+
         BlackHoleLensingPass.releaseTarget();
     }
 
@@ -70,8 +77,13 @@ public final class VfxShaderLibrary {
         return portalWindow;
     }
 
-    /** Shader de ruido fractal para crear las nubes en espiral del vórtice. */
+    /** Shader volumétrico procedural para el vórtice de nubes. */
     public static ShaderInstance cloudVortex() {
         return cloudVortex;
+    }
+
+    /** Shader procedural de lente gravitacional y disco de acreción. */
+    public static ShaderInstance blackHoleSurface() {
+        return blackHoleSurface;
     }
 }
