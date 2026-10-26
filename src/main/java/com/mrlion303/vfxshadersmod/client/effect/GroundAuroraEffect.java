@@ -70,12 +70,15 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
 
         // Varias crestas de distintos ritmos mantienen el fenómeno en marcha sin superar los 50 bloques.
         for (int layer = 0; layer < 6; layer++) {
-            double speed = 0.48D + layer * 0.035D;
-            double phase = layer * (MAX_RADIUS / 6.0D);
-            double radius = (time * speed + phase) % MAX_RADIUS;
-            double edgeFade = Math.min(1.0D, (MAX_RADIUS - radius) / 6.0D);
-            double nearFade = Math.min(1.0D, radius / 3.0D);
-            float alpha = (float) ((0.34D - layer * 0.035D) * edgeFade * nearFade);
+            double speed = 0.42D + layer * 0.025D;
+            double cycle = MAX_RADIUS + 12.0D;
+            double phase = layer * (cycle / 6.0D);
+            double radius = (time * speed + phase) % cycle;
+            double edgeT = Math.max(0.0D, Math.min(1.0D, (MAX_RADIUS - radius) / 8.0D));
+            double nearT = Math.max(0.0D, Math.min(1.0D, radius / 4.0D));
+            double edgeFade = edgeT * edgeT * (3.0D - 2.0D * edgeT);
+            double nearFade = nearT * nearT * (3.0D - 2.0D * nearT);
+            float alpha = (float) ((0.38D - layer * 0.032D) * edgeFade * nearFade);
             double width = 0.65D + (layer % 3) * 0.18D;
             int ringColor = layer % 3 == 0 ? lighten(color, 0.38F) : color;
 
@@ -96,8 +99,8 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
         for (int segment = 0; segment < SEGMENTS; segment++) {
             double a = Math.PI * 2.0D * segment / SEGMENTS;
             double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
-            double warpA = Math.sin(a * 7.0D + time * 0.08D + layer) * 0.8D;
-            double warpB = Math.sin(b * 7.0D + time * 0.08D + layer) * 0.8D;
+            double warpA = Math.sin(a * 5.0D + time * 0.06D + layer * 0.45D) * 0.18D;
+            double warpB = Math.sin(b * 5.0D + time * 0.06D + layer * 0.45D) * 0.18D;
             double innerA = Math.max(0.05D, radius - width + warpA);
             double outerA = radius + width + warpA;
             double innerB = Math.max(0.05D, radius - width + warpB);
@@ -125,9 +128,10 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         // Altura ondulada: parece una marea luminosa, sin rellenar el mundo como agua.
-        double wave = Math.sin(angle * 5.0D - time * 0.07D + layer) * 0.56D
-                + Math.sin(angle * 11.0D + time * 0.045D + layer * 0.7D) * 0.20D;
-        return new Vec3(x - camera.x, groundY + wave - camera.y, z - camera.z);
+        double wave = 0.12D
+                + Math.sin(angle * 4.0D - time * 0.055D + layer * 0.6D) * 0.11D
+                + Math.sin(angle * 9.0D + time * 0.035D + layer * 0.7D) * 0.035D;
+        return new Vec3(x - camera.x, groundY + 0.24D + wave - camera.y, z - camera.z);
     }
 
     private static int lighten(int rgb, float amount) {

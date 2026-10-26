@@ -56,6 +56,10 @@ public final class FallingStarsEffect implements VfxEffect, ClientVfxRenderer {
 
         Vec3 playerPosition = player.getPosition(partialTick);
         Vec3 camera = event.getCamera().getPosition();
+        var cameraLeft = event.getCamera().getLeftVector();
+        var cameraUp = event.getCamera().getUpVector();
+        Vec3 billboardRight = new Vec3(-cameraLeft.x, -cameraLeft.y, -cameraLeft.z).normalize();
+        Vec3 billboardUp = new Vec3(cameraUp.x, cameraUp.y, cameraUp.z).normalize();
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         RenderType type = VfxRenderTypes.colorQuads();
@@ -93,10 +97,43 @@ public final class FallingStarsEffect implements VfxEffect, ClientVfxRenderer {
             Vec3 side = new Vec3(-0.18D, 0.0D, -0.18D);
 
             // Halo ancho y cola más brillante: cada estrella se distingue sin convertir la lluvia en líneas de un píxel.
-            emitStreak(stars, pose, tail, head, side.scale(2.6D), rgb, alpha * 0.17F);
+            emitStreak(stars, pose, tail, head, side.scale(2.6D), rgb, alpha * 0.20F);
             emitStreak(stars, pose, tail, head, side, rgb, alpha);
+            double starSize = 0.42D + seedX * 0.24D;
+            emitStar(stars, pose, head, billboardRight, billboardUp,
+                    starSize * 1.8D, rgb, alpha * 0.22F);
+            emitStar(stars, pose, head, billboardRight, billboardUp,
+                    starSize, 0xFFFFFF, alpha);
         }
         buffers.endBatch(type);
+    }
+
+    private static void emitStar(
+            VertexConsumer vertices, PoseStack.Pose pose, Vec3 center,
+            Vec3 right, Vec3 up, double radius, int rgb, float alpha
+    ) {
+        // Cuatro puntas de diamante que destacan sobre la estela.
+        for (int arm = 0; arm < 4; arm++) {
+            double angle = Math.PI * 0.5D * arm;
+            Vec3 direction = right.scale(Math.cos(angle)).add(up.scale(Math.sin(angle)));
+            Vec3 perpendicular = right.scale(-Math.sin(angle)).add(up.scale(Math.cos(angle)));
+            Vec3 tip = center.add(direction.scale(radius));
+            Vec3 inner = center.add(direction.scale(radius * 0.08D));
+            Vec3 wingA = center.add(direction.scale(radius * 0.43D))
+                    .add(perpendicular.scale(radius * 0.16D));
+            Vec3 wingB = center.add(direction.scale(radius * 0.43D))
+                    .subtract(perpendicular.scale(radius * 0.16D));
+            VfxGeometry.quad(vertices, pose,
+                    wingA.x, wingA.y, wingA.z, tip.x, tip.y, tip.z,
+                    wingB.x, wingB.y, wingB.z, inner.x, inner.y, inner.z, rgb, alpha);
+        }
+        double core = radius * 0.18D;
+        Vec3 p0 = center.add(right.scale(-core)).add(up.scale(-core));
+        Vec3 p1 = center.add(right.scale(core)).add(up.scale(-core));
+        Vec3 p2 = center.add(right.scale(core)).add(up.scale(core));
+        Vec3 p3 = center.add(right.scale(-core)).add(up.scale(core));
+        VfxGeometry.quad(vertices, pose, p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
+                p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, alpha);
     }
 
     private static void emitStreak(

@@ -104,13 +104,13 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         for (int i = 0; i < STAR_COUNT; i++) {
             double seed = fract(Math.sin((i + 1) * 127.1D) * 43758.5453D);
             double seed2 = fract(Math.sin((i + 1) * 311.7D) * 24634.6345D);
-            double latitude = -0.045D + seed2 * 1.52D;
+            double polar = 0.08D + seed2 * 1.45D;
             double speed = 0.075D + seed * 0.055D;
             double angle = seed * Math.PI * 2.0D + time * speed;
             double trailLength = 0.065D + seed * 0.045D;
-            Vec3 tail = point(angle - trailLength, latitude + 0.014D, SKY_RADIUS * 0.992D);
-            Vec3 head = point(angle, latitude, SKY_RADIUS * 0.992D);
-            Vec3 side = new Vec3(-Math.sin(angle), 0.0D, Math.cos(angle))
+            Vec3 tail = pointAroundHorizon(angle - trailLength, polar, SKY_RADIUS * 0.992D);
+            Vec3 head = pointAroundHorizon(angle, polar, SKY_RADIUS * 0.992D);
+            Vec3 side = new Vec3(-Math.sin(angle), Math.cos(angle), 0.0D)
                     .scale(0.22D + seed * 0.28D);
 
             emitQuad(stars, pose, tail.subtract(side.scale(2.6D)), tail.add(side.scale(2.6D)),
@@ -126,6 +126,11 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         return new Vec3(Math.cos(azimuth) * horizontal,
                 Math.sin(latitude) * radius,
                 Math.sin(azimuth) * horizontal);
+    }
+
+    private static Vec3 pointAroundHorizon(double angle, double polar, double radius) {
+        double ring = Math.sin(polar) * radius;
+        return new Vec3(Math.cos(angle) * ring, Math.sin(angle) * ring, Math.cos(polar) * radius);
     }
 
     private static void emitQuad(

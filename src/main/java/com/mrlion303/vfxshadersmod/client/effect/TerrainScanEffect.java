@@ -22,7 +22,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "scan");
     private static final int SEGMENTS = 220;
-    private static final long LIFETIME = 184L;
+    private static final long LIFETIME = 70L;
     private static volatile Vec3 requestedOrigin = Vec3.ZERO;
     private static volatile int requestedColor = 0x3478FF;
 
@@ -72,9 +72,10 @@ public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
         VertexConsumer vertices = buffers.getBuffer(type);
 
         double time = age + partialTick;
-        double radius = Math.min(260.0D, 0.5D + time * 1.48D);
-        float fade = (float) Math.min(1.0D, (LIFETIME - time) / 15.0D);
-        if (fade <= 0.0F) {
+        double radius = Math.min(100.0D, 0.5D + time * 1.48D);
+        double fadeT = Math.max(0.0D, Math.min(1.0D, (100.0D - radius) / 9.0D));
+        float fade = (float) (fadeT * fadeT * (3.0D - 2.0D * fadeT));
+        if (fade <= 0.0F || radius >= 100.0D) {
             buffers.endBatch(type);
             return;
         }
