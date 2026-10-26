@@ -13,13 +13,29 @@ Motor de efectos en tiempo real para Minecraft Java Edition, orientado a Forge 1
 - `/vfx enable blackhole_sky`: muestra un agujero negro celeste gigante fijado a 50° sobre el horizonte.
 - `/vfx disable blackhole_sky`: lo desactiva.
 - `/vfxmove empujon <jugadores>`: impulsa a los jugadores seleccionados hacia atrás y hacia arriba.
+- `/vfxmove moonjump enable|disable <jugadores>`: activa o desactiva gravedad lunar por jugador.
+- `/vfxmove waterwalk enable|disable <jugadores>` (también `caminar_agua`): permite caminar por la superficie del agua.
+- `/vfx enable cloud_vortex`: activa un vórtice de nubes rojo-anaranjadas en el cielo.
+- `/vfx enable starsspeed <color>`: activa estelas estelares rápidas sobre un cielo tintado; el color es opcional (por defecto, azul).
+- `/vfx enable ground_aurora <x> <y> <z> <color>`: extiende ondas luminosas sobre el suelo desde coordenadas dadas.
+- `/vfx enable falling_stars`: activa una lluvia continua de estrellas diagonales arcoíris.
+- `/vfx enable sky_portal`: abre un portal circular cinematográfico en el cielo.
+- `/vfxonce scan <x> <y> <z> <color>`: lanza una única onda de escaneo que se adapta al relieve.
 
-Los comandos VFX están disponibles en el cliente y en el servidor. Desde bloques de comandos, el servidor envía las órdenes visuales a los clientes conectados en la misma dimensión. Instala el mod tanto en el servidor como en los clientes. Los comandos de servidor requieren permiso de operador de nivel 2.
+Los comandos VFX están disponibles en el cliente y en el servidor. Desde bloques de comandos, el servidor envía las órdenes visuales a los clientes conectados en la misma dimensión. Instala el mod tanto en el servidor como en los clientes. Los comandos de servidor requieren permiso de operador de nivel 2. Los comandos de movimiento modifican únicamente a los jugadores seleccionados y se limpian al desconectarse.
 
 Ejemplos de bloque de comandos:
 
 ```text
 /vfx enable blackhole 80 120 170 -300
+/vfx enable cloud_vortex
+/vfx enable starsspeed celeste
+/vfx enable ground_aurora 120 70 -300 naranja
+/vfx enable falling_stars
+/vfx enable sky_portal
+/vfxonce scan 120 70 -300 azul
+/vfxmove moonjump enable @a
+/vfxmove waterwalk enable @a
 /vfx disable blackhole
 /vfx enable blackhole_sky
 /vfx disable blackhole_sky
@@ -37,7 +53,13 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 - **rainbow_aurora:** cortinas luminosas ondulantes con ciclos continuos.
 - **rainbow_sky:** pinta uniformemente el cielo y va cambiando de azul a rojo y a los demás colores del arcoíris. Cubre el cenit y tiñe las nubes sin recolorear los bloques cercanos.
 - **blackhole:** agujero negro en coordenadas del mundo, con sombra oscura, disco de acreción blanco-dorado casi horizontal, halos curvados y lente gravitacional de pantalla.
-- **blackhole_sky:** versión gigantesca colocada en el cielo a 50° sobre el horizonte, con disco luminoso cálido y distorsión amplia de la escena, inspirada visualmente en Gargantúa de *Interstellar*.
+- **blackhole_sky:** versión gigantesca colocada en el cielo a 50° sobre el horizonte, con disco luminoso cálido y distorsión de la escena, inspirada visualmente en Gargantúa de *Interstellar*.
+- **cloud_vortex:** espiral animada de nubes rojo-anaranjadas con un centro brillante.
+- **starsspeed:** cúpula celeste de color uniforme, estelas de estrellas veloces y resplandor en el horizonte; permite seleccionar el color.
+- **ground_aurora:** ondas luminosas de color personalizable que recorren el terreno desde una coordenada.
+- **falling_stars:** lluvia de estrellas diagonales con tonos arcoíris y desvanecimiento al tocar el suelo.
+- **sky_portal:** grieta celeste animada que se abre como disco galáctico. Usa `panorama_overlay.png` de la raíz si está presente en la compilación; si falta, el shader crea un interior galáctico procedural.
+- **scan:** escaneo de un solo uso iniciado con `/vfxonce scan`; el aro sigue la superficie de los bloques cargados para rodear elevaciones y montañas.
 
 La lente es una aproximación cinematográfica en pantalla: deforma el fondo, dibuja la sombra y el disco luminoso. No simula relatividad general ni altera bloques o colisiones. La apariencia final debe comprobarse dentro de Minecraft; una compilación correcta no garantiza la salida visual en todos los drivers.
 
