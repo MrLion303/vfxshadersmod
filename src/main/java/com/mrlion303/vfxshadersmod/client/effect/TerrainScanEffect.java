@@ -12,7 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Heightmap;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -85,7 +85,7 @@ public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
             }
             int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) Math.floor(x), (int) Math.floor(z));
             double ripple = Math.sin(angle * 12.0D + age * 0.075D) * 0.10D;
-            points[i] = new Vec3(x - camera.x, Math.max(origin.y + 0.12D, surface + 0.12D) - camera.y + ripple,
+            points[i] = new Vec3(x - camera.x, surface + 0.12D - camera.y + ripple,
                     z - camera.z);
         }
 
