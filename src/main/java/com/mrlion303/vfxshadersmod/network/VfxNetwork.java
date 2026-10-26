@@ -11,7 +11,7 @@ import java.util.Optional;
 
 /** Canal para convertir los comandos de eventos en efectos visibles por los clientes. */
 public final class VfxNetwork {
-    private static final String PROTOCOL_VERSION = "1";
+    private static final String PROTOCOL_VERSION = "2";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(VfxShadersMod.MOD_ID, "main"),
