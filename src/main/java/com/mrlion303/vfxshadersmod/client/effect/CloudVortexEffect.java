@@ -21,7 +21,7 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "cloud_vortex");
     private static final double SKY_DISTANCE = 224.0D;
     private static final double ELEVATION = Math.toRadians(51.0D);
-    private static final double HALF_SIZE = 80.0D;
+    private static final double HALF_SIZE = 160.0D;
     private long age;
 
     @Override

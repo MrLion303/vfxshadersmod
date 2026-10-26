@@ -151,13 +151,13 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
         for (int layer = 0; layer < layers; layer++) {
             double inner = coreRadius * (1.04D + layer * 0.28D);
             double outer = inner + coreRadius * (0.17D + layer * 0.018D);
-            float alpha = switch (layer) {
-                case 0 -> 0.96F;
-                case 1 -> 0.82F;
-                case 2 -> 0.63F;
-                case 3 -> 0.45F;
-                case 4 -> 0.31F;
-                default -> 0.20F;
+            float layerAlpha = switch (layer) {
+                case 0 -> 0.99F;
+                case 1 -> 0.86F;
+                case 2 -> 0.67F;
+                case 3 -> 0.48F;
+                case 4 -> 0.32F;
+                default -> 0.21F;
             };
             int rgb = switch (layer) {
                 case 0 -> 0xFFFFF3;
@@ -180,9 +180,13 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
                 Vec3 p1 = diskPoint(center, outer, a, wobbleA);
                 Vec3 p2 = diskPoint(center, outer, b, wobbleB);
                 Vec3 p3 = diskPoint(center, inner, b, wobbleB);
+                double turbulence = 0.75D
+                        + 0.18D * Math.sin((a + b) * 3.5D + time * 0.12D + layer)
+                        + 0.07D * Math.sin((a + b) * 8.0D - time * 0.08D);
+                float segmentAlpha = (float) (layerAlpha * Math.max(0.42D, turbulence));
                 VfxGeometry.quad(vertices, pose,
                         p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
-                        p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, alpha);
+                        p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, segmentAlpha);
             }
         }
     }
@@ -190,7 +194,7 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
     private static Vec3 diskPoint(Vec3 center, double radius, double angle, double wobble) {
         return center.add(
                 planeRight.scale(Math.cos(angle) * radius)
-                        .add(planeUp.scale(Math.sin(angle) * radius))
+                        .add(planeUp.scale(Math.sin(angle) * radius * 0.34D))
                         .add(direction.scale(wobble))
         );
     }
@@ -201,7 +205,7 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
     ) {
         final int segments = 144;
         final double[] horizontalScale = {1.12D, 1.36D, 1.66D, 1.92D};
-        final double[] verticalScale = {0.78D, 0.98D, 1.18D, 1.38D};
+        final double[] verticalScale = {0.28D, 0.40D, 0.55D, 0.72D};
         final int[] colors = {0xFFFFF0, 0xFFFFD8, 0xFFF0D0, 0xFFD0A0};
         final float[] alpha = {0.98F, 0.72F, 0.43F, 0.22F};
 

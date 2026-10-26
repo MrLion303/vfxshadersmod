@@ -106,12 +106,12 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
             double innerRadius = coreRadius * (1.04D + layer * 0.28D);
             double outerRadius = innerRadius + coreRadius * (0.17D + layer * 0.018D);
             float layerAlpha = switch (layer) {
-                case 0 -> 0.96F;
-                case 1 -> 0.82F;
-                case 2 -> 0.63F;
-                case 3 -> 0.45F;
-                case 4 -> 0.31F;
-                default -> 0.20F;
+                case 0 -> 0.99F;
+                case 1 -> 0.86F;
+                case 2 -> 0.67F;
+                case 3 -> 0.48F;
+                case 4 -> 0.32F;
+                default -> 0.21F;
             };
             int rgb = switch (layer) {
                 case 0 -> 0xFFFFF3;
@@ -134,9 +134,13 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
                 Vec3 outerA = diskPoint(center, outerRadius, angleA, waveA, direction, screenRight, screenUp);
                 Vec3 outerB = diskPoint(center, outerRadius, angleB, waveB, direction, screenRight, screenUp);
                 Vec3 innerB = diskPoint(center, innerRadius, angleB, waveB, direction, screenRight, screenUp);
+                double turbulence = 0.76D
+                        + 0.17D * Math.sin((angleA + angleB) * 3.5D + time * 0.12D + layer)
+                        + 0.07D * Math.sin((angleA + angleB) * 8.0D - time * 0.08D);
+                float segmentAlpha = (float) (layerAlpha * Math.max(0.42D, turbulence));
                 VfxGeometry.quad(vertices, pose,
                         innerA.x, innerA.y, innerA.z, outerA.x, outerA.y, outerA.z,
-                        outerB.x, outerB.y, outerB.z, innerB.x, innerB.y, innerB.z, rgb, layerAlpha);
+                        outerB.x, outerB.y, outerB.z, innerB.x, innerB.y, innerB.z, rgb, segmentAlpha);
             }
         }
     }
@@ -147,7 +151,7 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     ) {
         return center.add(
                 screenRight.scale(Math.cos(angle) * radius)
-                        .add(screenUp.scale(Math.sin(angle) * radius))
+                        .add(screenUp.scale(Math.sin(angle) * radius * 0.36D))
                         .add(direction.scale(wobble))
         );
     }
@@ -158,7 +162,7 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     ) {
         final int segments = 144;
         final double[] horizontalScale = {1.12D, 1.36D, 1.66D, 1.92D};
-        final double[] verticalScale = {0.78D, 0.98D, 1.18D, 1.38D};
+        final double[] verticalScale = {0.28D, 0.40D, 0.55D, 0.72D};
         final int[] colors = {0xFFFFF0, 0xFFFFD8, 0xFFF0D0, 0xFFD0A0};
         final float[] alpha = {0.98F, 0.72F, 0.43F, 0.22F};
 

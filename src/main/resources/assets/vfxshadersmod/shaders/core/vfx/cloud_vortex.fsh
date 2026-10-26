@@ -8,7 +8,6 @@ out vec4 fragColor;
 float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
-
 float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
@@ -16,51 +15,60 @@ float noise(vec2 p) {
     return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
                mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
 }
-
 float fbm(vec2 p) {
     float value = 0.0;
     float amplitude = 0.5;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         value += noise(p) * amplitude;
-        p = p * 2.03 + vec2(7.1, 3.7);
+        p = p * 2.02 + vec2(5.2, 3.9);
         amplitude *= 0.5;
     }
     return value;
 }
-
 void main() {
-    vec2 p = texCoord * 2.0 - 1.0;
+    vec2 p = (texCoord * 2.0 - 1.0) * 1.18;
     float r = length(p);
-    float angle = atan(p.y, p.x);
-    float time = VortexTime * 0.018;
-
-    // El campo de ruido se retuerce alrededor del centro para simular nubes arrastradas por un remolino.
-    float twist = angle + r * 8.2 - time;
-    vec2 flow = vec2(cos(twist), sin(twist)) * r;
-    float lowCloud = fbm(flow * 7.0 + vec2(VortexTime * 0.005, -VortexTime * 0.003));
-    float highCloud = fbm(flow * 15.0 + vec2(4.3, -2.1) - VortexTime * 0.008);
-    float detail = fbm(flow * 24.0 + vec2(-VortexTime * 0.011, 8.4));
-    float density = lowCloud * 0.48 + highCloud * 0.34 + detail * 0.18;
-    float cloudMask = smoothstep(0.32, 0.67, density);
-    float raggedEdge = 1.0 - smoothstep(0.78 + (density - 0.5) * 0.12, 1.03, r);
-    float spiralGaps = smoothstep(0.22, 0.58, lowCloud * 0.72 + highCloud * 0.28);
-    float clouds = cloudMask * raggedEdge * spiralGaps;
-
-    vec3 deepRed = vec3(0.30, 0.018, 0.012);
-    vec3 burntOrange = vec3(0.92, 0.115, 0.025);
-    vec3 hotOrange = vec3(1.0, 0.35, 0.065);
-    vec3 cloudColor = mix(deepRed, burntOrange, smoothstep(0.28, 0.76, density));
-    cloudColor = mix(cloudColor, hotOrange, smoothstep(0.68, 0.9, detail) * 0.5);
-
-    float core = exp(-r * 15.0);
-    float innerGlow = exp(-r * 5.0) * 0.34;
-    vec3 color = cloudColor + vec3(1.0, 0.55, 0.18) * innerGlow;
-    color += vec3(1.0, 0.92, 0.68) * core * 2.6;
-
-    float alpha = clouds * 0.88 + innerGlow * 0.30 + core * 0.92;
-    alpha *= 1.0 - smoothstep(0.93, 1.02, r);
-    if (alpha < 0.015) {
-        discard;
-    }
-    fragColor = vec4(color, clamp(alpha, 0.0, 0.96));
+    float time = VortexTime * 0.012;
+    // Distorsión de dominio: las nubes se estiran y se rompen en bandas de flujo.
+    // No se dibujan anillos concéntricos regulares.
+    vec2 warp = vec2(
+        fbm(p * 2.4 + vec2(time * 0.7, -time * 0.4)),
+        fbm(p * 2.4 + vec2(8.3, -3.6) + vec2(-time * 0.5, time * 0.35))
+    );
+    vec2 warped = p + (warp - 0.5) * 0.42;
+    float warpedAngle = atan(warped.y, warped.x);
+    float warpedRadius = length(warped);
+    float twist = warpedAngle + warpedRadius * 3.9 - time;
+    vec2 spiral = vec2(cos(twist), sin(twist)) * warpedRadius;
+    float broad = fbm(spiral * 3.2 + warp * 1.4);
+    float medium = fbm(spiral * 6.8 + vec2(2.7, -1.8) - time * 0.55);
+    float fine = fbm(warped * 17.0 + vec2(-time * 0.8, time * 0.6));
+    float wisps = fbm(warped * 31.0 + vec2(4.2, 9.1) + time * 0.25);
+    float density = broad * 0.44 + medium * 0.31 + fine * 0.17 + wisps * 0.08;
+    float cloudField = density + (fine - 0.5) * 0.23 + (wisps - 0.5) * 0.10;
+    float cloudMask = smoothstep(0.43, 0.62, cloudField);
+    float edgeNoise = fbm(warped * 5.0 + vec2(2.4, time * 0.18));
+    float outerEdge = 1.0 - smoothstep(0.78 + (edgeNoise - 0.5) * 0.18, 1.12, r);
+    float centralEye = smoothstep(0.045, 0.22, r);
+    float filaments = smoothstep(0.54, 0.78, fine * 0.65 + wisps * 0.35);
+    float clouds = cloudMask * outerEdge * centralEye;
+    vec3 shadowRed = vec3(0.075, 0.009, 0.012);
+    vec3 deepRed = vec3(0.24, 0.018, 0.018);
+    vec3 burntOrange = vec3(0.72, 0.095, 0.025);
+    vec3 hotOrange = vec3(1.0, 0.31, 0.055);
+    vec3 paleHot = vec3(1.0, 0.72, 0.40);
+    vec3 cloudColor = mix(shadowRed, deepRed, smoothstep(0.30, 0.58, density));
+    cloudColor = mix(cloudColor, burntOrange, smoothstep(0.47, 0.68, medium));
+    cloudColor = mix(cloudColor, hotOrange, filaments * smoothstep(0.48, 0.75, density) * 0.72);
+    float core = exp(-r * 18.0);
+    float innerGlow = exp(-r * 4.7) * 0.24;
+    float hotRim = exp(-pow((r - 0.19 - (broad - 0.5) * 0.055) / 0.075, 2.0));
+    vec3 color = cloudColor + vec3(1.0, 0.28, 0.06) * innerGlow;
+    color += paleHot * hotRim * 0.42;
+    color += vec3(1.0, 0.94, 0.78) * core * 2.15;
+    float cloudAlpha = clouds * (0.38 + medium * 0.42);
+    float alpha = cloudAlpha + innerGlow * 0.26 + core * 0.90 + hotRim * 0.10;
+    alpha *= outerEdge;
+    if (alpha < 0.012) discard;
+    fragColor = vec4(color, clamp(alpha, 0.0, 0.94));
 }
