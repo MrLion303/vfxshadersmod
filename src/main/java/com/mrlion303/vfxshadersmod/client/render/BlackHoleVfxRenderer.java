@@ -103,23 +103,23 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
             Vec3 direction, Vec3 screenRight, Vec3 screenUp, double time
     ) {
         for (int layer = 0; layer < DISK_LAYERS; layer++) {
-            double innerRadius = coreRadius * (1.04D + layer * 0.28D);
-            double outerRadius = innerRadius + coreRadius * (0.17D + layer * 0.018D);
+            double innerRadius = coreRadius * (0.99D + layer * 0.16D);
+            double outerRadius = innerRadius + coreRadius * (0.15D + layer * 0.006D);
             float layerAlpha = switch (layer) {
                 case 0 -> 0.99F;
-                case 1 -> 0.86F;
-                case 2 -> 0.67F;
-                case 3 -> 0.48F;
-                case 4 -> 0.32F;
-                default -> 0.21F;
+                case 1 -> 0.92F;
+                case 2 -> 0.78F;
+                case 3 -> 0.62F;
+                case 4 -> 0.44F;
+                default -> 0.28F;
             };
             int rgb = switch (layer) {
-                case 0 -> 0xFFFFF3;
-                case 1 -> 0xFFFFD8;
-                case 2 -> 0xFFFFB4;
-                case 3 -> 0xFFFF8A;
-                case 4 -> 0xFFE16A;
-                default -> 0xFFAD52;
+                case 0 -> 0xFFFFF7;
+                case 1 -> 0xFFFFDA;
+                case 2 -> 0xFFFFB0;
+                case 3 -> 0xFF9A54;
+                case 4 -> 0xF65A3F;
+                default -> 0x9F4B75;
             };
 
             for (int i = 0; i < DISK_SEGMENTS; i++) {
@@ -134,13 +134,18 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
                 Vec3 outerA = diskPoint(center, outerRadius, angleA, waveA, direction, screenRight, screenUp);
                 Vec3 outerB = diskPoint(center, outerRadius, angleB, waveB, direction, screenRight, screenUp);
                 Vec3 innerB = diskPoint(center, innerRadius, angleB, waveB, direction, screenRight, screenUp);
-                double turbulence = 0.76D
-                        + 0.17D * Math.sin((angleA + angleB) * 3.5D + time * 0.12D + layer)
-                        + 0.07D * Math.sin((angleA + angleB) * 8.0D - time * 0.08D);
-                float segmentAlpha = (float) (layerAlpha * Math.max(0.42D, turbulence));
+                double middleAngle = (angleA + angleB) * 0.5D;
+                double turbulence = 0.72D
+                        + 0.18D * Math.sin(middleAngle * 3.5D + time * 0.12D + layer)
+                        + 0.10D * Math.sin(middleAngle * 8.0D - time * 0.08D);
+                double beaming = Math.max(0.0D, Math.cos(middleAngle + time * 0.018D));
+                int segmentColor = mixColor(rgb, 0xFFFFF0,
+                        (float) (layer < 2 ? 0.12D + beaming * 0.48D : 0.04D + beaming * 0.22D));
+                float segmentAlpha = (float) (layerAlpha * Math.max(0.40D, turbulence)
+                        * (0.82D + beaming * 0.18D));
                 VfxGeometry.quad(vertices, pose,
                         innerA.x, innerA.y, innerA.z, outerA.x, outerA.y, outerA.z,
-                        outerB.x, outerB.y, outerB.z, innerB.x, innerB.y, innerB.z, rgb, segmentAlpha);
+                        outerB.x, outerB.y, outerB.z, innerB.x, innerB.y, innerB.z, segmentColor, segmentAlpha);
             }
         }
     }
@@ -151,7 +156,7 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     ) {
         return center.add(
                 screenRight.scale(Math.cos(angle) * radius)
-                        .add(screenUp.scale(Math.sin(angle) * radius * 0.36D))
+                        .add(screenUp.scale(Math.sin(angle) * radius * 0.30D))
                         .add(direction.scale(wobble))
         );
     }
@@ -163,8 +168,8 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         final int segments = 144;
         final double[] horizontalScale = {1.12D, 1.36D, 1.66D, 1.92D};
         final double[] verticalScale = {0.28D, 0.40D, 0.55D, 0.72D};
-        final int[] colors = {0xFFFFF0, 0xFFFFD8, 0xFFF0D0, 0xFFD0A0};
-        final float[] alpha = {0.98F, 0.72F, 0.43F, 0.22F};
+        final int[] colors = {0xFFFFF0, 0xFFFFD8, 0xFFFFBE, 0xFFE18A};
+        final float[] alpha = {1.0F, 0.76F, 0.48F, 0.26F};
 
         for (int layer = 0; layer < horizontalScale.length; layer++) {
             Vec3 previous = arcPoint(center, coreRadius, 0.0D, layer, time,
@@ -201,4 +206,12 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         vertices.vertex(pose.pose(), (float) point.x, (float) point.y, (float) point.z)
                 .color(red, green, blue, alpha).endVertex();
     }
+    private static int mixColor(int a, int b, float weight) {
+        float t = Math.max(0.0F, Math.min(1.0F, weight));
+        int r = Math.round(((a >> 16) & 255) * (1.0F - t) + ((b >> 16) & 255) * t);
+        int g = Math.round(((a >> 8) & 255) * (1.0F - t) + ((b >> 8) & 255) * t);
+        int bl = Math.round((a & 255) * (1.0F - t) + (b & 255) * t);
+        return (r << 16) | (g << 8) | bl;
+    }
+
 }
