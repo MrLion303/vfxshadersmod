@@ -64,19 +64,23 @@ float cloudDensity(vec3 local, out float broad, out float billows, out float rad
     vec3 warpedDetail = flow * 3.85 + vec3((broad - 0.5) * 1.45,
             (0.5 - broad) * 1.1, -VortexTime * 0.006);
     billows = vfxNoise3(warpedDetail);
+    float fine = vfxNoise3(warpedDetail * 1.95 + vec3(-3.7, 8.1, VortexTime * 0.012));
 
-    float spiralBand = sin(angle * 4.0 - radius * 15.5 + local.z * 2.15 - VortexTime * 0.018);
-    float arms = mix(0.54, 1.0,
-            smoothstep(-0.84, 0.48, spiralBand + (billows - 0.5) * 0.82));
+    float spiralBand = sin(angle * 3.7 - radius * 13.8 + local.z * 2.6 - VortexTime * 0.018);
+    float armNoise = spiralBand + (billows - 0.5) * 1.0 + (fine - 0.5) * 0.48;
+    float arms = mix(0.38, 1.0, smoothstep(-0.92, 0.47, armNoise));
 
-    float cloudField = broad + (billows - 0.5) * 0.48;
-    float wisps = smoothstep(0.295, 0.615, cloudField);
-    float irregularRadius = radius + (billows - 0.5) * 0.15 + (broad - 0.5) * 0.075;
-    float perimeter = 1.0 - smoothstep(0.64, 1.06, irregularRadius);
-    float depthFade = 1.0 - smoothstep(0.74, 1.02, abs(local.z));
+    float cloudField = broad + (billows - 0.5) * 0.56 - (fine - 0.5) * 0.24;
+    float wisps = smoothstep(0.28, 0.62, cloudField);
+    float edgeRadius = 0.84 + (broad - 0.5) * 0.22
+            + (billows - 0.5) * 0.26 + (fine - 0.5) * 0.10;
+    float perimeter = 1.0 - smoothstep(edgeRadius - 0.12, edgeRadius + 0.16, radius);
+    float depthFade = 1.0 - smoothstep(0.70 + (billows - 0.5) * 0.10,
+                                        1.02, abs(local.z));
+    float volumeFade = 1.0 - smoothstep(0.79, 1.0, length(local));
     float centralOpening = smoothstep(0.012, 0.105, radius);
 
-    return wisps * perimeter * depthFade * centralOpening * arms;
+    return wisps * perimeter * depthFade * volumeFade * centralOpening * arms;
 }
 
 void main() {
@@ -157,9 +161,9 @@ void main() {
                     cloudColor = mix(cloudColor, vec3(1.0, 0.28, 0.055),
                                      smoothstep(0.54, 0.78, billows) * 0.56);
                     cloudColor *= lighting;
-                    cloudColor = mix(cloudColor, vec3(1.0, 0.88, 0.68),
-                                     clamp(core * 1.15, 0.0, 1.0));
-                    cloudColor += vec3(0.20, 0.065, 0.012) * core;
+                    cloudColor = mix(cloudColor, vec3(1.0, 0.96, 0.82),
+                                     clamp(core * 1.20, 0.0, 1.0));
+                    cloudColor += vec3(0.30, 0.12, 0.025) * core;
 
                     float contribution = transmittance * sampleAlpha;
                     accumulated += cloudColor * contribution;
