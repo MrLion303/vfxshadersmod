@@ -1,11 +1,22 @@
 #version 150
 
+uniform vec3 CameraForward;
+uniform vec3 CameraRight;
+uniform vec3 CameraUp;
+uniform vec3 VortexDirection;
+uniform vec3 VortexRight;
+uniform vec3 VortexUp;
+uniform float TanHalfFov;
+uniform float ScreenAspect;
 uniform float VortexTime;
 
 in vec2 texCoord;
 out vec4 fragColor;
 
-// Ruido 3D procedural calculado directamente en el fragment shader.
+const float VORTEX_DISTANCE = 224.0;
+const vec3 VORTEX_RADII = vec3(82.0, 62.0, 74.0);
+const int RAY_STEPS = 10;
+
 float hash31(vec3 p) {
     p = fract(p * 0.1031);
     p += dot(p, p.yzx + 33.33);
@@ -13,132 +24,158 @@ float hash31(vec3 p) {
 }
 
 float vfxNoise3(vec3 p) {
-    vec3 i = floor(p);
+    vec3 cell = floor(p);
     vec3 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float n000 = hash31(i);
-    float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
-    float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
-    float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
-    float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
-    float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
-    float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
-    float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+    float n000 = hash31(cell);
+    float n100 = hash31(cell + vec3(1.0, 0.0, 0.0));
+    float n010 = hash31(cell + vec3(0.0, 1.0, 0.0));
+    float n110 = hash31(cell + vec3(1.0, 1.0, 0.0));
+    float n001 = hash31(cell + vec3(0.0, 0.0, 1.0));
+    float n101 = hash31(cell + vec3(1.0, 0.0, 1.0));
+    float n011 = hash31(cell + vec3(0.0, 1.0, 1.0));
+    float n111 = hash31(cell + vec3(1.0, 1.0, 1.0));
     float z0 = mix(mix(n000, n100, f.x), mix(n010, n110, f.x), f.y);
     float z1 = mix(mix(n001, n101, f.x), mix(n011, n111, f.x), f.y);
     return mix(z0, z1, f.z);
 }
 
-float fbm3(vec3 p) {
-    float sum = 0.0;
-    float amplitude = 0.5;
-    for (int octave = 0; octave < 2; octave++) {
-        sum += vfxNoise3(p) * amplitude;
-        p = p * 2.03 + vec3(7.13, 3.71, 5.47);
-        amplitude *= 0.5;
-    }
-    return sum / 0.75;
+float fbmCloud(vec3 p) {
+    float coarse = vfxNoise3(p);
+    float fine = vfxNoise3(p * 2.03 + vec3(7.1, 3.7, 5.3));
+    return coarse * 0.68 + fine * 0.32;
 }
 
-// Densidad volumétrica con flujo en espiral, ruido de baja frecuencia y erosión fina.
-float cloudDensity(vec3 p, out float broad, out float detail) {
-    float radius = length(p.xy);
-    float angle = atan(p.y, p.x);
-    float twist = angle + radius * 5.65 - VortexTime * 0.010 + p.z * 0.46;
-    vec2 swirl = vec2(cos(twist), sin(twist)) * radius;
-    vec3 flow = vec3(swirl * 1.45, p.z * 1.35);
+vec3 toVortexLocal(vec3 relativePosition) {
+    return vec3(
+        dot(relativePosition, VortexRight) / VORTEX_RADII.x,
+        dot(relativePosition, VortexUp) / VORTEX_RADII.y,
+        dot(relativePosition, VortexDirection) / VORTEX_RADII.z
+    );
+}
 
-    vec2 warp = vec2(
-        vfxNoise3(flow * 2.15 + vec3(0.0, 0.0, VortexTime * 0.004)),
-        vfxNoise3(flow * 2.15 + vec3(17.1, 5.2, -2.7))
-    ) - 0.5;
-    vec3 q = flow + vec3(warp * 0.52, (warp.x - warp.y) * 0.30);
+float cloudDensity(vec3 local, out float broad, out float billows, out float radius) {
+    radius = length(local.xy);
+    float angle = atan(local.y, local.x);
 
-    broad = fbm3(q * 3.05 + vec3(0.0, 0.0, VortexTime * 0.003));
-    float billows = vfxNoise3(q * 7.6 + vec3(4.0, -2.0, VortexTime * 0.006));
-    detail = vfxNoise3(q * 15.2 + vec3(-3.0, 9.0, -VortexTime * 0.008));
+    // Domain warp gives the cloud banks a spiral flow instead of circular rings.
+    float turn = (1.0 - clamp(radius, 0.0, 1.0)) * 3.7
+               + local.z * 0.43 - VortexTime * 0.008;
+    float cs = cos(turn);
+    float sn = sin(turn);
+    vec2 rotated = mat2(cs, -sn, sn, cs) * local.xy;
+    vec3 flow = vec3(rotated * vec2(3.15, 2.72), local.z * 3.1);
 
-    float shape = smoothstep(0.385, 0.655,
-            broad + (billows - 0.5) * 0.43 - (detail - 0.5) * 0.19);
-    float irregularRadius = radius + (billows - 0.5) * 0.12 + (detail - 0.5) * 0.045;
-    float edge = 1.0 - smoothstep(0.69, 1.015, irregularRadius);
-    float verticalProfile = 1.0 - smoothstep(0.64, 1.08, abs(p.z));
-    float centralFlow = smoothstep(0.025, 0.15, radius + (billows - 0.5) * 0.025);
-    return shape * edge * verticalProfile * centralFlow;
+    broad = fbmCloud(flow * 1.42 + vec3(0.0, 0.0, VortexTime * 0.003));
+    billows = vfxNoise3(flow * 4.15 + vec3(11.7, -4.2, -VortexTime * 0.006));
+
+    float spiralBand = sin(angle * 4.0 - radius * 15.5 + local.z * 2.15 - VortexTime * 0.018);
+    float arms = mix(0.42, 1.0,
+            smoothstep(-0.82, 0.48, spiralBand + (billows - 0.5) * 0.72));
+
+    float cloudField = broad + (billows - 0.5) * 0.39;
+    float wisps = smoothstep(0.335, 0.655, cloudField);
+    float irregularRadius = radius + (billows - 0.5) * 0.085;
+    float perimeter = 1.0 - smoothstep(0.70, 1.015, irregularRadius);
+    float depthFade = 1.0 - smoothstep(0.73, 1.01, abs(local.z));
+    float centralOpening = smoothstep(0.012, 0.105, radius);
+
+    return wisps * perimeter * depthFade * centralOpening * arms;
 }
 
 void main() {
-    vec2 uv = (texCoord * 2.0 - 1.0) * 1.10;
-    float radius = length(uv);
-    float time = VortexTime * 0.012;
+    vec2 screen = texCoord * 2.0 - 1.0;
+    vec3 rayDirection = normalize(
+        CameraForward
+        + CameraRight * (screen.x * ScreenAspect * TanHalfFov)
+        + CameraUp * (screen.y * TanHalfFov)
+    );
 
-    vec3 accumulatedColor = vec3(0.0);
-    float accumulatedAlpha = 0.0;
-    float transmittance = 1.0;
+    vec3 center = VortexDirection * VORTEX_DISTANCE;
+    vec3 radiiInverse = 1.0 / VORTEX_RADII;
+    vec3 rayOriginLocal = toVortexLocal(-center);
+    vec3 rayDirectionLocal = vec3(
+        dot(rayDirection, VortexRight) * radiiInverse.x,
+        dot(rayDirection, VortexUp) * radiiInverse.y,
+        dot(rayDirection, VortexDirection) * radiiInverse.z
+    );
 
-    const int STEPS = 12;
-    const float STEP_LENGTH = 2.12 / float(STEPS);
+    // Exact ray/ellipsoid intersection bounds the march to the cloud volume.
+    float a = dot(rayDirectionLocal, rayDirectionLocal);
+    float b = dot(rayOriginLocal, rayDirectionLocal);
+    float c = dot(rayOriginLocal, rayOriginLocal) - 1.0;
+    float discriminant = b * b - a * c;
 
-    // La cuadrícula solo delimita el volumen: la apariencia completa se calcula por píxel.
-    for (int i = 0; i < STEPS; i++) {
-        float z = -1.06 + (float(i) + 0.5) * STEP_LENGTH;
-        vec2 drift = vec2(sin(z * 2.2 + time), cos(z * 1.8 - time * 0.7)) * 0.035;
-        vec3 position = vec3(uv + drift, z);
+    // Faint atmospheric red spill is smooth and has no rectangular silhouette.
+    float closestT = max(dot(center, rayDirection), 0.0);
+    vec3 nearest = rayDirection * closestT - center;
+    float closestRadius = length(toVortexLocal(nearest));
+    float halo = exp(-max(closestRadius - 0.78, 0.0) * 4.2)
+               * (1.0 - smoothstep(1.05, 1.85, closestRadius));
+    float haloAlpha = halo * 0.115;
 
-        float broad;
-        float detail;
-        float density = cloudDensity(position, broad, detail);
-        if (density > 0.015) {
-            float opticalDepth = density * STEP_LENGTH * 2.75;
-            float sampleAlpha = 1.0 - exp(-opticalDepth);
-            float erosion = vfxNoise3(position * 17.0 + vec3(1.3, 7.1, time * 0.22));
+    vec3 accumulated = vec3(0.090, 0.0025, 0.009) * haloAlpha;
+    float accumulatedAlpha = haloAlpha;
+    float transmittance = 1.0 - haloAlpha;
 
-            // Sombreado interno aproximado y dispersión cálida de las nubes densas.
-            float lighting = clamp(0.22 + broad * 1.28 + (1.0 - detail) * 0.26
-                    + max(0.0, erosion - 0.53) * 0.34, 0.12, 1.24);
-            vec3 shadowRed = vec3(0.075, 0.008, 0.014);
-            vec3 deepRed = vec3(0.28, 0.022, 0.026);
-            vec3 burntOrange = vec3(0.79, 0.105, 0.026);
-            vec3 hotOrange = vec3(1.0, 0.32, 0.065);
-            vec3 cream = vec3(1.0, 0.69, 0.38);
+    if (discriminant > 0.0 && a > 0.00001) {
+        float root = sqrt(discriminant);
+        float tEnter = max((-b - root) / a, 0.0);
+        float tExit = (-b + root) / a;
 
-            vec3 cloudColor = mix(shadowRed, deepRed, smoothstep(0.27, 0.53, broad));
-            cloudColor = mix(cloudColor, burntOrange, smoothstep(0.43, 0.63, broad));
-            cloudColor = mix(cloudColor, hotOrange, smoothstep(0.54, 0.79, detail) * 0.50);
-            cloudColor = mix(cloudColor, cream,
-                    smoothstep(0.73, 0.91, broad + detail * 0.12) * 0.48);
-            cloudColor *= lighting;
+        if (tExit > tEnter) {
+            float stepLength = (tExit - tEnter) / float(RAY_STEPS);
+            float jitter = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
 
-            float contribution = transmittance * sampleAlpha;
-            accumulatedColor += cloudColor * contribution;
-            accumulatedAlpha += contribution;
-            transmittance *= 1.0 - sampleAlpha;
-        }
-        if (transmittance < 0.045) {
-            break;
+            for (int i = 0; i < RAY_STEPS; i++) {
+                float t = tEnter + (float(i) + 0.25 + jitter * 0.5) * stepLength;
+                vec3 relativePosition = rayDirection * t - center;
+                vec3 local = toVortexLocal(relativePosition);
+
+                float broad;
+                float billows;
+                float radius;
+                float density = cloudDensity(local, broad, billows, radius);
+
+                // An emissive core remains visible through gaps in the outer cloud banks.
+                float core = exp(-radius * 12.0)
+                           * (1.0 - smoothstep(0.24, 0.78, abs(local.z)));
+                density = max(density, core * 0.92);
+
+                if (density > 0.012) {
+                    float opticalDepth = density * stepLength * 0.028;
+                    float sampleAlpha = 1.0 - exp(-opticalDepth);
+                    float lighting = clamp(
+                        0.32 + broad * 1.10 + billows * 0.20
+                        + (1.0 - radius) * 0.20 + local.y * 0.10,
+                        0.10, 1.45
+                    );
+
+                    vec3 cloudColor = mix(
+                        vec3(0.075, 0.0025, 0.009),
+                        vec3(0.43, 0.012, 0.022),
+                        smoothstep(0.30, 0.60, broad)
+                    );
+                    cloudColor = mix(cloudColor, vec3(0.92, 0.075, 0.018),
+                                     smoothstep(0.43, 0.68, broad) * 0.82);
+                    cloudColor = mix(cloudColor, vec3(1.0, 0.28, 0.055),
+                                     smoothstep(0.54, 0.78, billows) * 0.56);
+                    cloudColor *= lighting;
+                    cloudColor = mix(cloudColor, vec3(1.0, 0.70, 0.37),
+                                     clamp(core * 0.92, 0.0, 0.96));
+
+                    float contribution = transmittance * sampleAlpha;
+                    accumulated += cloudColor * contribution;
+                    accumulatedAlpha += contribution;
+                    transmittance *= 1.0 - sampleAlpha;
+                }
+
+                if (transmittance < 0.035) break;
+            }
         }
     }
 
-    vec3 color = accumulatedAlpha > 0.0001
-            ? accumulatedColor / accumulatedAlpha
-            : vec3(0.0);
-    float alpha = clamp(accumulatedAlpha, 0.0, 0.91);
-
-    // Núcleo incandescente irregular que emerge del flujo de las nubes.
-    float coreNoise = fbm3(vec3(uv * 8.0, time * 0.35));
-    float coreRadius = length(uv + vec2(coreNoise - 0.5, 0.5 - coreNoise) * 0.035);
-    float ember = exp(-coreRadius * 5.8) * 0.32;
-    float hotCore = exp(-coreRadius * 14.0) * 0.92;
-    color = mix(color, vec3(1.0, 0.19, 0.035), clamp(ember * 1.65, 0.0, 0.76));
-    color = mix(color, vec3(1.0, 0.67, 0.31), clamp(hotCore * 0.84, 0.0, 0.92));
-    alpha = max(alpha, clamp(ember + hotCore * 0.44, 0.0, 0.88));
-
-    float fringe = fbm3(vec3(uv * 4.5, 0.6));
-    float perimeter = 1.0 - smoothstep(0.79 + (fringe - 0.5) * 0.14,
-            1.035 + (fringe - 0.5) * 0.055, radius);
-    alpha *= perimeter;
-    if (alpha < 0.012) {
-        discard;
-    }
-    fragColor = vec4(max(color, vec3(0.0)), clamp(alpha, 0.0, 0.94));
+    if (accumulatedAlpha < 0.008) discard;
+    vec3 color = accumulated / max(accumulatedAlpha, 0.0001);
+    fragColor = vec4(color, clamp(accumulatedAlpha, 0.0, 0.97));
 }

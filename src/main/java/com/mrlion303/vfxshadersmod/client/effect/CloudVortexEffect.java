@@ -52,38 +52,58 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
             return;
         }
 
-        double time = age + partialTick;
-        if (shader.getUniform("VortexTime") != null) {
-            shader.getUniform("VortexTime").set((float) time);
-        }
+        var camera = event.getCamera();
+        Vec3 forward = camera.getLookVector().normalize();
+        var cameraLeft = camera.getLeftVector();
+        Vec3 right = new Vec3(-cameraLeft.x, -cameraLeft.y, -cameraLeft.z).normalize();
+        var cameraUp = camera.getUpVector();
+        Vec3 up = new Vec3(cameraUp.x, cameraUp.y, cameraUp.z).normalize();
 
-        // El vórtice ocupa una dirección fija del cielo; no gira para seguir la cámara.
-        Vec3 direction = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
-        Vec3 center = direction.scale(SKY_DISTANCE);
+        // El volumen se orienta en una dirección fija del mundo, no hacia la cámara.
         Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
-        Vec3 right = direction.cross(worldUp).normalize();
-        if (right.lengthSqr() < 1.0E-6D) {
-            right = new Vec3(1.0D, 0.0D, 0.0D);
-        }
-        Vec3 up = right.cross(direction).normalize();
+        Vec3 direction = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
+        Vec3 vortexRight = direction.cross(worldUp).normalize();
+        Vec3 vortexUp = vortexRight.cross(direction).normalize();
 
-        PoseStack.Pose pose = event.getPoseStack().last();
+        float fov = minecraft.options.fov().get().floatValue();
+        float tanHalfFov = (float) Math.tan(Math.toRadians(fov) * 0.5D);
+        float aspect = minecraft.getWindow().getWidth()
+                / (float) Math.max(1, minecraft.getWindow().getHeight());
+
+        setVector(shader, "CameraForward", forward);
+        setVector(shader, "CameraRight", right);
+        setVector(shader, "CameraUp", up);
+        setVector(shader, "VortexDirection", direction);
+        setVector(shader, "VortexRight", vortexRight);
+        setVector(shader, "VortexUp", vortexUp);
+        if (shader.getUniform("TanHalfFov") != null) {
+            shader.getUniform("TanHalfFov").set(tanHalfFov);
+        }
+        if (shader.getUniform("ScreenAspect") != null) {
+            shader.getUniform("ScreenAspect").set(aspect);
+        }
+        if (shader.getUniform("VortexTime") != null) {
+            shader.getUniform("VortexTime").set((float) (age + partialTick));
+        }
+
+        // El shader calcula el volumen por rayo sobre el cielo ya dibujado.
+        // No se proyecta una tarjeta rectangular, por lo que no existe borde de plano.
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         RenderType type = VfxRenderTypes.cloudQuads();
         VertexConsumer vertices = buffers.getBuffer(type);
-
-        Vec3 p0 = point(center, right, up, -HALF_SIZE, -HALF_SIZE);
-        Vec3 p1 = point(center, right, up, HALF_SIZE, -HALF_SIZE);
-        Vec3 p2 = point(center, right, up, HALF_SIZE, HALF_SIZE);
-        Vec3 p3 = point(center, right, up, -HALF_SIZE, HALF_SIZE);
-        vertices.vertex(pose.pose(), (float) p0.x, (float) p0.y, (float) p0.z).uv(0.0F, 0.0F).endVertex();
-        vertices.vertex(pose.pose(), (float) p1.x, (float) p1.y, (float) p1.z).uv(1.0F, 0.0F).endVertex();
-        vertices.vertex(pose.pose(), (float) p2.x, (float) p2.y, (float) p2.z).uv(1.0F, 1.0F).endVertex();
-        vertices.vertex(pose.pose(), (float) p3.x, (float) p3.y, (float) p3.z).uv(0.0F, 1.0F).endVertex();
+        vertices.vertex(-1.0F, -1.0F, 0.0F).uv(0.0F, 0.0F).endVertex();
+        vertices.vertex( 1.0F, -1.0F, 0.0F).uv(1.0F, 0.0F).endVertex();
+        vertices.vertex( 1.0F,  1.0F, 0.0F).uv(1.0F, 1.0F).endVertex();
+        vertices.vertex(-1.0F,  1.0F, 0.0F).uv(0.0F, 1.0F).endVertex();
         buffers.endBatch(type);
     }
 
-    private static Vec3 point(Vec3 center, Vec3 right, Vec3 up, double x, double y) {
-        return center.add(right.scale(x)).add(up.scale(y));
+    private static void setVector(ShaderInstance shader, String name, Vec3 vector) {
+        if (shader.getUniform(name) != null) {
+            shader.getUniform(name).set(new float[]{
+                    (float) vector.x, (float) vector.y, (float) vector.z
+            });
+        }
     }
+
 }

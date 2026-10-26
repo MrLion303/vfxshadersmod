@@ -1,21 +1,103 @@
 {
   "vertex": "vfxshadersmod:vfx/cloud_vortex",
   "fragment": "vfxshadersmod:vfx/cloud_vortex",
-  "attributes": ["Position", "UV0"],
+  "attributes": [
+    "Position",
+    "UV0"
+  ],
   "samplers": [],
   "uniforms": [
     {
-      "name": "ModelViewMat",
-      "type": "matrix4x4",
-      "count": 16,
-      "values": [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+      "name": "VortexTime",
+      "type": "float",
+      "count": 1,
+      "values": [
+        0
+      ]
     },
     {
-      "name": "ProjMat",
-      "type": "matrix4x4",
-      "count": 16,
-      "values": [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+      "name": "CameraForward",
+      "type": "float",
+      "count": 3,
+      "values": [
+        0,
+        0,
+        -1
+      ]
     },
-    { "name": "VortexTime", "type": "float", "count": 1, "values": [0.0] }
+    {
+      "name": "CameraRight",
+      "type": "float",
+      "count": 3,
+      "values": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "CameraUp",
+      "type": "float",
+      "count": 3,
+      "values": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "name": "VortexDirection",
+      "type": "float",
+      "count": 3,
+      "values": [
+        0,
+        0.77714596,
+        -0.62932039
+      ]
+    },
+    {
+      "name": "VortexRight",
+      "type": "float",
+      "count": 3,
+      "values": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "VortexUp",
+      "type": "float",
+      "count": 3,
+      "values": [
+        0,
+        0.62932039,
+        0.77714596
+      ]
+    },
+    {
+      "name": "TanHalfFov",
+      "type": "float",
+      "count": 1,
+      "values": [
+        0.7002075
+      ]
+    },
+    {
+      "name": "ScreenAspect",
+      "type": "float",
+      "count": 1,
+      "values": [
+        1.7777778
+      ]
+    },
+    {
+      "name": "VortexTime",
+      "type": "float",
+      "count": 1,
+      "values": [
+        0
+      ]
+    }
   ]
 }
