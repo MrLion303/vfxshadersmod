@@ -21,6 +21,7 @@ import java.io.IOException;
 public final class VfxShaderLibrary {
     private static ShaderInstance basicColor;
     private static ShaderInstance blackHoleLensing;
+    private static ShaderInstance portalWindow;
 
     private VfxShaderLibrary() {
     }
@@ -38,6 +39,12 @@ public final class VfxShaderLibrary {
                 new ShaderInstance(event.getResourceProvider(), lensingId, DefaultVertexFormat.POSITION_TEX),
                 shader -> blackHoleLensing = shader
         );
+        ResourceLocation portalId = new ResourceLocation(VfxShadersMod.MOD_ID, "vfx/portal_window");
+        event.registerShader(
+                new ShaderInstance(event.getResourceProvider(), portalId, DefaultVertexFormat.POSITION_TEX),
+                shader -> portalWindow = shader
+        );
+
         BlackHoleLensingPass.releaseTarget();
     }
 
@@ -49,5 +56,10 @@ public final class VfxShaderLibrary {
     /** Shader del pase de deformación de pantalla para agujeros negros. */
     public static ShaderInstance blackHoleLensing() {
         return blackHoleLensing;
+    }
+
+    /** Shader que recorta el interior del portal como un disco y dibuja la galaxia. */
+    public static ShaderInstance portalWindow() {
+        return portalWindow;
     }
 }
