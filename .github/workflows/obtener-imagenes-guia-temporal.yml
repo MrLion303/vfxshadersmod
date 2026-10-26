@@ -1,0 +1,23 @@
+name: Preparar imágenes guía (temporal)
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  empaquetar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+      - name: Empaquetar imágenes de referencia
+        run: zip -j imagenes-guia.zip "Imagenes guia"/*
+      - name: Guardar paquete temporal
+        uses: actions/upload-artifact@v7
+        with:
+          name: imagenes-guia-temporal
+          path: imagenes-guia.zip
+          retention-days: 1
