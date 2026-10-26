@@ -2,6 +2,12 @@ package com.mrlion303.vfxshadersmod.client;
 
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
+import com.mrlion303.vfxshadersmod.client.effect.CloudVortexEffect;
+import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
+import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
+import com.mrlion303.vfxshadersmod.client.effect.FallingStarsEffect;
+import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
+import com.mrlion303.vfxshadersmod.client.effect.SkyPortalEffect;
 import com.mrlion303.vfxshadersmod.client.effect.DemoOrbitEffect;
 import com.mrlion303.vfxshadersmod.client.effect.MusicHorizonBarsEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraEffect;
@@ -64,6 +70,49 @@ public final class ClientVfxCatalog {
                 "Un agujero negro de apariencia astronómica en el cielo, con disco de acreción y lente gravitacional.",
                 VfxEffectCategory.ENVIRONMENT,
                 BlackHoleSkyEffect::new
+        );
+
+        EffectRegistry.register(
+                CloudVortexEffect.ID,
+                "Vórtice de nubes celeste",
+                "Nubes naranja rojizas giran alrededor de un centro brillante en el cielo.",
+                VfxEffectCategory.ENVIRONMENT,
+                CloudVortexEffect::new
+        );
+        EffectRegistry.register(
+                StarsspeedEffect.ID,
+                "Starsspeed",
+                "Cielo tintado uniformemente, con estelas de estrellas veloces y resplandor en el horizonte.",
+                VfxEffectCategory.ENVIRONMENT,
+                StarsspeedEffect::new
+        );
+        EffectRegistry.register(
+                GroundAuroraEffect.ID,
+                "Aurora del suelo",
+                "Ondas luminosas de color personalizable se expanden por el terreno desde una coordenada.",
+                VfxEffectCategory.WORLD_ANCHORED,
+                GroundAuroraEffect::new
+        );
+        EffectRegistry.register(
+                FallingStarsEffect.ID,
+                "Lluvia de estrellas",
+                "Estrellas diagonales de colores arcoíris caen hacia el suelo y se desvanecen al llegar.",
+                VfxEffectCategory.PARTICLE_SYSTEM,
+                FallingStarsEffect::new
+        );
+        EffectRegistry.register(
+                TerrainScanEffect.ID,
+                "Escaneo del terreno",
+                "Un aro de escaneo de un solo uso se expande sobre la superficie de los bloques.",
+                VfxEffectCategory.PARTICLE_SYSTEM,
+                TerrainScanEffect::new
+        );
+        EffectRegistry.register(
+                SkyPortalEffect.ID,
+                "Portal celeste",
+                "Una grieta cinematográfica se abre como un portal circular con interior galáctico.",
+                VfxEffectCategory.ENVIRONMENT,
+                SkyPortalEffect::new
         );
 
         ClientWorldVfxRendererRegistry.register(BlackHoleEffect.ID, new BlackHoleVfxRenderer());
