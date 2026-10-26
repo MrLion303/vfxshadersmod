@@ -76,6 +76,17 @@ tasks.named('processResources').configure {
     }
 }
 
+// Si el archivo del proyecto existe en la raíz, se incluye como textura del portal.
+def panoramaOverlay = file('panorama_overlay.png')
+if (panoramaOverlay.exists()) {
+    tasks.named('processResources').configure {
+        from(panoramaOverlay) {
+            into 'assets/vfxshadersmod/textures/vfx'
+            rename { 'panorama_overlay.png' }
+        }
+    }
+}
+
 tasks.named('jar').configure {
     manifest {
         attributes([
