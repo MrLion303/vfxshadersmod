@@ -18,7 +18,8 @@ public record VfxCommandPacket(
         float diameter,
         double x,
         double y,
-        double z
+        double z,
+        String option
 ) {
     public static final String ENABLE = "enable";
     public static final String DISABLE = "disable";
@@ -26,6 +27,8 @@ public record VfxCommandPacket(
     public static final String DISABLE_ALL = "disable_all";
     public static final String PLACE_BLACKHOLE = "place_blackhole";
     public static final String CLEAR_BLACKHOLES = "clear_blackholes";
+    public static final String ENABLE_CONFIGURED = "enable_configured";
+    public static final String SCAN_ONCE = "scan_once";
 
     public VfxCommandPacket(
             String operation,
@@ -34,7 +37,21 @@ public record VfxCommandPacket(
             float diameter,
             Vec3 position
     ) {
-        this(operation, effect, dimension, diameter, position.x, position.y, position.z);
+        this(operation, effect, dimension, diameter, position.x, position.y, position.z, "");
+    }
+
+    public VfxCommandPacket(
+            String operation, String effect, ResourceLocation dimension,
+            float diameter, Vec3 position, String option
+    ) {
+        this(operation, effect, dimension, diameter, position.x, position.y, position.z, option);
+    }
+
+    public VfxCommandPacket(
+            String operation, String effect, ResourceLocation dimension,
+            float diameter, double x, double y, double z
+    ) {
+        this(operation, effect, dimension, diameter, x, y, z, "");
     }
 
     public Vec3 position() {
@@ -49,6 +66,7 @@ public record VfxCommandPacket(
         buffer.writeDouble(x);
         buffer.writeDouble(y);
         buffer.writeDouble(z);
+        buffer.writeUtf(option == null ? "" : option, 64);
     }
 
     public static VfxCommandPacket decode(FriendlyByteBuf buffer) {
@@ -59,7 +77,8 @@ public record VfxCommandPacket(
                 buffer.readFloat(),
                 buffer.readDouble(),
                 buffer.readDouble(),
-                buffer.readDouble()
+                buffer.readDouble(),
+                buffer.readUtf(64)
         );
     }
 
