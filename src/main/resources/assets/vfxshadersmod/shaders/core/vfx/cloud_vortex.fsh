@@ -12,7 +12,7 @@ float hash31(vec3 p) {
     return fract((p.x + p.y) * p.z);
 }
 
-float noise3(vec3 p) {
+float vfxNoise3(vec3 p) {
     vec3 i = floor(p);
     vec3 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
@@ -32,12 +32,12 @@ float noise3(vec3 p) {
 float fbm3(vec3 p) {
     float sum = 0.0;
     float amplitude = 0.5;
-    for (int octave = 0; octave < 3; octave++) {
-        sum += noise3(p) * amplitude;
+    for (int octave = 0; octave < 2; octave++) {
+        sum += vfxNoise3(p) * amplitude;
         p = p * 2.03 + vec3(7.13, 3.71, 5.47);
         amplitude *= 0.5;
     }
-    return sum / 0.875;
+    return sum / 0.75;
 }
 
 // Densidad volumétrica con flujo en espiral, ruido de baja frecuencia y erosión fina.
@@ -49,14 +49,14 @@ float cloudDensity(vec3 p, out float broad, out float detail) {
     vec3 flow = vec3(swirl * 1.45, p.z * 1.35);
 
     vec2 warp = vec2(
-        noise3(flow * 2.15 + vec3(0.0, 0.0, VortexTime * 0.004)),
-        noise3(flow * 2.15 + vec3(17.1, 5.2, -2.7))
+        vfxNoise3(flow * 2.15 + vec3(0.0, 0.0, VortexTime * 0.004)),
+        vfxNoise3(flow * 2.15 + vec3(17.1, 5.2, -2.7))
     ) - 0.5;
     vec3 q = flow + vec3(warp * 0.52, (warp.x - warp.y) * 0.30);
 
     broad = fbm3(q * 3.05 + vec3(0.0, 0.0, VortexTime * 0.003));
-    float billows = noise3(q * 7.6 + vec3(4.0, -2.0, VortexTime * 0.006));
-    detail = noise3(q * 15.2 + vec3(-3.0, 9.0, -VortexTime * 0.008));
+    float billows = vfxNoise3(q * 7.6 + vec3(4.0, -2.0, VortexTime * 0.006));
+    detail = vfxNoise3(q * 15.2 + vec3(-3.0, 9.0, -VortexTime * 0.008));
 
     float shape = smoothstep(0.405, 0.665,
             broad + (billows - 0.5) * 0.35 - (detail - 0.5) * 0.15);
@@ -76,7 +76,7 @@ void main() {
     float accumulatedAlpha = 0.0;
     float transmittance = 1.0;
 
-    const int STEPS = 20;
+    const int STEPS = 12;
     const float STEP_LENGTH = 2.12 / float(STEPS);
 
     // La cuadrícula solo delimita el volumen: la apariencia completa se calcula por píxel.
@@ -91,7 +91,7 @@ void main() {
         if (density > 0.015) {
             float opticalDepth = density * STEP_LENGTH * 2.75;
             float sampleAlpha = 1.0 - exp(-opticalDepth);
-            float erosion = noise3(position * 17.0 + vec3(1.3, 7.1, time * 0.22));
+            float erosion = vfxNoise3(position * 17.0 + vec3(1.3, 7.1, time * 0.22));
 
             // Sombreado interno aproximado y dispersión cálida de las nubes densas.
             float lighting = clamp(0.22 + broad * 1.28 + (1.0 - detail) * 0.26

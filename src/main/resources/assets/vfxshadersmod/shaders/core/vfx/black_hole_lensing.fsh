@@ -14,54 +14,39 @@ uniform vec4 Hole7;
 in vec2 texCoord;
 out vec4 fragColor;
 
+// Screen-space lensing: map visible rays back to their source directions.
+// The radial fold near the Einstein radius approximates a secondary image.
 vec2 bendAroundHole(vec2 uv, vec4 hole, float aspect) {
     if (hole.z <= 0.0) return uv;
 
     vec2 delta = uv - hole.xy;
     vec2 metric = vec2(delta.x * aspect, delta.y);
     float d = length(metric);
-    float radius = clamp(hole.z, 0.001, 0.25);
+    float horizonRadius = clamp(hole.z, 0.001, 0.25);
+    if (d < 0.00001) return uv;
 
-    // La zona deformada queda ligada al tamaño aparente del agujero:
-    // el alcance visible es de aproximadamente un radio a su alrededor.
-    float reach = radius * 2.2;
-    float falloff = 1.0 - smoothstep(radius * 0.18, reach, d);
-    float strength = clamp(hole.w, 0.0, 1.4);
-    float offset = radius * 0.18 * strength * falloff
-            / (1.0 + d / max(radius, 0.001));
+    float strength = clamp(hole.w, 0.0, 1.45);
+    float reach = horizonRadius * 5.2;
+    float fade = 1.0 - smoothstep(horizonRadius * 1.05, reach, d);
 
-    if (d > 0.00001) {
-        metric /= d;
-        uv += vec2(metric.x / aspect, metric.y) * offset;
-    }
-    return uv;
+    // Deflection grows toward the hole and folds at the approximate Einstein radius.
+    float einsteinRadius = horizonRadius * 1.55;
+    float deflection = (einsteinRadius * einsteinRadius)
+            / max(d, horizonRadius * 0.24);
+    deflection = min(deflection, horizonRadius * 2.8);
+    float mappedDistance = d - deflection * strength * fade;
+
+    vec2 direction = metric / d;
+    vec2 mappedMetric = direction * mappedDistance;
+    return hole.xy + vec2(mappedMetric.x / aspect, mappedMetric.y);
 }
 
-void addGargantuaLook(inout vec3 color, vec2 screenUv, vec4 hole, float aspect) {
-    if (hole.z <= 0.0) return;
-
+float eventHorizonMask(vec2 screenUv, vec4 hole, float aspect) {
+    if (hole.z <= 0.0) return 0.0;
     vec2 delta = screenUv - hole.xy;
-    vec2 metric = vec2(delta.x * aspect, delta.y);
+    float d = length(vec2(delta.x * aspect, delta.y));
     float radius = clamp(hole.z, 0.001, 0.25);
-    float d = length(metric);
-    float normalizedDistance = d / radius;
-    float intensity = clamp(hole.w / 1.4, 0.0, 1.0);
-
-    // Solo el núcleo del agujero queda negro; nunca se oscurece la pantalla completa.
-    float shadow = 1.0 - smoothstep(0.82, 1.02, normalizedDistance);
-    color *= 1.0 - shadow;
-
-    float bandWidth = max(radius * 0.10, 0.0012);
-    float diskBand = exp(-pow(metric.y / bandWidth, 2.0));
-    diskBand *= smoothstep(radius * 0.72, radius * 1.04, abs(metric.x));
-    diskBand *= 1.0 - smoothstep(radius * 2.1, radius * 3.0, abs(metric.x));
-
-    float innerHalo = exp(-pow((d - radius * 1.10) / max(radius * 0.10, 0.0012), 2.0));
-    float outerHalo = exp(-pow((d - radius * 1.42) / max(radius * 0.17, 0.0015), 2.0));
-
-    color += vec3(1.0, 0.86, 0.63) * diskBand * (0.72 * intensity);
-    color += vec3(1.0, 0.96, 0.84) * innerHalo * (0.68 * intensity);
-    color += vec3(1.0, 0.68, 0.36) * outerHalo * (0.22 * intensity);
+    return 1.0 - smoothstep(radius * 0.87, radius * 1.08, d);
 }
 
 void main() {
@@ -76,15 +61,19 @@ void main() {
     uv = bendAroundHole(uv, Hole6, aspect);
     uv = bendAroundHole(uv, Hole7, aspect);
 
-    vec4 scene = texture(DiffuseSampler, clamp(uv, vec2(0.001), vec2(0.999)));
-    addGargantuaLook(scene.rgb, texCoord, Hole0, aspect);
-    addGargantuaLook(scene.rgb, texCoord, Hole1, aspect);
-    addGargantuaLook(scene.rgb, texCoord, Hole2, aspect);
-    addGargantuaLook(scene.rgb, texCoord, Hole3, aspect);
-    addGargantuaLook(scene.rgb, texCoord, Hole4, aspect);
-    addGargantuaLook(scene.rgb, texCoord, Hole5, aspect);
-    addGargantuaLook(scene.rgb, texCoord, Hole6, aspect);
-    addGargantuaLook(scene.rgb, texCoord, Hole7, aspect);
+    vec3 scene = texture(DiffuseSampler, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
 
-    fragColor = vec4(scene.rgb, 1.0);
+    // The procedural surface already generates the accretion disk and photon ring.
+    // This final pass only lenses the actual rendered scene and keeps the horizon dark.
+    float horizon = max(
+        max(eventHorizonMask(texCoord, Hole0, aspect), eventHorizonMask(texCoord, Hole1, aspect)),
+        max(eventHorizonMask(texCoord, Hole2, aspect), eventHorizonMask(texCoord, Hole3, aspect))
+    );
+    horizon = max(horizon, max(
+        max(eventHorizonMask(texCoord, Hole4, aspect), eventHorizonMask(texCoord, Hole5, aspect)),
+        max(eventHorizonMask(texCoord, Hole6, aspect), eventHorizonMask(texCoord, Hole7, aspect))
+    ));
+
+    scene = mix(scene, vec3(0.0002, 0.0003, 0.0007), horizon);
+    fragColor = vec4(scene, 1.0);
 }

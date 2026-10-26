@@ -1,6 +1,7 @@
 package com.mrlion303.vfxshadersmod.client;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
+import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -51,6 +52,10 @@ public final class ClientVfxEvents {
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         ClientVfxManager.render(event);
+        // La escena ya está renderizada: aplicar la lente sin interferir con la geometría del mundo.
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            BlackHoleLensingPass.render(event);
+        }
     }
 
     @SubscribeEvent

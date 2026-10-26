@@ -30,6 +30,25 @@ jobs:
           gradle-version: '8.1.1'
 
 
+      - name: Preparar validador GLSL
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y glslang-tools
+
+      - name: Validar shaders GLSL
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' shader; do
+            case "$shader" in
+              *.fsh) stage=frag ;;
+              *.vsh) stage=vert ;;
+              *) continue ;;
+            esac
+            echo "Validando shader: $shader"
+            glslangValidator -S "$stage" "$shader"
+          done < <(find src/main/resources/assets/vfxshadersmod/shaders/core/vfx -type f \\( -name '*.fsh' -o -name '*.vsh' \\) -print0)
+
       - name: Validar JSON de recursos
         run: |
           python - <<'PY'
