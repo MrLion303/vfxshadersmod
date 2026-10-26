@@ -7,6 +7,9 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHolePlacement;
+import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
+import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
+import com.mrlion303.vfxshadersmod.util.VfxColors;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.EffectRegistry;
 import net.minecraft.client.Minecraft;
@@ -37,6 +40,19 @@ public final class ClientVfxCommands {
                                                 BlackHoleEffect.MIN_DIAMETER, BlackHoleEffect.MAX_DIAMETER))
                                         .then(Commands.argument("position", Vec3Argument.vec3())
                                                 .executes(ClientVfxCommands::placeBlackHole))))
+                        .then(Commands.literal("starsspeed")
+                                .executes(context -> enableConfigured(context, "starsspeed", "blue", Vec3.ZERO))
+                                .then(Commands.argument("color", StringArgumentType.word())
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(VfxColors.names(), builder))
+                                        .executes(context -> enableConfigured(context, "starsspeed",
+                                                StringArgumentType.getString(context, "color"), Vec3.ZERO))))
+                        .then(Commands.literal("ground_aurora")
+                                .then(Commands.argument("position", Vec3Argument.vec3())
+                                        .then(Commands.argument("color", StringArgumentType.word())
+                                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(VfxColors.names(), builder))
+                                                .executes(context -> enableConfigured(context, "ground_aurora",
+                                                        StringArgumentType.getString(context, "color"),
+                                                        Vec3Argument.getVec3(context, "position"))))))
                         .then(Commands.argument("effect", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
                                         EffectRegistry.ids().stream().map(id -> id.location().getPath()).toList(), builder))
@@ -65,6 +81,11 @@ public final class ClientVfxCommands {
         source.sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos"), false);
         source.sendSuccess(() -> Component.literal("/vfx list — lista los efectos, categorías y estados"), false);
         source.sendSuccess(() -> Component.literal("/vfx enable <efecto> — activa un efecto"), false);
+        source.sendSuccess(() -> Component.literal("/vfx enable starsspeed <color> — activa el cielo con estelas rápidas"), false);
+        source.sendSuccess(() -> Component.literal("/vfx enable ground_aurora <x> <y> <z> <color> — ondas de luz sobre el suelo"), false);
+        source.sendSuccess(() -> Component.literal("/vfxonce scan <x> <y> <z> <color> — escaneo del terreno de un solo uso"), false);
+        source.sendSuccess(() -> Component.literal("/vfxmove moonjump enable|disable <jugadores>"), false);
+        source.sendSuccess(() -> Component.literal("/vfxmove waterwalk enable|disable <jugadores>"), false);
         source.sendSuccess(() -> Component.literal("/vfx enable blackhole <tamaño> <x> <y> <z> — coloca un agujero negro en coordenadas exactas"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva un efecto"), false);
         source.sendSuccess(() -> Component.literal("/vfx disable blackhole — elimina todos los agujeros negros colocados"), false);
@@ -136,6 +157,38 @@ public final class ClientVfxCommands {
                 : "Se eliminaron " + count + " agujeros negros colocados.";
         context.getSource().sendSuccess(() -> Component.literal(message), false);
         return count;
+    }
+
+    private static int enableConfigured(
+            CommandContext<CommandSourceStack> context, String effect, String colorName, Vec3 position
+    ) {
+        Integer rgb = VfxColors.parse(colorName);
+        if (rgb == null) {
+            context.getSource().sendFailure(Component.literal(
+                    "Color inválido. " + VfxColors.describeOptions()));
+            return 0;
+        }
+
+        EffectId id = EffectId.of(VfxShadersMod.MOD_ID, effect);
+        if (!EffectRegistry.ids().contains(id)) {
+            context.getSource().sendFailure(Component.literal("No existe el efecto " + id + "."));
+            return 0;
+        }
+        if ("starsspeed".equals(effect)) {
+            StarsspeedEffect.configureColor(rgb);
+        } else if ("ground_aurora".equals(effect)) {
+            GroundAuroraEffect.configure(position, rgb);
+        }
+
+        ClientVfxManager.disable(id);
+        ClientVfxManager.Result result = ClientVfxManager.enable(id);
+        if (result == ClientVfxManager.Result.SUCCESS) {
+            context.getSource().sendSuccess(() -> Component.literal(
+                    effect + " activado con color " + colorName + "."), false);
+            return 1;
+        }
+        context.getSource().sendFailure(Component.literal("No se pudo activar " + effect + "."));
+        return 0;
     }
 
     private static int change(CommandContext<CommandSourceStack> context, Action action) {
