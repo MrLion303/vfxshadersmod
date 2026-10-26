@@ -141,9 +141,11 @@ public final class VfxMoveCommands {
         }
 
         UUID id = player.getUUID();
-        if (MOONJUMP.contains(id) && !player.getAbilities().flying && !player.isFallFlying()) {
+        if (MOONJUMP.contains(id) && !player.getAbilities().flying && !player.isFallFlying()
+                && !player.onGround()) {
             Vec3 velocity = player.getDeltaMovement();
-            double adjustedY = velocity.y >= 0.0D ? velocity.y * 0.985D : velocity.y * 0.68D;
+            // Compensa parte de la gravedad normal para ampliar el salto y ralentizar la caída.
+            double adjustedY = velocity.y + (velocity.y < 0.0D ? 0.055D : 0.045D);
             player.setDeltaMovement(velocity.x, adjustedY, velocity.z);
             player.fallDistance *= 0.94F;
             player.hurtMarked = true;
