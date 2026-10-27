@@ -8,6 +8,11 @@ import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Circle;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Sphere;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleConfig;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleEmitter;
+import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
+import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
+import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
@@ -34,6 +39,64 @@ public final class PhotonEffectBridge {
         VORTEX,
         PORTAL,
         BLACK_HOLE
+    }
+
+    /**
+     * Crea el sistema Photon apropiado para una de las definiciones del mod.
+     * Las coordenadas especiales se toman de la misma configuración que usa el VFX.
+     */
+    public static Handle playForEffect(String effectPath, Level level) {
+        Vec3 anchor = anchorFor(effectPath, level);
+        return switch (effectPath) {
+            case "blackhole" -> Handle.empty();
+            case "demo_orbit" -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
+            case "music_horizon_bars" -> play(level, anchor, Preset.HORIZON, 0xFF55DFFF, 2.4F);
+            case "rainbow_aurora" -> play(level, anchor, Preset.RAINBOW, 0, 2.8F);
+            case "rainbow_sky" -> play(level, anchor, Preset.RAINBOW, 0, 4.0F);
+            case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE, 0, 3.0F);
+            case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 3.0F);
+            case "starsspeed" -> play(level, anchor, Preset.FALLING_STARS, 0xFF8ABEFF, 2.0F);
+            case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, 0xFF58DFFF, 2.4F);
+            case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
+            case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, 0xFF3478FF, 1.6F);
+            case "trampolin" -> play(level, anchor, Preset.GROUND_WAVE, 0xFF58DFFF, 2.5F);
+            case "sky_portal" -> play(level, anchor, Preset.PORTAL, 0, 4.0F);
+            default -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
+        };
+    }
+
+    /** Actualiza el ancla de los sistemas ambientales que deben acompañar al jugador. */
+    public static void updateForEffect(String effectPath, Handle handle, Level level) {
+        if (handle != null && followsPlayer(effectPath)) {
+            handle.moveTo(anchorFor(effectPath, level));
+        }
+    }
+
+    private static boolean followsPlayer(String effectPath) {
+        return switch (effectPath) {
+            case "demo_orbit", "music_horizon_bars", "rainbow_aurora", "rainbow_sky",
+                    "blackhole_sky", "cloud_vortex", "starsspeed", "falling_stars", "sky_portal" -> true;
+            default -> false;
+        };
+    }
+
+    private static Vec3 anchorFor(String effectPath, Level level) {
+        Player player = Minecraft.getInstance().player;
+        Vec3 base = player == null ? Vec3.ZERO : player.position().add(0.0D, 1.0D, 0.0D);
+        return switch (effectPath) {
+            case "ground_aurora" -> GroundAuroraEffect.configuredOrigin();
+            case "scan" -> TerrainScanEffect.configuredOrigin();
+            case "trampolin" -> TrampolineWaveEffect.configuredOrigin();
+            case "blackhole_sky" -> base.add(0.0D, 26.0D, -65.0D);
+            case "cloud_vortex" -> base.add(0.0D, 35.0D, -72.0D);
+            case "sky_portal" -> {
+                if (player == null) yield base;
+                Vec3 look = player.getLookAngle().normalize();
+                yield base.add(look.scale(65.0D)).add(0.0D, 18.0D, 0.0D);
+            }
+            case "rainbow_sky" -> base.add(0.0D, 12.0D, 0.0D);
+            default -> base;
+        };
     }
 
     public static Handle play(Level level, Vec3 position, Preset preset, int color, float scale) {
