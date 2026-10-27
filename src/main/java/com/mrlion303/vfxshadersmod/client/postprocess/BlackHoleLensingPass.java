@@ -127,8 +127,8 @@ public final class BlackHoleLensingPass {
             if (skyHoleActive && screenHoles.size() < MAX_HOLES) {
                 Vec3 skyCenter = cameraPosition.add(BlackHoleSkyEffect.centerOffset());
                 float[] center = project(skyCenter, camera, event);
-                double skyHalfWidth = BlackHoleSkyEffect.SKY_DIAMETER * 0.90D;
-                double horizonRadius = skyHalfWidth * 0.145D;
+                double skyHalfWidth = BlackHoleSkyEffect.SKY_HALF_WIDTH;
+                double horizonRadius = skyHalfWidth * 0.245D;
                 Vec3 skyEdge = skyCenter.add(
                         cameraLeft.x * horizonRadius,
                         cameraLeft.y * horizonRadius,
