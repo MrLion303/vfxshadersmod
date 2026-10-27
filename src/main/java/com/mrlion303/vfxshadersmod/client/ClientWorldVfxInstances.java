@@ -1,5 +1,6 @@
 package com.mrlion303.vfxshadersmod.client;
 
+import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
 import net.minecraft.client.Minecraft;
@@ -16,6 +17,7 @@ import java.util.UUID;
 /** Almacén local de apariciones situadas en coordenadas del mundo. */
 public final class ClientWorldVfxInstances {
     private static final Map<UUID, WorldVfxInstance> INSTANCES = new LinkedHashMap<>();
+    private static final Map<UUID, PhotonEffectBridge.Handle> PHOTON_PLACED = new LinkedHashMap<>();
 
     private ClientWorldVfxInstances() {
     }
@@ -38,6 +40,7 @@ public final class ClientWorldVfxInstances {
                 scale, level.getGameTime(), durationTicks, parameters
         );
         INSTANCES.put(instance.instanceId(), instance);
+        startPhotonForPlacedInstance(instance, level);
         return instance;
     }
 
@@ -49,6 +52,10 @@ public final class ClientWorldVfxInstances {
             return false;
         }
         INSTANCES.put(instance.instanceId(), instance);
+        Level level = Minecraft.getInstance().level;
+        if (instance.belongsTo(level)) {
+            startPhotonForPlacedInstance(instance, level);
+        }
         return true;
     }
 
@@ -57,13 +64,33 @@ public final class ClientWorldVfxInstances {
     }
 
     public static boolean remove(UUID instanceId) {
-        return INSTANCES.remove(instanceId) != null;
+        WorldVfxInstance removed = INSTANCES.remove(instanceId);
+        PhotonEffectBridge.Handle photon = PHOTON_PLACED.remove(instanceId);
+        if (photon != null) {
+            photon.close();
+        }
+        return removed != null;
+    }
+
+    private static void startPhotonForPlacedInstance(WorldVfxInstance instance, Level level) {
+        if (!instance.effectId().location().getPath().equals("blackhole")) {
+            return;
+        }
+        double diameter = instance.parameters().getOrDefault("diameter", 10.0D);
+        float scale = (float) Math.max(0.1D, Math.min(10.0D, diameter / 10.0D));
+        PHOTON_PLACED.put(instance.instanceId(), PhotonEffectBridge.play(
+                level, instance.position(), PhotonEffectBridge.Preset.BLACK_HOLE, 0xFFFFA34A, scale));
     }
 
     public static int removeByEffect(EffectId effectId) {
-        int before = INSTANCES.size();
-        INSTANCES.values().removeIf(instance -> instance.effectId().equals(effectId));
-        return before - INSTANCES.size();
+        List<UUID> removeIds = INSTANCES.values().stream()
+                .filter(instance -> instance.effectId().equals(effectId))
+                .map(WorldVfxInstance::instanceId)
+                .toList();
+        for (UUID id : removeIds) {
+            remove(id);
+        }
+        return removeIds.size();
     }
 
     public static boolean hasInstances(EffectId effectId) {
@@ -103,11 +130,20 @@ public final class ClientWorldVfxInstances {
         if (level == null || level != Minecraft.getInstance().level) {
             return;
         }
-        INSTANCES.values().removeIf(instance ->
-                instance.belongsTo(level) && instance.isExpired(level.getGameTime()));
+        List<UUID> expired = INSTANCES.values().stream()
+                .filter(instance -> instance.belongsTo(level) && instance.isExpired(level.getGameTime()))
+                .map(WorldVfxInstance::instanceId)
+                .toList();
+        for (UUID id : expired) {
+            remove(id);
+        }
     }
 
     public static void clear() {
+        for (PhotonEffectBridge.Handle handle : PHOTON_PLACED.values()) {
+            handle.close();
+        }
+        PHOTON_PLACED.clear();
         INSTANCES.clear();
     }
 
