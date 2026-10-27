@@ -243,6 +243,15 @@ public final class PhotonEffectBridge {
         });
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.58F);
+        config.trails.setLifetime(NumberFunction.constant(0.34F));
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(16);
+        config.trails.config.setMinVertexDistance(0.055F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(Math.max(0.025F, size * 0.55F)));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
     }
@@ -348,15 +357,6 @@ public final class PhotonEffectBridge {
 
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
-        config.trails.setEnable(true);
-        config.trails.setRatio(0.58F);
-        config.trails.setLifetime(NumberFunction.constant(0.34F));
-        config.trails.setInheritParticleColor(true);
-        config.trails.setSizeAffectsWidth(false);
-        config.trails.config.setTime(16);
-        config.trails.config.setMinVertexDistance(0.055F);
-        config.trails.config.setWidthOverTrail(NumberFunction.constant(Math.max(0.025F, size * 0.55F)));
-        config.trails.config.setColorOverTrail(NumberFunction.color(color));
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
     }
