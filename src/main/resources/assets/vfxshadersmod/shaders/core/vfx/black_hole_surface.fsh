@@ -11,7 +11,7 @@ float hash21(vec2 p) {
     return fract(p.x * p.y);
 }
 
-float noise2(vec2 p) {
+float bhSurfaceNoise2(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
@@ -26,7 +26,7 @@ float fbm2(vec2 p) {
     float value = 0.0;
     float amplitude = 0.55;
     for (int i = 0; i < 3; i++) {
-        value += noise2(p) * amplitude;
+        value += bhSurfaceNoise2(p) * amplitude;
         p = p * 2.07 + vec2(5.7, 9.2);
         amplitude *= 0.48;
     }
@@ -56,7 +56,7 @@ void main() {
     ) - 0.5;
     float turbulence = fbm2(flow * 2.65 + warp * 2.2);
     float filaments = fbm2(flow * 5.5 + vec2(warp.y, -warp.x) * 3.2);
-    float fineDetail = noise2(flow * 13.0 + vec2(time * 0.4, -time * 0.7));
+    float fineDetail = bhSurfaceNoise2(flow * 13.0 + vec2(time * 0.4, -time * 0.7));
 
     float innerEdge = smoothstep(0.162, 0.222, diskRadius + (turbulence - 0.5) * 0.018);
     float outerEdge = 1.0 - smoothstep(

@@ -124,7 +124,7 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
         BlockPos sample = BlockPos.containing(x, yBound, z);
         double groundY = origin.y + 0.025D;
         if (level.hasChunkAt(sample)) {
-            groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) Math.floor(x), (int) Math.floor(z)) + 0.12D;
+            groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) Math.floor(x), (int) Math.floor(z));
         }
 
         // Sin onda vertical: cada vértice toma la altura real del terreno debajo.

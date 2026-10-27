@@ -11,7 +11,7 @@ float hash21(vec2 p) {
     return fract(p.x * p.y);
 }
 
-float noise2(vec2 p) {
+float bhDiskNoise2(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
@@ -26,7 +26,7 @@ float fbm2(vec2 p) {
     float value = 0.0;
     float amplitude = 0.55;
     for (int i = 0; i < 3; i++) {
-        value += noise2(p) * amplitude;
+        value += bhDiskNoise2(p) * amplitude;
         p = p * 2.03 + vec2(7.1, 3.7);
         amplitude *= 0.48;
     }
