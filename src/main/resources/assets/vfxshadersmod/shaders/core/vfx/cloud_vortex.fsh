@@ -23,7 +23,7 @@ float hash21(vec2 p) {
     return fract(p.x * p.y);
 }
 
-float noise2(vec2 p) {
+float vortexNoise2(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
@@ -38,7 +38,7 @@ float fbm2(vec2 p) {
     float value = 0.0;
     float amplitude = 0.5;
     for (int i = 0; i < 3; i++) {
-        value += noise2(p) * amplitude;
+        value += vortexNoise2(p) * amplitude;
         p = p * 2.02 + vec2(7.1, -3.8);
         amplitude *= 0.5;
     }
