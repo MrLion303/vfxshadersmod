@@ -45,7 +45,7 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         double diameter = instance.parameters().getOrDefault(
                 "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
         double configuredRadius = Math.max(0.5D, diameter * 0.5D);
-        double horizonRadius = configuredRadius;
+        double horizonRadius = configuredRadius * 0.35D;
         double innerDiskRadius = horizonRadius * 1.045D;
         double outerDiskRadius = horizonRadius * 1.8D;
         Vec3 center = context.toCameraRelative(instance.position());
