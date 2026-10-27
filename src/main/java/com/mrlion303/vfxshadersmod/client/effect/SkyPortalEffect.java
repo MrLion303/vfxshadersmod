@@ -13,6 +13,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.texture.SimpleTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
@@ -51,6 +53,16 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         if (shader == null) {
             return;
         }
+
+        // Carga el panorama del proyecto como textura real del portal, también tras recargar recursos.
+        ResourceLocation portalTextureId = new ResourceLocation(
+                VfxShadersMod.MOD_ID, "textures/vfx/panorama_overlay.png");
+        var textureManager = minecraft.getTextureManager();
+        if (!(textureManager.getTexture(portalTextureId) instanceof SimpleTexture)) {
+            textureManager.register(portalTextureId, new SimpleTexture(portalTextureId));
+        }
+        var portalTexture = textureManager.getTexture(portalTextureId);
+        shader.setSampler("PortalSampler", portalTexture::getId);
 
         Vec3 direction = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
         Vec3 center = direction.scale(SKY_DISTANCE);
