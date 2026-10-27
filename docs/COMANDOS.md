@@ -18,6 +18,8 @@ Los comandos `/vfx` se pueden usar en el chat y desde bloques de comandos. Los b
 | `/vfx disable blackhole_sky` | Desactiva el agujero celeste |
 | `/vfx enable rainbow_sky` | Colorea uniformemente el cielo y las nubes |
 | `/vfx disable rainbow_sky` | Desactiva el cielo de colores |
+| `/vfx enable rainbow_aurora_photon` | Activa la variante Photon de la aurora arcoíris |
+| `/vfx disable rainbow_aurora_photon` | Desactiva esa variante |
 
 El tamaño del agujero negro del mundo es el diámetro de su horizonte en bloques (de 1 a 100). Las coordenadas aceptan números absolutos o relativos con `~`.
 
@@ -50,13 +52,14 @@ Ejemplos:
 /vfxmove empujon @a
 ```
 
-Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no buffers gráficos. El código GLSL aplica una distorsión cinematográfica de pantalla y no modifica la geometría ni la física de los bloques.
+Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no buffers gráficos. La pasada de lente de pantalla del agujero negro colocado está temporalmente desactivada porque causaba un framebuffer negro en algunas configuraciones. El horizonte y el disco siguen activos; la forma visual no altera la geometría ni la física de los bloques.
 
 ## Efectos incluidos
 
 - `demo_orbit`: anillos de demostración alrededor del jugador local.
 - `music_horizon_bars`: barras de neón alrededor del horizonte.
-- `rainbow_aurora`: cortinas de luz arcoíris.
+- `rainbow_aurora`: cortinas de luz arcoíris del renderizador clásico.
+- `rainbow_aurora_photon`: variante separada de partículas y estelas Photon.
 - `rainbow_sky`: cielo de color uniforme, alternando tonos del arcoíris, con cenit cerrado y nubes teñidas.
 - `blackhole`: agujero negro en coordenadas del mundo, disco de acreción y distorsión fuerte del fondo.
 - `blackhole_sky`: agujero negro celeste gigante, fijo a 50° sobre el horizonte, con disco y lente gravitacional.

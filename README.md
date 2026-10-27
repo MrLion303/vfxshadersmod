@@ -50,13 +50,13 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 ## Efectos incluidos
 
 - **demo_orbit:** anillos orbitales nativos de Photon, con movimiento de partículas, bloom y estelas.
-- **music_horizon_bars:** columnas de partículas Photon alrededor del horizonte, con altura animada por curvas y color según su posición. La animación es procedural y aún no analiza audio real.
-- **rainbow_aurora:** bandas de partículas arcoíris con movimiento orbital, bloom y estelas largas de Photon.
+- **music_horizon_bars:** barras geométricas originales alrededor del horizonte, con alturas y colores animados. Se conserva el renderizador previo a la migración a Photon; no analiza audio real.
+- **rainbow_aurora:** aurora arcoíris clásica con cortinas geométricas ondulantes y gradientes de color, restaurada a su renderizador original.
 - **rainbow_sky:** pinta uniformemente el cielo y va cambiando de azul a rojo y a los demás colores del arcoíris. Cubre el cenit y tiñe las nubes sin recolorear los bloques cercanos.
-- **blackhole:** agujero negro en coordenadas del mundo, con sombra y lente gravitacional GLSL propias; Photon añade el disco de acreción luminoso, partículas y estelas orbitales.
+- **blackhole:** agujero negro en coordenadas del mundo, con horizonte compacto y disco de acreción amplio. La pasada de lente gravitacional de pantalla está temporalmente desactivada para evitar el fallo que dejaba la pantalla negra.
 - **blackhole_sky:** versión gigantesca colocada en el cielo con el disco de partículas de Photon alineado con la acreción GLSL; los agujeros negros colocados usan un preset Photon separado con el disco casi horizontal.
-- **cloud_vortex:** vórtice volumétrico creado con emisores esféricos Photon, ruido, movimiento orbital y estelas rojizas y naranjas.
-- **starsspeed:** cielo tintado con un shader propio; Photon gestiona las partículas veloces y sus estelas. Permite seleccionar el color.
+- **cloud_vortex:** nube-vórtice basada en una textura recortada de la imagen guía, proyectada en una dirección fija del cielo con distorsión animada sutil; Photon añade partículas y estelas.
+- **rainbow_aurora_photon:** variante independiente de la aurora arcoíris, con bandas orbitales, bloom y estelas largas de Photon.
 - **ground_aurora:** ondas Photon de radio creciente acompañadas por bandas propias que se adaptan al relieve; permite personalizar el color.
 - **falling_stars:** lluvia de partículas arcoíris de Photon con estelas y colisiones que retiran las estrellas al tocar el terreno.
 - **sky_portal:** anillos Photon que crecen durante la apertura y fragmentos orbitales con estelas alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
