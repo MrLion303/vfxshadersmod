@@ -344,7 +344,8 @@ public final class PhotonEffectBridge {
 
             config.shape.setPosition(new NumberFunction3(
                     NumberFunction.constant(x), centerCurve, NumberFunction.constant(z)));
-            config.shape.setScale(new NumberFunction3(1.05F, heightCurve, 0.68F));
+            config.shape.setScale(new NumberFunction3(
+                    NumberFunction.constant(1.05F), heightCurve, NumberFunction.constant(0.68F)));
             config.renderer.setBloomEffect(true);
             config.renderer.setBloomColor(color);
             config.physics.setEnable(false);
