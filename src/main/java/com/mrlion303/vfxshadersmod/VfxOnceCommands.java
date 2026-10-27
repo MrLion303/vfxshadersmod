@@ -58,7 +58,7 @@ public final class VfxOnceCommands {
                                         .then(Commands.argument("radio", FloatArgumentType.floatArg(4.0F, 64.0F))
                                                 .executes(VfxOnceCommands::trampolinePowerAndRadius)
                                                 .then(Commands.argument("velocidad", FloatArgumentType.floatArg(0.15F, 2.0F))
-                                                        .executes(VfxOnceCommands::trampolineCustom))))));
+                                                        .executes(VfxOnceCommands::trampolineCustom)))))));
     }
 
     private static int scan(CommandContext<CommandSourceStack> context) {
