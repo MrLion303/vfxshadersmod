@@ -76,14 +76,17 @@ public final class PhotonEffectBridge {
             case "rainbow_aurora_photon" -> play(level, anchor, Preset.RAINBOW_AURORA, 0, 1.0F);
             // El tinte integral del cielo requiere el shader propio; Photon no simula una cúpula de color.
             case "rainbow_sky" -> Handle.empty();
-            case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE_SKY, 0, 20.0F);
-            case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 1.0F);
+            // El shader compartido ya dibuja el anillo; evita añadir otro con partículas.
+            case "blackhole_sky" -> Handle.empty();
+            // El vórtice procedural es el renderizador principal y no necesita capas duplicadas.
+            case "cloud_vortex" -> Handle.empty();
             case "starsspeed" -> Handle.empty();
             case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
             case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
             case "trampolin" -> play(level, anchor, Preset.TRAMPOLINE, 0xFF58DFFF, (float) (TrampolineWaveEffect.configuredRadius() / 14.0D));
-            case "sky_portal" -> play(level, anchor, Preset.PORTAL, 0, 20.0F);
+            // El portal propio ya contiene el panorama y las grietas geométricas.
+            case "sky_portal" -> Handle.empty();
             default -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
         };
     }

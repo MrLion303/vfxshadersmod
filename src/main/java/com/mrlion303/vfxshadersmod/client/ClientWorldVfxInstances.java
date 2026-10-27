@@ -73,13 +73,8 @@ public final class ClientWorldVfxInstances {
     }
 
     private static void startPhotonForPlacedInstance(WorldVfxInstance instance, Level level) {
-        if (!instance.effectId().location().getPath().equals("blackhole")) {
-            return;
-        }
-        double diameter = instance.parameters().getOrDefault("diameter", 10.0D);
-        float scale = (float) Math.max(0.1D, Math.min(10.0D, diameter / 10.0D));
-        PHOTON_PLACED.put(instance.instanceId(), PhotonEffectBridge.play(
-                level, instance.position(), PhotonEffectBridge.Preset.BLACK_HOLE, 0xFFFFA34A, scale));
+        // La superficie procedural del agujero negro ya incluye el disco de acreción.
+        // Los emisores duplicados podían crear un anillo desprendido de la silueta.
     }
 
     public static int removeByEffect(EffectId effectId) {
