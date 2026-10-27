@@ -46,7 +46,7 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
         PoseStack poseStack = event.getPoseStack();
         PoseStack.Pose pose = poseStack.last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        RenderType type = VfxRenderTypes.colorQuads();
+        RenderType type = VfxRenderTypes.additiveQuads();
         VertexConsumer out = buffers.getBuffer(type);
         float time = (float) (age + partialTick);
 
