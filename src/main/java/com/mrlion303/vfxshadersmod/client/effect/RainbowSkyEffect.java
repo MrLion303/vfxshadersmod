@@ -24,8 +24,8 @@ public final class RainbowSkyEffect implements VfxEffect, ClientVfxRenderer {
     private static final int SEGMENTS = 96;
     private static final int VERTICAL_BANDS = 48;
     private static final double RADIUS = 192.0D;
-    private static final int HOLD_TICKS = 48;
-    private static final int TRANSITION_TICKS = 24;
+    private static final int HOLD_TICKS = 24;
+    private static final int TRANSITION_TICKS = 12;
     private static final int TICKS_PER_COLOR = HOLD_TICKS + TRANSITION_TICKS;
 
     // Empieza azul como pediste y luego recorre rojo, naranja, amarillo, verde,

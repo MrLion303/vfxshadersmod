@@ -11,7 +11,6 @@ import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Circle;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Sphere;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleConfig;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleEmitter;
-import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
 import com.mrlion303.vfxshadersmod.client.effect.CloudVortexEffect;
 import com.mrlion303.vfxshadersmod.client.effect.SkyPortalEffect;
@@ -62,7 +61,7 @@ public final class PhotonEffectBridge {
      */
     public static boolean usesPhotonAsPrimaryRenderer(String effectPath) {
         return switch (effectPath) {
-            case "demo_orbit", "falling_stars", "music_horizon_bars", "rainbow_aurora" -> true;
+            case "demo_orbit", "falling_stars", "rainbow_aurora_photon" -> true;
             default -> false;
         };
     }
@@ -72,14 +71,14 @@ public final class PhotonEffectBridge {
         return switch (effectPath) {
             case "blackhole" -> Handle.empty();
             case "demo_orbit" -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
-            case "music_horizon_bars" -> play(level, anchor, Preset.HORIZON, 0xFF55DFFF, 2.4F);
-            case "rainbow_aurora" -> play(level, anchor, Preset.RAINBOW_AURORA, 0, 1.0F);
+            case "music_horizon_bars" -> Handle.empty();
+            case "rainbow_aurora" -> Handle.empty();
+            case "rainbow_aurora_photon" -> play(level, anchor, Preset.RAINBOW_AURORA, 0, 1.0F);
             // El tinte integral del cielo requiere el shader propio; Photon no simula una cúpula de color.
             case "rainbow_sky" -> Handle.empty();
             case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE_SKY, 0, 20.0F);
             case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 1.0F);
-            case "starsspeed" -> play(level, anchor, Preset.STARSSPEED,
-                    0xFF000000 | StarsspeedEffect.configuredColor(), 3.3F);
+            case "starsspeed" -> Handle.empty();
             case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
             case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
@@ -98,8 +97,8 @@ public final class PhotonEffectBridge {
 
     private static boolean followsPlayer(String effectPath) {
         return switch (effectPath) {
-            case "demo_orbit", "music_horizon_bars", "rainbow_aurora",
-                    "blackhole_sky", "cloud_vortex", "starsspeed", "falling_stars", "sky_portal" -> true;
+            case "demo_orbit", "rainbow_aurora_photon",
+                    "blackhole_sky", "cloud_vortex", "falling_stars", "sky_portal" -> true;
             default -> false;
         };
     }

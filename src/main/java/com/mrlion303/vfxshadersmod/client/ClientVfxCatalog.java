@@ -12,6 +12,7 @@ import com.mrlion303.vfxshadersmod.client.effect.SkyPortalEffect;
 import com.mrlion303.vfxshadersmod.client.effect.DemoOrbitEffect;
 import com.mrlion303.vfxshadersmod.client.effect.MusicHorizonBarsEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraEffect;
+import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraPhotonEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowSkyEffect;
 import com.mrlion303.vfxshadersmod.client.render.BlackHoleVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.ClientWorldVfxRendererRegistry;
@@ -51,6 +52,14 @@ public final class ClientVfxCatalog {
                 VfxEffectCategory.ENVIRONMENT,
                 RainbowAuroraEffect::new
         );
+        EffectRegistry.register(
+                RainbowAuroraPhotonEffect.ID,
+                "Aurora arcoíris Photon",
+                "Variante de partículas Photon con bandas orbitales, estelas largas y bloom.",
+                VfxEffectCategory.ENVIRONMENT,
+                RainbowAuroraPhotonEffect::new
+        );
+
         EffectRegistry.register(
                 RainbowSkyEffect.ID,
                 "Cielo arcoíris cambiante",

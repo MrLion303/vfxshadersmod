@@ -1,7 +1,6 @@
 package com.mrlion303.vfxshadersmod.client.effect;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
-import com.mrlion303.vfxshadersmod.client.ClientVfxManager;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.VfxGeometry;
 import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
@@ -83,12 +82,6 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
             }
         }
         buffers.endBatch(skyType);
-
-        // El cielo tintado sigue siendo específico de este efecto; las estrellas y sus estelas
-        // pasan al runtime Photon cuando esté disponible.
-        if (ClientVfxManager.isPhotonRunning(ID)) {
-            return;
-        }
 
         // Eje fijo de mundo: girar la cámara no reorienta el campo de estrellas.
         Vec3 horizonForward = new Vec3(0.0D, 0.0D, -1.0D);
