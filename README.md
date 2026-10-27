@@ -54,12 +54,12 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 - **rainbow_aurora:** bandas de partículas arcoíris con movimiento orbital, bloom y estelas largas de Photon.
 - **rainbow_sky:** pinta uniformemente el cielo y va cambiando de azul a rojo y a los demás colores del arcoíris. Cubre el cenit y tiñe las nubes sin recolorear los bloques cercanos.
 - **blackhole:** agujero negro en coordenadas del mundo, con sombra y lente gravitacional GLSL propias; Photon añade el disco de acreción luminoso, partículas y estelas orbitales.
-- **blackhole_sky:** versión gigantesca colocada en el cielo a 50° sobre el horizonte, con disco de partículas cálidas de Photon y distorsión GLSL de la escena, inspirada visualmente en Gargantúa de *Interstellar*.
+- **blackhole_sky:** versión gigantesca colocada en el cielo con el disco de partículas de Photon alineado con la acreción GLSL; los agujeros negros colocados usan un preset Photon separado con el disco casi horizontal.
 - **cloud_vortex:** vórtice volumétrico creado con emisores esféricos Photon, ruido, movimiento orbital y estelas rojizas y naranjas.
 - **starsspeed:** cielo tintado con un shader propio; Photon gestiona las partículas veloces y sus estelas. Permite seleccionar el color.
 - **ground_aurora:** ondas Photon de radio creciente acompañadas por bandas propias que se adaptan al relieve; permite personalizar el color.
 - **falling_stars:** lluvia de partículas arcoíris de Photon con estelas y colisiones que retiran las estrellas al tocar el terreno.
-- **sky_portal:** anillos y fragmentos con estelas Photon alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
+- **sky_portal:** anillos Photon que crecen durante la apertura y fragmentos orbitales con estelas alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
 - **scan:** onda Photon con radio animado por curva, complementada por un aro propio que sigue la superficie de los bloques cargados.
 
 La lente es una aproximación cinematográfica en pantalla: deforma el fondo, dibuja la sombra y el disco luminoso. No simula relatividad general ni altera bloques o colisiones. La apariencia final debe comprobarse dentro de Minecraft; una compilación correcta no garantiza la salida visual en todos los drivers.
