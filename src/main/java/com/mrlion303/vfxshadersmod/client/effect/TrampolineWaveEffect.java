@@ -4,6 +4,7 @@ import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.VfxGeometry;
 import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
+import com.mrlion303.vfxshadersmod.core.physics.VfxFieldMath;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffect;
@@ -202,12 +203,11 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
     }
 
     private static double smoothstep(double edge0, double edge1, double value) {
-        double t = clamp((value - edge0) / (edge1 - edge0), 0.0D, 1.0D);
-        return t * t * (3.0D - 2.0D * t);
+        return VfxFieldMath.smoothstep(edge0, edge1, value);
     }
 
     private static double clamp(double value, double min, double max) {
-        return Math.max(min, Math.min(max, value));
+        return VfxFieldMath.clamp(value, min, max);
     }
 
     private static int mixRgb(int a, int b, float t) {
