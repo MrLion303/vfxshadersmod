@@ -103,7 +103,7 @@ public final class VfxServerCommands {
         context.getSource().sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos de servidor/command block"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx enable <efecto> — activa el efecto en los clientes de esta dimensión"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx enable blackhole <tamaño> <x> <y> <z> — coloca un agujero negro"), false);
-        context.getSource().sendSuccess(() -> Component.literal("/vfx enable blackhole_sky — activa el agujero celeste fijo a 50 grados"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfx enable blackhole_sky — activa el agujero celeste fijo a 50 grados sobre el horizonte"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva el efecto"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx disable blackhole — elimina los agujeros negros colocados"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx disable all — limpia todos los VFX"), false);
