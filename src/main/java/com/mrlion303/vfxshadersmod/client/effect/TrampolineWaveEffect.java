@@ -46,6 +46,14 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
     private long age;
     private final Map<Long, Double> groundHeightCache = new HashMap<>();
 
+    public static Vec3 configuredOrigin() {
+        return requestedOrigin;
+    }
+
+    public static double configuredRadius() {
+        return requestedRadius;
+    }
+
     public static void configure(Vec3 position, double peakHeight, double waveRadius, double waveSpeed) {
         requestedOrigin = position;
         requestedPower = clamp(peakHeight, 1.0D, 64.0D);
