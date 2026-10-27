@@ -111,14 +111,6 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
             Vec3 p2 = surfacePoint(level, camera, b, outerB, time, layer);
             Vec3 p3 = surfacePoint(level, camera, b, innerB, time, layer);
 
-            // Recorta los segmentos que cruzan un desnivel abrupto: así la luz no se estira
-            // de un bloque al siguiente como una tela suspendida sobre las montañas.
-            double minY = Math.min(Math.min(p0.y, p1.y), Math.min(p2.y, p3.y));
-            double maxY = Math.max(Math.max(p0.y, p1.y), Math.max(p2.y, p3.y));
-            if (maxY - minY > 0.78D) {
-                continue;
-            }
-
             VfxGeometry.quad(vertices, pose,
                     p0.x, p0.y, p0.z, p1.x, p1.y, p1.z,
                     p2.x, p2.y, p2.z, p3.x, p3.y, p3.z, rgb, alpha);
