@@ -260,7 +260,11 @@ public final class PhotonEffectBridge {
 
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
-        config.physics.setEnable(false);
+        // Photon detecta la colisión con el terreno y retira la estrella al tocarlo.
+        // Su estela se desvanece después, sin una comprobación de suelo del renderer propio.
+        config.physics.setEnable(true);
+        config.physics.setHasCollision(true);
+        config.physics.setRemovedWhenCollided(true);
         fx.getMainFX().objects().add(emitter);
     }
 
