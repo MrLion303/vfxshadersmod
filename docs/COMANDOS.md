@@ -83,5 +83,17 @@ Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no b
 
 `/vfxonce scan <x> <y> <z> <color>` inicia un aro de escaneo desde las coordenadas indicadas. El aro se adapta al relieve del terreno cargado y termina solo; no hace falta ejecutar otro comando para detenerlo.
 
+`/vfxonce trampolin <x> <y> <z> [potencia] [radio] [velocidad]` crea un pulso circular de un solo uso. El frente se expande por el suelo, la malla visual se eleva en crestas concéntricas y los jugadores que estén en el suelo reciben un impulso vertical cuando la onda los alcanza. La potencia representa la altura aproximada del salto en bloques; el radio se mide en bloques y la velocidad en bloques por tick. Los valores por defecto son potencia `12`, radio `32` y velocidad `0.65`. Límites: potencia `1–64`, radio `4–64` y velocidad `0.15–2`.
+
+Ejemplos:
+
+```text
+/vfxonce trampolin 0 64 0
+/vfxonce trampolin 120 70 -300 24
+/vfxonce trampolin ~ ~ ~ 32 48 0.8
+```
+
+La superficie ondulada es una deformación visual temporal sobre el terreno cargado; no sustituye las mallas ni las colisiones de los bloques. El impulso de los jugadores sí se aplica desde el servidor, y la gravedad normal crea la trayectoria parabólica.
+
 Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amarillo`, `verde`, `morado`, `rosa` y `blanco`. También se acepta hexadecimal con el formato `#RRGGBB`.
 
