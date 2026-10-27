@@ -4,6 +4,12 @@
 
 `EffectRegistry` guarda identificadores, categorías y fábricas de efectos. `ClientVfxManager` ejecuta los efectos en el hilo gráfico del cliente. Las apariciones colocadas en el mundo viven en `WorldVfxInstance`, con dimensión, coordenadas, escala, duración y parámetros.
 
+## Composición visual y materiales
+
+Los VFX comparten materiales de renderizado en `VfxRenderTypes`. Las superficies base conservan profundidad cuando corresponde; los halos, estelas, grietas y partículas usan mezcla aditiva sin escribir profundidad. Los efectos de cielo tienen variantes que omiten la prueba de profundidad para permanecer detrás del mundo. Los efectos complejos se construyen por capas en lugar de depender de una sola superficie: base, volumen/estructura y brillo.
+
+Los materiales comunes están integrados en lluvia de estrellas, aurora del suelo, escaneo del terreno, aurora arcoíris, vórtice, portal, órbitas de demostración y estelas de Starsspeed. Los shaders especializados de agujero negro, disco de acreción, portal y nube procedural se mantienen como materiales específicos porque controlan geometría o distorsión que un material genérico no puede sustituir.
+
 ## Agujeros negros
 
 `blackhole` se ancla a coordenadas absolutas del mundo y tiene tamaño en bloques. El renderer dibuja una sombra negra, un disco de acreción cálido casi horizontal y halos. `BlackHoleLensingPass` calcula centros y radios aparentes con los vectores de orientación de la cámara, proyecta las ubicaciones y modifica la textura de la escena con un shader GLSL. El shader crea una deformación fuerte y amplia del fondo, una región central negra y una banda luminosa blanco-dorada. Esta representación es una aproximación cinematográfica; no es una simulación física relativista.
