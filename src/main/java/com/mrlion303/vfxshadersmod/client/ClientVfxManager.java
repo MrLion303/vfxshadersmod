@@ -2,6 +2,7 @@ package com.mrlion303.vfxshadersmod.client;
 
 import com.mojang.logging.LogUtils;
 import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
+import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.ClientWorldVfxRendererRegistry;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
@@ -24,6 +25,7 @@ import java.util.Set;
 public final class ClientVfxManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<EffectId, VfxEffect> ACTIVE = new LinkedHashMap<>();
+    private static final Map<EffectId, PhotonEffectBridge.Handle> PHOTON_ACTIVE = new LinkedHashMap<>();
 
     private ClientVfxManager() {
     }
@@ -58,6 +60,12 @@ public final class ClientVfxManager {
         try {
             effect.onStart(EffectContext.fromLevel(level));
             ACTIVE.put(id, effect);
+            try {
+                PHOTON_ACTIVE.put(id, PhotonEffectBridge.playForEffect(id.location().getPath(), level));
+            } catch (RuntimeException photonException) {
+                // El efecto original conserva su funcionamiento si un preset Photon no puede inicializarse.
+                LOGGER.error("No se pudo iniciar el preset Photon para {}", id, photonException);
+            }
             return Result.SUCCESS;
         } catch (RuntimeException exception) {
             LOGGER.error("No se pudo iniciar el efecto VFX {}", id, exception);
@@ -67,6 +75,7 @@ public final class ClientVfxManager {
 
     public static Result disable(EffectId id) {
         VfxEffect effect = ACTIVE.remove(id);
+        stopPhoton(id);
         Level level = Minecraft.getInstance().level;
         if (effect != null && level != null) {
             try {
@@ -98,6 +107,9 @@ public final class ClientVfxManager {
 
     /** Limpia los efectos y libera buffers auxiliares al abandonar el mundo. */
     public static void clear() {
+        for (EffectId id : new ArrayList<>(PHOTON_ACTIVE.keySet())) {
+            stopPhoton(id);
+        }
         Level level = Minecraft.getInstance().level;
         if (level != null) {
             EffectContext context = EffectContext.fromLevel(level);
@@ -126,12 +138,16 @@ public final class ClientVfxManager {
             try {
                 VfxEffect effect = entry.getValue();
                 effect.tick(context);
+                PhotonEffectBridge.updateForEffect(entry.getKey().location().getPath(),
+                        PHOTON_ACTIVE.get(entry.getKey()), level);
                 if (effect.isFinished()) {
                     effect.onStop(context);
+                    stopPhoton(entry.getKey());
                     iterator.remove();
                 }
             } catch (RuntimeException exception) {
                 LOGGER.error("El efecto VFX {} falló y será desactivado", entry.getKey(), exception);
+                stopPhoton(entry.getKey());
                 iterator.remove();
             }
         }
@@ -156,6 +172,17 @@ public final class ClientVfxManager {
         }
 
         ClientWorldVfxRendererRegistry.render(event);
+    }
+
+    private static void stopPhoton(EffectId id) {
+        PhotonEffectBridge.Handle handle = PHOTON_ACTIVE.remove(id);
+        if (handle != null) {
+            try {
+                handle.close();
+            } catch (RuntimeException exception) {
+                LOGGER.warn("No se pudo detener el runtime Photon para {}", id, exception);
+            }
+        }
     }
 
     public static boolean isActive(EffectId id) {
