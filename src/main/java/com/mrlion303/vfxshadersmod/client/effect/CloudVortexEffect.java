@@ -3,7 +3,6 @@ package com.mrlion303.vfxshadersmod.client.effect;
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
-import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffect;
@@ -11,17 +10,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
 /** Vórtice de nubes rojo-anaranjadas con textura procedural y un núcleo incandescente. */
 public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "cloud_vortex");
-    private static final double SKY_DISTANCE = 224.0D;
-    private static final double ELEVATION = Math.toRadians(28.0D);
-    private static final double HALF_SIZE = 160.0D;
     private long age;
 
     @Override
@@ -47,12 +41,6 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        ShaderInstance shader = VfxShaderLibrary.cloudVortex();
-        if (shader == null) {
-            return;
-        }
-
-        var camera = event.getCamera();
         PoseStack poseStack = event.getPoseStack();
         PoseStack.Pose pose = poseStack.last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
@@ -62,7 +50,10 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
 
         // El vórtice se construye como una malla 3D fija en el mundo:
         // múltiples brazos helicoidales, capas de nubes y una esfera central.
-        Vec3 center = new Vec3(0.0D, 74.0D, -150.0D);
+        double skyDistance = 224.0D;
+        double elevation = Math.toRadians(28.0D);
+        double halfSize = 160.0D;
+        Vec3 center = new Vec3(0.0D, skyDistance * Math.sin(elevation), -skyDistance * Math.cos(elevation));
         Vec3 axis = new Vec3(0.0D, 0.32D, -1.0D).normalize();
         Vec3 right = axis.cross(new Vec3(0.0D, 1.0D, 0.0D)).normalize();
         Vec3 up = right.cross(axis).normalize();
@@ -74,8 +65,8 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
                 double t1 = (i + 1) / (double) segments;
                 double a0 = t0 * Math.PI * 5.4D + arm * Math.PI * 2.0D / arms - time * 0.012D;
                 double a1 = t1 * Math.PI * 5.4D + arm * Math.PI * 2.0D / arms - time * 0.012D;
-                double r0 = 5.0D + t0 * 57.0D;
-                double r1 = 5.0D + t1 * 57.0D;
+                double r0 = 5.0D + t0 * (halfSize * 0.56D);
+                double r1 = 5.0D + t1 * (halfSize * 0.56D);
                 double thickness0 = (2.0D + 7.0D * Math.sin(t0 * Math.PI))
                         * (0.65D + 0.35D * Math.sin(i * 1.71D + arm * 4.0D));
                 double thickness1 = (2.0D + 7.0D * Math.sin(t1 * Math.PI))
@@ -101,7 +92,7 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
         for (int i = 0; i < 420; i++) {
             double seed = i * 12.9898D;
             double angle = seed + time * (0.006D + (i % 7) * 0.001D);
-            double radius = 18.0D + fract(Math.sin(seed * 1.73D) * 43758.5453D) * 48.0D;
+            double radius = 18.0D + fract(Math.sin(seed * 1.73D) * 43758.5453D) * (halfSize * 0.42D);
             double axial = (fract(Math.sin(seed * 0.91D) * 24634.6345D) - 0.5D) * 34.0D;
             Vec3 radial = right.scale(Math.cos(angle)).add(up.scale(Math.sin(angle)));
             Vec3 p = center.add(radial.scale(radius)).add(axis.scale(axial));
@@ -164,12 +155,5 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
                         (rgb & 255) / 255.0F, alpha).endVertex();
     }
 
-    private static void setVector(ShaderInstance shader, String name, Vec3 vector) {
-        if (shader.getUniform(name) != null) {
-            shader.getUniform(name).set(new float[]{
-                    (float) vector.x, (float) vector.y, (float) vector.z
-            });
-        }
-    }
 
 }
