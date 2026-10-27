@@ -8,6 +8,7 @@ import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Circle;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Sphere;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleConfig;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleEmitter;
+import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
 import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
@@ -67,7 +68,8 @@ public final class PhotonEffectBridge {
             case "rainbow_sky" -> play(level, anchor, Preset.RAINBOW, 0, 4.0F);
             case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE, 0, 3.0F);
             case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 3.0F);
-            case "starsspeed" -> play(level, anchor, Preset.STARSSPEED, 0xFF8ABEFF, 2.0F);
+            case "starsspeed" -> play(level, anchor, Preset.STARSSPEED,
+                    0xFF000000 | StarsspeedEffect.configuredColor(), 2.0F);
             case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
             case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
