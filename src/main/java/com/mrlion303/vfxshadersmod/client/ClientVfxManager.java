@@ -161,6 +161,15 @@ public final class ClientVfxManager {
                     continue;
                 }
 
+                // Cuando Photon ya está ejecutando el preset como renderer principal,
+                // no dibujamos también la versión antigua del efecto.
+                String effectPath = entry.getKey().location().getPath();
+                PhotonEffectBridge.Handle photonHandle = PHOTON_ACTIVE.get(entry.getKey());
+                if (PhotonEffectBridge.usesPhotonAsPrimaryRenderer(effectPath)
+                        && photonHandle != null && photonHandle.isRunning()) {
+                    continue;
+                }
+
                 try {
                     renderer.render(event, event.getPartialTick());
                 } catch (RuntimeException exception) {
