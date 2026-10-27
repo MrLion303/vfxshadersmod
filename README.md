@@ -16,6 +16,7 @@ Motor de efectos en tiempo real para Minecraft Java Edition, orientado a Forge 1
 - `/vfxmove moonjump enable|disable <jugadores>`: activa o desactiva gravedad lunar por jugador.
 - `/vfxmove waterwalk enable|disable <jugadores>` (también `caminar_agua`): permite caminar por la superficie del agua.
 - `/vfx enable cloud_vortex`: activa un vórtice de nubes rojo-anaranjadas en el cielo.
+- `/vfx enable rainbow_aurora_photon`: activa la variante independiente de la aurora hecha con partículas Photon.
 - `/vfx enable starsspeed <color>`: activa estelas estelares rápidas sobre un cielo tintado; el color es opcional (por defecto, azul).
 - `/vfx enable ground_aurora <x> <y> <z> <color>`: extiende ondas luminosas sobre el suelo desde coordenadas dadas.
 - `/vfx enable falling_stars`: activa una lluvia continua de estrellas diagonales arcoíris.
@@ -57,12 +58,13 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 - **blackhole_sky:** versión gigantesca colocada en el cielo con el disco de partículas de Photon alineado con la acreción GLSL; los agujeros negros colocados usan un preset Photon separado con el disco casi horizontal.
 - **cloud_vortex:** nube-vórtice basada en una textura recortada de la imagen guía, proyectada en una dirección fija del cielo con distorsión animada sutil; Photon añade partículas y estelas.
 - **rainbow_aurora_photon:** variante independiente de la aurora arcoíris, con bandas orbitales, bloom y estelas largas de Photon.
+- **starsspeed:** campo original de estrellas veloces y estelas curvas sobre una cúpula celeste tintada. Permite seleccionar el color y conserva el renderer previo a Photon.
 - **ground_aurora:** ondas Photon de radio creciente acompañadas por bandas propias que se adaptan al relieve; permite personalizar el color.
 - **falling_stars:** lluvia de partículas arcoíris de Photon con estelas y colisiones que retiran las estrellas al tocar el terreno.
 - **sky_portal:** anillos Photon que crecen durante la apertura y fragmentos orbitales con estelas alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
 - **scan:** onda Photon con radio animado por curva, complementada por un aro propio que sigue la superficie de los bloques cargados.
 
-La lente es una aproximación cinematográfica en pantalla: deforma el fondo, dibuja la sombra y el disco luminoso. No simula relatividad general ni altera bloques o colisiones. La apariencia final debe comprobarse dentro de Minecraft; una compilación correcta no garantiza la salida visual en todos los drivers.
+La lente de pantalla del agujero negro colocado está temporalmente desactivada porque causaba un framebuffer negro en algunas configuraciones. Su horizonte y disco de acreción siguen activos. El efecto visual no simula relatividad general ni altera bloques o colisiones; el aspecto final debe comprobarse dentro de Minecraft.
 
 ## Probar la migración
 
@@ -70,7 +72,7 @@ Consulta [la guía de instalación y pruebas de Photon](docs/PROBAR_PHOTON.md) p
 
 ## Motor Photon real
 
-El mod usa **Photon para Forge 1.20.1, versión 1.1.17**, como motor real de partículas. Los emisores, formas, curvas de escala, rotación orbital, ruido, bloom y estelas se construyen con la API de Photon, no con un renderizador que solo imita su estilo. Las órbitas, las estrellas, el ecualizador de partículas, la aurora arcoíris y el vórtice usan Photon como renderer principal. Los efectos compuestos mantienen las capas que exigen capacidades distintas: sombreado de cielo, lente de pantalla, superficies que siguen el terreno, interior del portal o física del servidor.
+El mod usa **Photon para Forge 1.20.1, versión 1.1.17**, como motor real de partículas. Los emisores, formas, curvas de escala, rotación orbital, bloom y estelas se construyen con la API de Photon. Las órbitas, la lluvia de estrellas y `rainbow_aurora_photon` usan Photon como renderizador principal. Las barras musicales, la aurora clásica y `starsspeed` conservan sus renderizadores originales; otros efectos combinan Photon con shaders o geometría especializada.
 
 Photon debe estar instalado junto con este mod. [Proyecto oficial de Photon](https://github.com/Low-Drag-MC/Photon) · [Versión Forge 1.20.1](https://modrinth.com/mod/photon-editor/version/mc1.20.1-1.1.17-forge).
 
