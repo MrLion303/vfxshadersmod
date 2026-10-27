@@ -170,6 +170,7 @@ public final class VfxServerCommands {
         float diameter = FloatArgumentType.getFloat(context, "diameter");
         Vec3 position = Vec3Argument.getVec3(context, "position");
         ServerLevel level = context.getSource().getLevel();
+        VfxForceFieldSystem.addBlackHole(level, position, diameter);
         send(level, VfxCommandPacket.PLACE_BLACKHOLE, "blackhole", diameter, position);
         active(level).add("blackhole");
         context.getSource().sendSuccess(() -> Component.literal(String.format(
@@ -195,6 +196,7 @@ public final class VfxServerCommands {
     }
 
     private static int clearBlackHoles(CommandContext<CommandSourceStack> context) {
+        VfxForceFieldSystem.clearBlackHoles(context.getSource().getLevel());
         send(context.getSource().getLevel(), VfxCommandPacket.CLEAR_BLACKHOLES, "blackhole", 0.0F, Vec3.ZERO);
         active(context.getSource().getLevel()).remove("blackhole");
         context.getSource().sendSuccess(() -> Component.literal("Se eliminaron los agujeros negros de los clientes de esta dimensión."), true);
