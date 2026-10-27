@@ -24,7 +24,9 @@ Los `RenderType` propios se reservan para las capas que requieren una superficie
 
 `blackhole` se ancla a coordenadas absolutas del mundo y tiene tamaño en bloques. El renderer dibuja una sombra negra, un disco de acreción cálido casi horizontal y halos. `BlackHoleLensingPass` calcula centros y radios aparentes con los vectores de orientación de la cámara, proyecta las ubicaciones y modifica la textura de la escena con un shader GLSL. El shader crea una deformación fuerte y amplia del fondo, una región central negra y una banda luminosa blanco-dorada. Esta representación es una aproximación cinematográfica; no es una simulación física relativista.
 
-`blackhole_sky` utiliza una dirección fija de mundo a 50° sobre el horizonte (cenit = 90°), en lugar de capturar la dirección de mirada al activarse. Su escala es mucho mayor para poder funcionar como evento de cielo desde lejos.
+`blackhole_sky` utiliza una dirección fija de mundo, en lugar de capturar la dirección de mirada al activarse. El ancla y la escala del disco de partículas Photon coinciden con el disco del renderer celeste; los agujeros negros colocados mantienen un preset independiente y casi horizontal.
+
+`sky_portal` combina su ventana galáctica especializada con anillos Photon cuyo radio crece durante el mismo intervalo de apertura. El ancla Photon usa el mismo centro celeste que el renderer del portal, para evitar que las partículas aparezcan separadas de la ventana.
 
 ## Cielo arcoíris
 
