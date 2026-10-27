@@ -15,7 +15,7 @@ in vec2 texCoord;
 out vec4 fragColor;
 
 const float VORTEX_DISTANCE = 196.0;
-const vec3 VORTEX_RADII = vec3(108.0, 78.0, 86.0);
+const vec3 VORTEX_RADII = vec3(66.0, 60.0, 56.0);
 const int RAY_STEPS = 24;
 
 float hash31(vec3 p) {
