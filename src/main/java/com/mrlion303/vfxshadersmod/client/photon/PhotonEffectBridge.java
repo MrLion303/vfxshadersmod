@@ -305,6 +305,10 @@ public final class PhotonEffectBridge {
             }
         }
 
+        public boolean isRunning() {
+            return instance != null && instance.isRunning();
+        }
+
         @Override
         public void close() {
             if (instance != null) {
@@ -342,6 +346,10 @@ public final class PhotonEffectBridge {
                 runtime.destroy(true);
                 runtime = null;
             }
+        }
+
+        private boolean isRunning() {
+            return runtime != null;
         }
 
         private static Vector3f toVector(Vec3 position) {
