@@ -82,7 +82,10 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
 
         // El cielo tintado sigue siendo específico de este efecto; las estrellas y sus estelas
         // pasan al runtime Photon cuando esté disponible.
-        if (!ClientVfxManager.isPhotonRunning(ID)) {
+        if (ClientVfxManager.isPhotonRunning(ID)) {
+            return;
+        }
+
         // Eje fijo de mundo: girar la cámara no reorienta el campo de estrellas.
         Vec3 horizonForward = new Vec3(0.0D, 0.0D, -1.0D);
         Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
@@ -133,7 +136,6 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
             }
         }
         buffers.endBatch(starType);
-        }
     }
 
     private static Vec3 orbitPoint(
