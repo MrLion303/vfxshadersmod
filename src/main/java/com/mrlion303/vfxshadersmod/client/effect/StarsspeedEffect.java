@@ -32,6 +32,10 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         requestedColor = rgb & 0xFFFFFF;
     }
 
+    public static int configuredColor() {
+        return requestedColor;
+    }
+
     @Override
     public EffectId id() {
         return ID;
