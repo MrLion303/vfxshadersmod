@@ -28,11 +28,11 @@ import java.util.Map;
  */
 public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "trampolin");
-    private static final double GRID_STEP = 1.5D;
+    private static final double GRID_STEP = 0.75D;
     private static final double WAVE_FREQUENCY = 0.88D;
     private static final double COVERAGE_SOFTNESS = GRID_STEP * 2.0D;
-    private static final int BASE_COLOR = 0x465BEA;
-    private static final int CREST_COLOR = 0xA7F8FF;
+    private static final int BASE_COLOR = 0x245CFF;
+    private static final int CREST_COLOR = 0xD9FFFF;
 
     private static volatile Vec3 requestedOrigin = Vec3.ZERO;
     private static volatile double requestedPower = 12.0D;
@@ -113,11 +113,11 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
 
         // La potencia representa altura aproximada del salto. Su equivalente visual
         // se limita para mantener el efecto pegado al terreno y evitar picos gigantes.
-        double amplitude = Math.min(2.0D, 0.35D + Math.sqrt(power) * 0.18D);
+        double amplitude = Math.min(1.8D, 0.45D + Math.sqrt(power) * 0.18D);
         Vec3 camera = event.getCamera().getPosition();
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
-        RenderType type = VfxRenderTypes.colorQuads();
+        RenderType type = VfxRenderTypes.additiveQuads();
         VertexConsumer vertices = buffers.getBuffer(type);
         int cells = (int) Math.ceil(radius / GRID_STEP);
 
@@ -148,7 +148,7 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
 
                 double coverage = (p0.coverage + p1.coverage + p2.coverage + p3.coverage) * 0.25D;
                 double crest = (p0.crest + p1.crest + p2.crest + p3.crest) * 0.25D;
-                float alpha = (float) (energy * coverage * (0.075D + crest * 0.23D));
+                float alpha = (float) (energy * coverage * (0.25D + crest * 0.48D));
                 if (alpha < 0.012F) {
                     continue;
                 }
@@ -158,10 +158,54 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
                         p1.x, p1.y, p1.z,
                         p2.x, p2.y, p2.z,
                         p3.x, p3.y, p3.z,
-                        color, Math.min(0.34F, alpha));
+                        color, Math.min(0.78F, alpha));
             }
         }
+
+        // Un borde cian intenso marca el frente de la onda para que la deformación
+        // se lea incluso sobre césped, piedra y superficies con iluminación oscura.
+        drawWaveFront(vertices, pose, level, camera, frontRadius, time, amplitude, energy);
         buffers.endBatch(type);
+    }
+
+    private void drawWaveFront(
+            VertexConsumer vertices, PoseStack.Pose pose, Level level, Vec3 camera,
+            double frontRadius, double time, double amplitude, double energy
+    ) {
+        if (energy <= 0.01D || frontRadius <= 0.05D) {
+            return;
+        }
+
+        final int segments = 160;
+        double innerRadius = Math.max(0.0D, frontRadius - 0.48D);
+        double outerRadius = Math.min(radius, frontRadius + 0.48D);
+        float alpha = (float) Math.min(0.92D, energy * 0.88D);
+        for (int i = 0; i < segments; i++) {
+            double a0 = Math.PI * 2.0D * i / segments;
+            double a1 = Math.PI * 2.0D * (i + 1) / segments;
+
+            SurfacePoint p0 = surfacePoint(level, camera,
+                    Math.cos(a0) * innerRadius, Math.sin(a0) * innerRadius,
+                    frontRadius, time, amplitude, energy);
+            SurfacePoint p1 = surfacePoint(level, camera,
+                    Math.cos(a1) * innerRadius, Math.sin(a1) * innerRadius,
+                    frontRadius, time, amplitude, energy);
+            SurfacePoint p2 = surfacePoint(level, camera,
+                    Math.cos(a1) * outerRadius, Math.sin(a1) * outerRadius,
+                    frontRadius, time, amplitude, energy);
+            SurfacePoint p3 = surfacePoint(level, camera,
+                    Math.cos(a0) * outerRadius, Math.sin(a0) * outerRadius,
+                    frontRadius, time, amplitude, energy);
+            if (p0 == null || p1 == null || p2 == null || p3 == null) {
+                continue;
+            }
+            VfxGeometry.quad(vertices, pose,
+                    p0.x, p0.y, p0.z,
+                    p1.x, p1.y, p1.z,
+                    p2.x, p2.y, p2.z,
+                    p3.x, p3.y, p3.z,
+                    CREST_COLOR, alpha);
+        }
     }
 
     private SurfacePoint surfacePoint(
@@ -184,7 +228,7 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
 
         // Los valles llegan casi hasta el suelo y las crestas sobresalen: el terreno
         // parece ondular sin sustituir los bloques ni alterar su colisión permanente.
-        double waveLift = amplitude * coverage * energy * (1.0D + Math.sin(phase));
+        double waveLift = amplitude * coverage * energy * (0.5D + 0.5D * Math.sin(phase));
         return new SurfacePoint(
                 worldX - camera.x,
                 groundY + 0.035D + waveLift - camera.y,

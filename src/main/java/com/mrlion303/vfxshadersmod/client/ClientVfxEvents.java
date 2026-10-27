@@ -1,7 +1,6 @@
 package com.mrlion303.vfxshadersmod.client;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
-import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -52,10 +51,9 @@ public final class ClientVfxEvents {
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         ClientVfxManager.render(event);
-        // Distorsiona la escena ya dibujada alrededor de los agujeros negros colocados en el mundo.
-        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
-            BlackHoleLensingPass.render(event);
-        }
+        // Se apartó temporalmente el posprocesado de lente gravitacional de pantalla:
+        // en algunas GPU dejaba el framebuffer negro. El horizonte y el disco 3D
+        // del agujero negro siguen renderizándose con normalidad.
     }
 
     @SubscribeEvent
