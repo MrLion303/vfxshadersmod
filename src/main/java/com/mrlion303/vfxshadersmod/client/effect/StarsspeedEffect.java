@@ -147,7 +147,7 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
                 Math.sin(azimuth) * horizontal);
     }
 
-    private static int skyColorAtLatitude(double latitude) {
+    private int skyColorAtLatitude(double latitude) {
         double height = Math.max(0.0D, Math.min(1.0D,
                 Math.abs(latitude) / (Math.PI * 0.5D)));
         int horizon = mixColor(0x25164A, color, 0.30F);
