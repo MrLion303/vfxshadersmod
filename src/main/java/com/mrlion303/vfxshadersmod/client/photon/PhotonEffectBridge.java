@@ -37,6 +37,7 @@ public final class PhotonEffectBridge {
         ORBIT,
         HORIZON,
         RAINBOW,
+        RAINBOW_AURORA,
         FALLING_STARS,
         STARSSPEED,
         GROUND_WAVE,
@@ -57,7 +58,7 @@ public final class PhotonEffectBridge {
      */
     public static boolean usesPhotonAsPrimaryRenderer(String effectPath) {
         return switch (effectPath) {
-            case "demo_orbit", "falling_stars", "music_horizon_bars" -> true;
+            case "demo_orbit", "falling_stars", "music_horizon_bars", "rainbow_aurora" -> true;
             default -> false;
         };
     }
@@ -68,7 +69,7 @@ public final class PhotonEffectBridge {
             case "blackhole" -> Handle.empty();
             case "demo_orbit" -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
             case "music_horizon_bars" -> play(level, anchor, Preset.HORIZON, 0xFF55DFFF, 2.4F);
-            case "rainbow_aurora" -> play(level, anchor, Preset.RAINBOW, 0, 2.8F);
+            case "rainbow_aurora" -> play(level, anchor, Preset.RAINBOW_AURORA, 0, 1.0F);
             case "rainbow_sky" -> play(level, anchor, Preset.RAINBOW, 0, 4.0F);
             case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE, 0, 3.0F);
             case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 3.0F);
@@ -137,6 +138,12 @@ public final class PhotonEffectBridge {
                 for (int i = 0; i < colors.length; i++) {
                     addRing(fx, "Photon Rainbow " + i, (8.0F + i * 1.45F) * safeScale, i * 0.9F,
                             1.5F, 72, 0.055F, 0.10F, colors[i]);
+                }
+            }
+            case RAINBOW_AURORA -> {
+                int[] colors = {0xFFFF4545, 0xFFFFA43A, 0xFFFFFF4A, 0xFF56FF76, 0xFF48E6FF, 0xFF6575FF, 0xFFE86BFF};
+                for (int i = 0; i < colors.length; i++) {
+                    addAuroraTrailRing(fx, i, colors[i]);
                 }
             }
             case FALLING_STARS -> {
@@ -230,6 +237,54 @@ public final class PhotonEffectBridge {
             case 2 -> new NumberFunction3(0.14F, 0.0F, 0.0F);
             default -> new NumberFunction3(0.0F, 0.14F, 0.0F);
         });
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /**
+     * Una banda de la aurora es un emisor circular nativo de Photon con partículas
+     * orbitando y estelas largas. Las bandas se apilan en altura y usan una paleta espectral.
+     */
+    private static void addAuroraTrailRing(FX fx, int layer, int color) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName("Photon Aurora Trail Band " + (layer + 1));
+        emitter.setDelay(layer * 4);
+        ParticleConfig config = emitter.config;
+        config.setDuration(100);
+        config.setLooping(true);
+        config.setStartLifetime(NumberFunction.constant(70));
+        config.setStartSpeed(NumberFunction.constant(0.0F));
+        config.setStartSize(new NumberFunction3(0.055F, 0.055F, 0.055F));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(180);
+        config.emission.setEmissionRate(NumberFunction.constant(2.0F));
+
+        Circle circle = new Circle();
+        circle.setRadius(1.0F);
+        circle.setRadiusThickness(0.025F);
+        config.shape.setShape(circle);
+        config.shape.setPosition(new NumberFunction3(0.0F, 9.0F + layer * 3.2F, 0.0F));
+        float radius = 74.0F + layer * 1.65F;
+        config.shape.setScale(new NumberFunction3(radius, 1.0F, radius));
+
+        config.velocityOverLifetime.setEnable(true);
+        config.velocityOverLifetime.setOrbitalMode(
+                com.lowdragmc.photon.client.gameobject.emitter.data.VelocityOverLifetimeSetting.OrbitalMode.AngularVelocity);
+        config.velocityOverLifetime.setOrbital(
+                new NumberFunction3(0.0F, 0.72F + layer * 0.035F, 0.0F));
+
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.95F);
+        config.trails.setLifetime(NumberFunction.constant(0.42F));
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(44);
+        config.trails.config.setMinVertexDistance(0.04F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(0.075F));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
+
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
