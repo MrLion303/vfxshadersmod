@@ -24,7 +24,7 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "blackhole_sky");
     public static final double SKY_DISTANCE = 512.0D;
     public static final double SKY_DIAMETER = 2340.0D;
-    public static final double SKY_ELEVATION_DEGREES = 14.0D;
+    public static final double SKY_ELEVATION_DEGREES = 50.0D;
     // El diámetro lógico se triplicó respecto al valor anterior (780), sin crear un plano gigante.
     public static final double SKY_HALF_WIDTH = SKY_DIAMETER * 0.90D / 10.5D;
 
