@@ -84,7 +84,8 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
         Vec3 orbitRight = new Vec3(1.0D, 0.0D, 0.0D);
 
-        VertexConsumer stars = buffers.getBuffer(skyType);
+        RenderType starType = VfxRenderTypes.skyAdditiveQuads();
+        VertexConsumer stars = buffers.getBuffer(starType);
         int haloColor = brighten(color, 0.82F);
         for (int i = 0; i < STAR_COUNT; i++) {
             double seed = fract(Math.sin((i + 1) * 127.1D) * 43758.5453D);
@@ -127,7 +128,7 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
                         0xFFFFFF, 0.92F);
             }
         }
-        buffers.endBatch(skyType);
+        buffers.endBatch(starType);
     }
 
     private static Vec3 orbitPoint(
