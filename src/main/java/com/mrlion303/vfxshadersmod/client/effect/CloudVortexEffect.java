@@ -18,6 +18,16 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 /** Vórtice de nubes rojo-anaranjadas con textura procedural y un núcleo incandescente. */
 public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "cloud_vortex");
+    private static final double SKY_DISTANCE = 224.0D;
+    private static final double SKY_ELEVATION = Math.toRadians(28.0D);
+
+    /** Centro exacto del fenómeno, compartido con el emisor Photon. */
+    public static Vec3 centerOffset() {
+        return new Vec3(0.0D,
+                SKY_DISTANCE * Math.sin(SKY_ELEVATION),
+                -SKY_DISTANCE * Math.cos(SKY_ELEVATION));
+    }
+
     private long age;
 
     @Override
@@ -52,10 +62,8 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
 
         // El vórtice se construye como una malla 3D fija en el mundo:
         // múltiples brazos helicoidales, capas de nubes y una esfera central.
-        double skyDistance = 224.0D;
-        double elevation = Math.toRadians(28.0D);
         double halfSize = 160.0D;
-        Vec3 center = new Vec3(0.0D, skyDistance * Math.sin(elevation), -skyDistance * Math.cos(elevation));
+        Vec3 center = centerOffset();
         Vec3 axis = new Vec3(0.0D, 0.32D, -1.0D).normalize();
         Vec3 right = axis.cross(new Vec3(0.0D, 1.0D, 0.0D)).normalize();
         Vec3 up = right.cross(axis).normalize();
