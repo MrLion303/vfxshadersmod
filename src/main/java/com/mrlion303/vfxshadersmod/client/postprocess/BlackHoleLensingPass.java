@@ -11,7 +11,9 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mrlion303.vfxshadersmod.client.ClientWorldVfxInstances;
+import com.mrlion303.vfxshadersmod.client.ClientVfxManager;
 import com.mrlion303.vfxshadersmod.client.effect.BlackHoleEffect;
+import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
 import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.WorldVfxInstance;
 import net.minecraft.client.Camera;
@@ -59,9 +61,10 @@ public final class BlackHoleLensingPass {
                         instance.position().distanceToSqr(event.getCamera().getPosition())))
                 .limit(MAX_HOLES)
                 .toList();
-        // El pase de pantalla se reserva para agujeros colocados en el mundo.
-        // El agujero del cielo aplica su lente dentro del propio shader para no teñir la pantalla. 
-        if (holes.isEmpty()) {
+        // Además de los agujeros físicos, el agujero celeste también curva el cielo y el
+        // terreno que aparecen detrás, como una lente gravitacional real de pantalla.
+        boolean skyHoleActive = ClientVfxManager.isActive(BlackHoleSkyEffect.ID);
+        if (holes.isEmpty() && !skyHoleActive) {
             releaseTarget();
             return;
         }
@@ -119,6 +122,26 @@ public final class BlackHoleLensingPass {
                 float strength = (float) Math.min(1.45D,
                         1.22D + 0.23D * Math.max(0.0D, 1.0D - distance / 192.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
+            }
+
+            if (skyHoleActive && screenHoles.size() < MAX_HOLES) {
+                Vec3 skyCenter = cameraPosition.add(BlackHoleSkyEffect.centerOffset());
+                float[] center = project(skyCenter, camera, event);
+                double skyHalfWidth = BlackHoleSkyEffect.SKY_DIAMETER * 0.90D;
+                double horizonRadius = skyHalfWidth * 0.145D;
+                Vec3 skyEdge = skyCenter.add(
+                        cameraLeft.x * horizonRadius,
+                        cameraLeft.y * horizonRadius,
+                        cameraLeft.z * horizonRadius
+                );
+                float[] edge = project(skyEdge, camera, event);
+                if (center != null && edge != null) {
+                    float dx = (edge[0] - center[0]) * aspect;
+                    float dy = edge[1] - center[1];
+                    float radius = Math.min(0.46F,
+                            Math.max(0.0015F, (float) Math.sqrt(dx * dx + dy * dy)));
+                    screenHoles.add(new float[]{center[0], center[1], radius, 1.36F});
+                }
             }
 
             if (screenHoles.isEmpty()) {
