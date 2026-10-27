@@ -60,7 +60,7 @@ public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
         double time = age + partialTick;
 
         PoseStack.Pose pose = event.getPoseStack().last();
-        RenderType renderType = VfxRenderTypes.colorQuads();
+        RenderType renderType = VfxRenderTypes.additiveQuads();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         VertexConsumer vertices = buffers.getBuffer(renderType);
 
