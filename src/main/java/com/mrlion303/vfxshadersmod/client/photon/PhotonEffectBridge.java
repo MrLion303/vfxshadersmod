@@ -125,7 +125,6 @@ public final class PhotonEffectBridge {
 
         FX fx = new FX();
         float safeScale = Math.max(0.1F, Math.min(20.0F, scale));
-        int warm = color == 0 ? 0xFFFF7A24 : color;
         switch (preset) {
             case ORBIT -> {
                 addRing(fx, "Photon Orbit Outer", 1.8F * safeScale, 1.0F, 1.2F, 70, 0.06F, 0.13F, 0xFFB16BFF, 0);
@@ -287,6 +286,15 @@ public final class PhotonEffectBridge {
 
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.58F);
+        config.trails.setLifetime(NumberFunction.constant(0.34F));
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(16);
+        config.trails.config.setMinVertexDistance(0.055F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(Math.max(0.025F, size * 0.55F)));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
     }
@@ -469,32 +477,6 @@ public final class PhotonEffectBridge {
         config.trails.config.setWidthOverTrail(NumberFunction.constant(0.075F));
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
-        config.renderer.setBloomEffect(true);
-        config.renderer.setBloomColor(color);
-        config.physics.setEnable(false);
-        fx.getMainFX().objects().add(emitter);
-    }
-
-    private static void addSphere(FX fx, String name, float radius, float y, float rate,
-                                  int lifetime, float speed, float size, int color) {
-        ParticleEmitter emitter = new ParticleEmitter();
-        emitter.setName(name);
-        ParticleConfig config = emitter.config;
-        config.setDuration(120);
-        config.setLooping(true);
-        config.setStartLifetime(NumberFunction.constant(lifetime));
-        config.setStartSpeed(NumberFunction.constant(speed));
-        config.setStartSize(new NumberFunction3(size, size, size));
-        config.setStartColor(NumberFunction.color(color));
-        config.setMaxParticles(1600);
-        config.emission.setEmissionRate(NumberFunction.constant(rate));
-
-        Sphere sphere = new Sphere();
-        sphere.setRadius(1.0F);
-        sphere.setRadiusThickness(1.0F);
-        config.shape.setShape(sphere);
-        config.shape.setPosition(new NumberFunction3(0.0F, y, 0.0F));
-        config.shape.setScale(new NumberFunction3(radius, radius, radius));
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
