@@ -9,6 +9,7 @@ uniform vec3 VortexUp;
 uniform float TanHalfFov;
 uniform float ScreenAspect;
 uniform float VortexTime;
+uniform sampler2D VortexReference;
 
 in vec2 texCoord;
 out vec4 fragColor;
@@ -110,9 +111,9 @@ void main() {
     float closestT = max(dot(center, rayDirection), 0.0);
     vec3 nearest = rayDirection * closestT - center;
     float closestRadius = length(toVortexLocal(nearest));
-    float halo = exp(-max(closestRadius - 0.78, 0.0) * 4.2)
-               * (1.0 - smoothstep(1.05, 1.85, closestRadius));
-    float haloAlpha = halo * 0.075;
+    float halo = exp(-max(closestRadius - 0.72, 0.0) * 1.9)
+               * (1.0 - smoothstep(1.15, 2.75, closestRadius));
+    float haloAlpha = halo * 0.20;
 
     vec3 accumulated = vec3(0.090, 0.0025, 0.009) * haloAlpha;
     float accumulatedAlpha = haloAlpha;
@@ -131,6 +132,15 @@ void main() {
                 float t = tEnter + (float(i) + 0.25 + jitter * 0.5) * stepLength;
                 vec3 relativePosition = rayDirection * t - center;
                 vec3 local = toVortexLocal(relativePosition);
+                float referenceWarp = vfxNoise3(local * vec3(4.8, 5.6, 8.4)
+                        + vec3(VortexTime * 0.002, -VortexTime * 0.0015, VortexTime * 0.0025)) - 0.5;
+                vec2 referenceUv = local.xy * 0.5 + 0.5;
+                referenceUv += vec2(referenceWarp * 0.055 + local.z * 0.015,
+                        -referenceWarp * 0.035 + local.z * 0.010);
+                vec4 reference = texture(VortexReference,
+                        clamp(referenceUv, vec2(0.003), vec2(0.997)));
+                float referenceDensity = smoothstep(0.035, 0.38, reference.a);
+                float referenceDepth = 1.0 - smoothstep(0.60, 0.96, abs(local.z));
 
                 float broad;
                 float billows;
@@ -140,6 +150,8 @@ void main() {
                 // An emissive core remains visible through gaps in the outer cloud banks.
                 float core = exp(-radius * 6.7)
                            * (1.0 - smoothstep(0.30, 0.82, abs(local.z)));
+                density = max(density * 0.42,
+                        referenceDensity * referenceDepth * 0.95);
                 density = max(density, core * 1.15);
 
                 if (density > 0.012) {
@@ -166,6 +178,8 @@ void main() {
                     cloudColor += vec3(0.42, 0.16, 0.035) * core;
                     cloudColor = mix(cloudColor, vec3(1.0, 0.35, 0.075),
                                      smoothstep(0.18, 0.55, core) * 0.52);
+                    float referenceColorWeight = smoothstep(0.12, 0.46, reference.a) * 0.82;
+                    cloudColor = mix(cloudColor, reference.rgb * 1.28, referenceColorWeight);
 
                     float contribution = transmittance * sampleAlpha;
                     accumulated += cloudColor * contribution;
