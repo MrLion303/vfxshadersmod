@@ -18,6 +18,7 @@ import com.mrlion303.vfxshadersmod.client.effect.SkyPortalEffect;
 import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
+import com.mrlion303.vfxshadersmod.client.render.BlackHoleVfxRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -78,7 +79,7 @@ public final class PhotonEffectBridge {
             case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE_SKY, 0, 20.0F);
             case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 1.0F);
             case "starsspeed" -> play(level, anchor, Preset.STARSSPEED,
-                    0xFF000000 | StarsspeedEffect.configuredColor(), 2.0F);
+                    0xFF000000 | StarsspeedEffect.configuredColor(), 3.3F);
             case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
             case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
@@ -158,9 +159,11 @@ public final class PhotonEffectBridge {
             }
             case TRAMPOLINE -> {
                 float radius = 14.0F * safeScale;
-                addExpandingRing(fx, "Photon Trampoline Wave Core", 0.2F, radius, 55, 6, 44.0F, 0.055F, color, 0, false);
-                addExpandingRing(fx, "Photon Trampoline Wave Halo", 0.2F, radius, 55, 6, 28.0F, 0.095F, tint(color, 0.55F), 2, false);
-                addExpandingRing(fx, "Photon Trampoline Wave Sparks", 0.2F, radius, 55, 6, 18.0F, 0.035F, 0xFFE9FFFF, 4, false);
+                int duration = Math.max(2, Math.min(450,
+                        (int) Math.ceil(radius / TrampolineWaveEffect.configuredSpeed())));
+                addExpandingRing(fx, "Photon Trampoline Wave Core", 0.2F, radius, duration, 6, 44.0F, 0.055F, color, 0, false);
+                addExpandingRing(fx, "Photon Trampoline Wave Halo", 0.2F, radius, duration, 6, 28.0F, 0.095F, tint(color, 0.55F), 2, false);
+                addExpandingRing(fx, "Photon Trampoline Wave Sparks", 0.2F, radius, duration, 6, 18.0F, 0.035F, 0xFFE9FFFF, 4, false);
             }
             case TERRAIN_SCAN -> {
                 float radius = 62.5F * safeScale;
@@ -193,15 +196,32 @@ public final class PhotonEffectBridge {
             }
             case BLACK_HOLE_SKY -> {
                 // En el cielo, el disco se orienta hacia el observador y coincide con la escala del shader.
-                addRing(fx, "Photon Sky Accretion Outer", 4.55F * safeScale, 0.0F, 6.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 1);
-                addRing(fx, "Photon Sky Accretion Mid", 3.70F * safeScale, 0.0F, 4.5F, 88, 0.06F, 0.13F, 0xFFFFB95F, 1);
-                addRing(fx, "Photon Sky Accretion Inner", 2.60F * safeScale, 0.0F, 3.0F, 80, 0.04F, 0.11F, 0xFFFFF1CE, 1);
+                addRing(fx, "Photon Sky Accretion Outer", 4.55F * safeScale, 0.0F, 6.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
+                addRing(fx, "Photon Sky Accretion Mid", 3.70F * safeScale, 0.0F, 4.5F, 88, 0.06F, 0.13F, 0xFFFFB95F, 0);
+                addRing(fx, "Photon Sky Accretion Inner", 2.60F * safeScale, 0.0F, 3.0F, 80, 0.04F, 0.11F, 0xFFFFF1CE, 0);
             }
         }
 
-        PhotonInstance instance = new PhotonInstance(fx, level, position);
+        PhotonInstance instance = new PhotonInstance(fx, level, position, orientationFor(preset));
         instance.start();
         return new Handle(instance);
+    }
+
+    /**
+     * Los emisores se crean en el plano XZ (normal Y); rota cada efecto compuesto
+     * para que el disco Photon coincida con el plano de su geometría principal.
+     */
+    private static Quaternionf orientationFor(Preset preset) {
+        Vec3 normal = switch (preset) {
+            case VORTEX -> CloudVortexEffect.centerOffset().normalize();
+            case PORTAL -> SkyPortalEffect.portalNormal();
+            case BLACK_HOLE -> BlackHoleVfxRenderer.diskNormal();
+            case BLACK_HOLE_SKY -> BlackHoleSkyEffect.diskNormal();
+            default -> new Vec3(0.0D, 1.0D, 0.0D);
+        };
+        Vector3f up = new Vector3f(0.0F, 1.0F, 0.0F);
+        Vector3f target = new Vector3f((float) normal.x, (float) normal.y, (float) normal.z).normalize();
+        return new Quaternionf().rotationTo(up, target);
     }
 
     private static void addRing(FX fx, String name, float radius, float y, float rate,
@@ -591,17 +611,19 @@ public final class PhotonEffectBridge {
 
     private static final class PhotonInstance extends FXEffect {
         private Vec3 position;
+        private final Quaternionf rotation;
 
-        private PhotonInstance(FX fx, Level level, Vec3 position) {
+        private PhotonInstance(FX fx, Level level, Vec3 position, Quaternionf rotation) {
             super(fx, level);
             this.position = position;
+            this.rotation = new Quaternionf(rotation);
         }
 
         @Override
         public void start() {
             runtime = fx.createRuntime();
             runtime.getRoot().updatePos(toVector(position));
-            runtime.getRoot().updateRotation(new Quaternionf());
+            runtime.getRoot().updateRotation(new Quaternionf(rotation));
             runtime.getRoot().updateScale(new Vector3f(1.0F, 1.0F, 1.0F));
             runtime.emmit(this);
         }
