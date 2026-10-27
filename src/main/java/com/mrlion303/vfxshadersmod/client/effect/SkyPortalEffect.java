@@ -24,6 +24,14 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
     private static final double SKY_DISTANCE = 150.0D;
     private static final double ELEVATION = Math.toRadians(78.0D);
     private static final double MAX_RADIUS = 124.0D;
+
+    /** Centro del portal en el mismo sistema de coordenadas relativo a la cámara. */
+    public static Vec3 centerOffset() {
+        return new Vec3(0.0D,
+                SKY_DISTANCE * Math.sin(ELEVATION),
+                -SKY_DISTANCE * Math.cos(ELEVATION));
+    }
+
     private long age;
 
     @Override
@@ -65,7 +73,7 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         shader.setSampler("PortalSampler", (java.util.function.IntSupplier) portalTexture::getId);
 
         Vec3 direction = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
-        Vec3 center = direction.scale(SKY_DISTANCE);
+        Vec3 center = centerOffset();
         Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
         Vec3 right = direction.cross(worldUp).normalize();
         Vec3 portalUp = right.cross(direction).normalize();
