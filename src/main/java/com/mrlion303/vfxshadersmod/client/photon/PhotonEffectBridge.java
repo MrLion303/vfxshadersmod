@@ -160,21 +160,21 @@ public final class PhotonEffectBridge {
             case STARSSPEED -> addStarsspeedEmitter(fx, safeScale, color);
             case GROUND_WAVE -> {
                 float radius = 20.0F * safeScale;
-                addExpandingRing(fx, "Photon Ground Wave Bright", 0.2F, radius, 120, 120, 34.0F, 0.055F, color, 0, true);
-                addExpandingRing(fx, "Photon Ground Wave Halo", 0.2F, radius, 120, 120, 24.0F, 0.085F, tint(color, 0.55F), 38, true);
-                addExpandingRing(fx, "Photon Ground Wave Sparks", 0.2F, radius, 120, 120, 22.0F, 0.035F, 0xFFE9FFFF, 76, true);
+                addExpandingRing(fx, "Photon Ground Wave Bright", 0.2F, radius, 120, 8, 34.0F, 0.055F, color, 0, true);
+                addExpandingRing(fx, "Photon Ground Wave Halo", 0.2F, radius, 120, 8, 24.0F, 0.085F, tint(color, 0.55F), 38, true);
+                addExpandingRing(fx, "Photon Ground Wave Sparks", 0.2F, radius, 120, 8, 22.0F, 0.035F, 0xFFE9FFFF, 76, true);
             }
             case TRAMPOLINE -> {
                 float radius = 14.0F * safeScale;
-                addExpandingRing(fx, "Photon Trampoline Wave Core", 0.2F, radius, 55, 55, 44.0F, 0.055F, color, 0, false);
-                addExpandingRing(fx, "Photon Trampoline Wave Halo", 0.2F, radius, 55, 55, 28.0F, 0.095F, tint(color, 0.55F), 2, false);
-                addExpandingRing(fx, "Photon Trampoline Wave Sparks", 0.2F, radius, 55, 55, 18.0F, 0.035F, 0xFFE9FFFF, 4, false);
+                addExpandingRing(fx, "Photon Trampoline Wave Core", 0.2F, radius, 55, 6, 44.0F, 0.055F, color, 0, false);
+                addExpandingRing(fx, "Photon Trampoline Wave Halo", 0.2F, radius, 55, 6, 28.0F, 0.095F, tint(color, 0.55F), 2, false);
+                addExpandingRing(fx, "Photon Trampoline Wave Sparks", 0.2F, radius, 55, 6, 18.0F, 0.035F, 0xFFE9FFFF, 4, false);
             }
             case TERRAIN_SCAN -> {
                 float radius = 62.5F * safeScale;
-                addExpandingRing(fx, "Photon Terrain Scan Outer", 0.2F, radius, 70, 70, 56.0F, 0.045F, color, 0, false);
-                addExpandingRing(fx, "Photon Terrain Scan Glow", 0.2F, radius, 70, 70, 38.0F, 0.075F, tint(color, 0.65F), 1, false);
-                addExpandingRing(fx, "Photon Terrain Scan Core", 0.2F, radius, 70, 70, 24.0F, 0.035F, 0xFFFFFFFF, 2, false);
+                addExpandingRing(fx, "Photon Terrain Scan Outer", 0.2F, radius, 70, 6, 56.0F, 0.045F, color, 0, false);
+                addExpandingRing(fx, "Photon Terrain Scan Glow", 0.2F, radius, 70, 6, 38.0F, 0.075F, tint(color, 0.65F), 1, false);
+                addExpandingRing(fx, "Photon Terrain Scan Core", 0.2F, radius, 70, 6, 24.0F, 0.035F, 0xFFFFFFFF, 2, false);
             }
             case VORTEX -> {
                 addVortexLayer(fx, "Photon Vortex Outer Cloud", 132.0F, 25.0F, -4.0F,
@@ -448,7 +448,8 @@ public final class PhotonEffectBridge {
 
         Circle circle = new Circle();
         circle.setRadius(1.0F);
-        circle.setRadiusThickness(0.84F);
+        // Solo una banda estrecha de partículas rodea el frente; evita llenar el disco interior.
+        circle.setRadiusThickness(0.985F);
         config.shape.setShape(circle);
         config.shape.setPosition(new NumberFunction3(0.0F, 0.14F, 0.0F));
 
