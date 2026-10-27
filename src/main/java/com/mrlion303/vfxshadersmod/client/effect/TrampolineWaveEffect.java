@@ -54,6 +54,10 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
         return requestedRadius;
     }
 
+    public static double configuredSpeed() {
+        return requestedSpeed;
+    }
+
     public static void configure(Vec3 position, double peakHeight, double waveRadius, double waveSpeed) {
         requestedOrigin = position;
         requestedPower = clamp(peakHeight, 1.0D, 64.0D);
