@@ -15,7 +15,7 @@ out vec4 fragColor;
 
 const float VORTEX_DISTANCE = 196.0;
 const vec3 VORTEX_RADII = vec3(90.0, 74.0, 78.0);
-const int RAY_STEPS = 32;
+const int RAY_STEPS = 72;
 
 float hash31(vec3 p) {
     p = fract(p * 0.1031);
@@ -53,8 +53,8 @@ float cloudDensity(vec3 local, out float broad, out float billows, out float rad
     float angle = atan(local.y, local.x);
 
     // Domain warp gives the cloud banks a spiral flow instead of circular rings.
-    float turn = (1.0 - clamp(radius, 0.0, 1.0)) * 4.25
-               + local.z * 0.48 - VortexTime * 0.012;
+    float turn = (1.0 - clamp(radius, 0.0, 1.0)) * 5.1
+               + local.z * 0.82 - VortexTime * 0.012;
     float cs = cos(turn);
     float sn = sin(turn);
     vec2 rotated = mat2(cs, -sn, sn, cs) * local.xy;
@@ -66,14 +66,14 @@ float cloudDensity(vec3 local, out float broad, out float billows, out float rad
     billows = vfxNoise3(warpedDetail);
     float fine = vfxNoise3(warpedDetail * 1.95 + vec3(-3.7, 8.1, VortexTime * 0.012));
 
-    float spiralBand = sin(angle * 2.65 - radius * 10.6 + local.z * 2.35 - VortexTime * 0.028);
+    float spiralBand = sin(angle * 2.35 - radius * 9.2 + local.z * 3.4 - VortexTime * 0.028);
     float armNoise = spiralBand + (billows - 0.5) * 1.0 + (fine - 0.5) * 0.48;
-    float arms = mix(0.32, 1.0, smoothstep(-0.96, 0.45, armNoise));
+    float arms = mix(0.18, 1.0, smoothstep(-0.96, 0.45, armNoise));
 
     float cloudField = broad + (billows - 0.5) * 0.62 - (fine - 0.5) * 0.30;
-    float wisps = smoothstep(0.265, 0.61, cloudField);
-    float edgeRadius = 0.82 + (broad - 0.5) * 0.24
-            + (billows - 0.5) * 0.30 + (fine - 0.5) * 0.14;
+    float wisps = smoothstep(0.30, 0.64, cloudField);
+    float edgeRadius = 0.84 + (broad - 0.5) * 0.30
+            + (billows - 0.5) * 0.34 + (fine - 0.5) * 0.18;
     float perimeter = 1.0 - smoothstep(edgeRadius - 0.12, edgeRadius + 0.16, radius);
     float depthFade = 1.0 - smoothstep(0.70 + (billows - 0.5) * 0.10,
                                         1.02, abs(local.z));
@@ -141,22 +141,23 @@ void main() {
                 density = max(density, core * 1.15);
 
                 if (density > 0.012) {
-                    float opticalDepth = density * stepLength * 0.028;
+                    float opticalDepth = density * stepLength * 0.034;
                     float sampleAlpha = 1.0 - exp(-opticalDepth);
                     float lighting = clamp(
-                        0.38 + broad * 1.14 + billows * 0.28
-                        + (1.0 - radius) * 0.24 + local.y * 0.10,
-                        0.10, 1.62
+                        0.22 + broad * 0.88 + billows * 0.46
+                        + (1.0 - radius) * 0.38 + local.y * 0.16
+                        + (fine - 0.5) * 0.22,
+                        0.06, 1.72
                     );
 
                     vec3 cloudColor = mix(
-                        vec3(0.075, 0.0025, 0.009),
-                        vec3(0.43, 0.012, 0.022),
+                        vec3(0.018, 0.001, 0.003),
+                        vec3(0.34, 0.008, 0.012),
                         smoothstep(0.30, 0.60, broad)
                     );
-                    cloudColor = mix(cloudColor, vec3(0.92, 0.075, 0.018),
+                    cloudColor = mix(cloudColor, vec3(0.82, 0.038, 0.008),
                                      smoothstep(0.43, 0.68, broad) * 0.82);
-                    cloudColor = mix(cloudColor, vec3(1.0, 0.28, 0.055),
+                    cloudColor = mix(cloudColor, vec3(1.0, 0.19, 0.028),
                                      smoothstep(0.54, 0.78, billows) * 0.56);
                     cloudColor *= lighting;
                     cloudColor = mix(cloudColor, vec3(1.0, 0.96, 0.82),
