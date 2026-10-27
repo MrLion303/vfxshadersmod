@@ -143,6 +143,16 @@ tasks.register('generateVfxReferenceTextures') {
         }
         javax.imageio.ImageIO.write(diskTexture, 'png',
                 new File(outputDir, 'blackhole_disk_reference.png'))
+
+        // El portal también necesita su panorama empaquetado dentro del JAR, no solo en la raíz del repo.
+        def panorama = file('panorama_overlay.png')
+        if (panorama.exists()) {
+            java.nio.file.Files.copy(
+                    panorama.toPath(),
+                    new File(outputDir, 'panorama_overlay.png').toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            )
+        }
     }
 }
 
