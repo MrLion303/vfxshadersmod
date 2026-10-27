@@ -26,27 +26,19 @@ vec2 bendAroundHole(vec2 uv, vec4 hole, float aspect) {
     if (d < 0.00001) return uv;
 
     float strength = clamp(hole.w, 0.0, 1.45);
-    float reach = horizonRadius * 5.2;
+    float reach = horizonRadius * 3.6;
     float fade = 1.0 - smoothstep(horizonRadius * 1.05, reach, d);
 
     // Deflection grows toward the hole and folds at the approximate Einstein radius.
     float einsteinRadius = horizonRadius * 1.55;
     float deflection = (einsteinRadius * einsteinRadius)
             / max(d, horizonRadius * 0.24);
-    deflection = min(deflection, horizonRadius * 2.8);
+    deflection = min(deflection, horizonRadius * 1.9);
     float mappedDistance = d - deflection * strength * fade;
 
     vec2 direction = metric / d;
     vec2 mappedMetric = direction * mappedDistance;
     return hole.xy + vec2(mappedMetric.x / aspect, mappedMetric.y);
-}
-
-float eventHorizonMask(vec2 screenUv, vec4 hole, float aspect) {
-    if (hole.z <= 0.0) return 0.0;
-    vec2 delta = screenUv - hole.xy;
-    float d = length(vec2(delta.x * aspect, delta.y));
-    float radius = clamp(hole.z, 0.001, 0.46);
-    return 1.0 - smoothstep(radius * 0.87, radius * 1.08, d);
 }
 
 void main() {
@@ -63,17 +55,6 @@ void main() {
 
     vec3 scene = texture(DiffuseSampler, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
 
-    // The procedural surface already generates the accretion disk and photon ring.
-    // This final pass only lenses the actual rendered scene and keeps the horizon dark.
-    float horizon = max(
-        max(eventHorizonMask(texCoord, Hole0, aspect), eventHorizonMask(texCoord, Hole1, aspect)),
-        max(eventHorizonMask(texCoord, Hole2, aspect), eventHorizonMask(texCoord, Hole3, aspect))
-    );
-    horizon = max(horizon, max(
-        max(eventHorizonMask(texCoord, Hole4, aspect), eventHorizonMask(texCoord, Hole5, aspect)),
-        max(eventHorizonMask(texCoord, Hole6, aspect), eventHorizonMask(texCoord, Hole7, aspect))
-    ));
-
-    scene = mix(scene, vec3(0.0002, 0.0003, 0.0007), horizon);
+    // La sombra visible viene de la esfera 3D; este pase solo deforma la escena.
     fragColor = vec4(scene, 1.0);
 }
