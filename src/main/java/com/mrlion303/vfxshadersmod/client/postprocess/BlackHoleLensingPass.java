@@ -94,13 +94,14 @@ public final class BlackHoleLensingPass {
                 double diameter = hole.parameters().getOrDefault(
                         "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
                 double configuredRadius = Math.max(0.5D, diameter * 0.5D);
-                double horizonRadius = configuredRadius;
+                double horizonRadius = configuredRadius * 0.35D;
                 double distance = hole.position().distanceTo(cameraPosition);
 
                 // Si la cámara cruza el horizonte físico, la sombra debe ocupar la vista.
                 // Fuera de él la proyección es perspectiva y crece al acercarse.
                 if (distance <= horizonRadius) {
-                    screenHoles.add(new float[]{0.5F, 0.5F, 0.48F, 1.45F});
+                    // La esfera negra 3D ya representa el horizonte; no añadimos una
+                    // máscara de casi media pantalla al acercarnos al objeto.
                     continue;
                 }
 
@@ -117,10 +118,10 @@ public final class BlackHoleLensingPass {
 
                 float dx = (edge[0] - center[0]) * aspect;
                 float dy = edge[1] - center[1];
-                float projectedRadius = Math.min(0.46F,
+                float projectedRadius = Math.min(0.22F,
                         Math.max(0.0015F, (float) Math.sqrt(dx * dx + dy * dy)));
-                float strength = (float) Math.min(1.45D,
-                        1.22D + 0.23D * Math.max(0.0D, 1.0D - distance / 192.0D));
+                float strength = (float) Math.min(1.05D,
+                        0.78D + 0.22D * Math.max(0.0D, 1.0D - distance / 192.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
             }
 
@@ -138,9 +139,9 @@ public final class BlackHoleLensingPass {
                 if (center != null && edge != null) {
                     float dx = (edge[0] - center[0]) * aspect;
                     float dy = edge[1] - center[1];
-                    float radius = Math.min(0.46F,
+                    float radius = Math.min(0.14F,
                             Math.max(0.0015F, (float) Math.sqrt(dx * dx + dy * dy)));
-                    screenHoles.add(new float[]{center[0], center[1], radius, 1.36F});
+                    screenHoles.add(new float[]{center[0], center[1], radius, 0.92F});
                 }
             }
 
