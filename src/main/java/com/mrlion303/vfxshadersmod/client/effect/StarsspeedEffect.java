@@ -60,6 +60,9 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         RenderType skyType = VfxRenderTypes.skyQuads();
         VertexConsumer sky = buffers.getBuffer(skyType);
 
+        double time = age + partialTick;
+        double skyRotation = time * 0.0075D;
+
         // Oscurece el tinte elegido para que las estelas blancas destaquen como en la referencia.
         int deepSky = scaleColor(color, 0.22F);
         for (int band = 0; band < BANDS; band++) {
@@ -72,8 +75,8 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
                 double a = Math.PI * 2.0D * segment / SEGMENTS;
                 double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
                 emitQuad(sky, pose,
-                        point(a, latA, SKY_RADIUS), point(b, latA, SKY_RADIUS),
-                        point(b, latB, SKY_RADIUS), point(a, latB, SKY_RADIUS),
+                        point(a, latA, SKY_RADIUS, skyRotation), point(b, latA, SKY_RADIUS, skyRotation),
+                        point(b, latB, SKY_RADIUS, skyRotation), point(a, latB, SKY_RADIUS, skyRotation),
                         deepSky, 0.99F);
             }
         }
@@ -93,8 +96,8 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
                 double a = Math.PI * 2.0D * segment / SEGMENTS;
                 double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
                 emitQuad(glow, pose,
-                        point(a, latA, SKY_RADIUS - 0.18D), point(b, latA, SKY_RADIUS - 0.18D),
-                        point(b, latB, SKY_RADIUS - 0.18D), point(a, latB, SKY_RADIUS - 0.18D),
+                        point(a, latA, SKY_RADIUS - 0.18D, skyRotation), point(b, latA, SKY_RADIUS - 0.18D, skyRotation),
+                        point(b, latB, SKY_RADIUS - 0.18D, skyRotation), point(a, latB, SKY_RADIUS - 0.18D, skyRotation),
                         rgb, alpha);
             }
         }
@@ -107,7 +110,6 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
 
         VertexConsumer stars = buffers.getBuffer(skyType);
         int haloColor = brighten(color, 0.82F);
-        double time = age + partialTick;
         for (int i = 0; i < STAR_COUNT; i++) {
             double seed = fract(Math.sin((i + 1) * 127.1D) * 43758.5453D);
             double seed2 = fract(Math.sin((i + 1) * 311.7D) * 24634.6345D);
@@ -119,13 +121,13 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
             double tailAngle = angle - trailAngle;
 
             Vec3 radial = worldUp.scale(Math.cos(angle)).add(orbitRight.scale(Math.sin(angle)));
-            Vec3 tail = orbitPoint(polar, tailAngle, SKY_RADIUS * 0.992D,
-                    horizonForward, worldUp, orbitRight);
-            Vec3 head = orbitPoint(polar, angle, SKY_RADIUS * 0.992D,
-                    horizonForward, worldUp, orbitRight);
-            Vec3 across = horizonForward.scale(-Math.sin(polar))
+            Vec3 tail = rotateAroundY(orbitPoint(polar, tailAngle, SKY_RADIUS * 0.992D,
+                    horizonForward, worldUp, orbitRight), skyRotation);
+            Vec3 head = rotateAroundY(orbitPoint(polar, angle, SKY_RADIUS * 0.992D,
+                    horizonForward, worldUp, orbitRight), skyRotation);
+            Vec3 across = rotateAroundY(horizonForward.scale(-Math.sin(polar))
                     .add(radial.scale(Math.cos(polar))).normalize()
-                    .scale(0.46D + seed * 0.88D);
+                    .scale(0.46D + seed * 0.88D), skyRotation);
             Vec3 broadAcross = across.scale(2.7D);
 
             emitQuad(stars, pose,
@@ -139,9 +141,11 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
 
             // Destellos blancos en algunas puntas para que el campo se sienta luminoso.
             if (i % 5 == 0) {
-                Vec3 tangent = worldUp.scale(-Math.sin(angle)).add(orbitRight.scale(Math.cos(angle)))
-                        .normalize().scale(0.48D + seed * 0.46D);
-                Vec3 sparkAcross = across.normalize().scale(0.92D + seed * 0.36D);
+                Vec3 tangent = rotateAroundY(worldUp.scale(-Math.sin(angle))
+                        .add(orbitRight.scale(Math.cos(angle))).normalize()
+                        .scale(0.48D + seed * 0.46D), skyRotation);
+                Vec3 sparkAcross = rotateAroundY(across.normalize()
+                        .scale(0.92D + seed * 0.36D), skyRotation);
                 emitQuad(stars, pose,
                         head.subtract(sparkAcross), head.add(tangent.scale(0.20D)),
                         head.add(sparkAcross), head.subtract(tangent.scale(0.20D)),
@@ -159,11 +163,20 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         return forward.scale(Math.cos(polar) * radius).add(radial.scale(Math.sin(polar) * radius));
     }
 
-    private static Vec3 point(double azimuth, double latitude, double radius) {
+    private static Vec3 point(double azimuth, double latitude, double radius, double rotation) {
         double horizontal = Math.cos(latitude) * radius;
-        return new Vec3(Math.cos(azimuth) * horizontal,
+        Vec3 point = new Vec3(Math.cos(azimuth) * horizontal,
                 Math.sin(latitude) * radius,
                 Math.sin(azimuth) * horizontal);
+        return rotateAroundY(point, rotation);
+    }
+
+    private static Vec3 rotateAroundY(Vec3 point, double angle) {
+        double cosine = Math.cos(angle);
+        double sine = Math.sin(angle);
+        return new Vec3(point.x * cosine - point.z * sine,
+                point.y,
+                point.x * sine + point.z * cosine);
     }
 
     private static void emitQuad(
