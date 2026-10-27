@@ -53,7 +53,6 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         var camera = event.getCamera();
-        Vec3 cameraPosition = camera.getPosition();
         PoseStack poseStack = event.getPoseStack();
         PoseStack.Pose pose = poseStack.last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
@@ -63,7 +62,7 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
 
         // El vórtice se construye como una malla 3D fija en el mundo:
         // múltiples brazos helicoidales, capas de nubes y una esfera central.
-        Vec3 center = cameraPosition.add(0.0D, 74.0D, -150.0D);
+        Vec3 center = new Vec3(0.0D, 74.0D, -150.0D);
         Vec3 axis = new Vec3(0.0D, 0.32D, -1.0D).normalize();
         Vec3 right = axis.cross(new Vec3(0.0D, 1.0D, 0.0D)).normalize();
         Vec3 up = right.cross(axis).normalize();
