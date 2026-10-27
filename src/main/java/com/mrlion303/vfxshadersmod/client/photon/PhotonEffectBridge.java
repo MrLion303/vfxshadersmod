@@ -470,8 +470,9 @@ public final class PhotonEffectBridge {
 
         Circle circle = new Circle();
         circle.setRadius(1.0F);
-        // Solo una banda estrecha de partículas rodea el frente; evita llenar el disco interior.
-        circle.setRadiusThickness(0.985F);
+        // Photon interpreta thickness como el grosor relativo de la banda exterior.
+        // Un valor pequeño deja un anillo fino y evita rellenar el disco interior.
+        circle.setRadiusThickness(0.035F);
         config.shape.setShape(circle);
         config.shape.setPosition(new NumberFunction3(0.0F, 0.14F, 0.0F));
 
