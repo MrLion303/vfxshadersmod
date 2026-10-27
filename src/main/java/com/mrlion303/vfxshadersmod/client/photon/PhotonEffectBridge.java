@@ -45,6 +45,17 @@ public final class PhotonEffectBridge {
      * Crea el sistema Photon apropiado para una de las definiciones del mod.
      * Las coordenadas especiales se toman de la misma configuración que usa el VFX.
      */
+    /**
+     * Efectos cuya representación visual se ejecuta íntegramente con el runtime de Photon.
+     * No deben dibujarse además con los renderizadores heredados del mod.
+     */
+    public static boolean usesPhotonAsPrimaryRenderer(String effectPath) {
+        return switch (effectPath) {
+            case "demo_orbit", "falling_stars" -> true;
+            default -> false;
+        };
+    }
+
     public static Handle playForEffect(String effectPath, Level level) {
         Vec3 anchor = anchorFor(effectPath, level);
         return switch (effectPath) {
@@ -109,9 +120,9 @@ public final class PhotonEffectBridge {
         int warm = color == 0 ? 0xFFFF7A24 : color;
         switch (preset) {
             case ORBIT -> {
-                addRing(fx, "Photon Orbit Outer", 1.8F * safeScale, 1.0F, 1.2F, 70, 0.06F, 0.13F, 0xFFB16BFF);
-                addRing(fx, "Photon Orbit Inner", 1.1F * safeScale, 1.0F, 1.8F, 48, 0.08F, 0.10F, 0xFF4FE6FF);
-                addRing(fx, "Photon Orbit Accent", 0.65F * safeScale, 1.0F, 0.9F, 40, 0.10F, 0.08F, 0xFFFF65B8);
+                addRing(fx, "Photon Orbit Outer", 1.8F * safeScale, 1.0F, 1.2F, 70, 0.06F, 0.13F, 0xFFB16BFF, 0);
+                addRing(fx, "Photon Orbit Inner", 1.1F * safeScale, 1.0F, 1.8F, 48, 0.08F, 0.10F, 0xFF4FE6FF, 1);
+                addRing(fx, "Photon Orbit Accent", 0.65F * safeScale, 1.0F, 0.9F, 40, 0.10F, 0.08F, 0xFFFF65B8, 2);
             }
             case HORIZON -> {
                 addRing(fx, "Photon Horizon Cyan", 12.0F * safeScale, 0.0F, 3.0F, 100, 0.06F, 0.12F, 0xFF55DFFF);
@@ -124,10 +135,8 @@ public final class PhotonEffectBridge {
                             1.5F, 72, 0.055F, 0.10F, colors[i]);
                 }
             }
-            case FALLING_STARS -> {
-                addSphere(fx, "Photon Star Field", 22.0F * safeScale, 0.0F, 6.0F, 55, 0.55F, 0.075F, 0xFFFFFFFF);
-                addSphere(fx, "Photon Star Glints", 17.0F * safeScale, 5.0F, 2.2F, 45, 0.32F, 0.12F, 0xFF9EDCFF);
-            }
+            case FALLING_STARS -> addFallingStarEmitter(
+                    fx, safeScale, color == 0 ? 0xFFFFFFFF : color);
             case GROUND_WAVE -> {
                 addRing(fx, "Photon Ground Wave Bright", 2.8F * safeScale, 0.10F, 4.0F, 55, 0.32F, 0.18F, color);
                 addRing(fx, "Photon Ground Wave Halo", 4.0F * safeScale, 0.18F, 3.0F, 65, 0.25F, 0.24F, tint(color, 0.55F));
@@ -143,9 +152,9 @@ public final class PhotonEffectBridge {
                 addRing(fx, "Photon Vortex Inner", 2.4F * safeScale, 1.7F, 3.0F, 80, 0.09F, 0.13F, 0xFFFFD49A);
             }
             case PORTAL -> {
-                addRing(fx, "Photon Portal Rim", 3.2F * safeScale, 0.0F, 5.0F, 100, 0.07F, 0.13F, 0xFF55DFFF, true);
-                addRing(fx, "Photon Portal Inner", 2.5F * safeScale, 0.0F, 3.5F, 78, 0.11F, 0.09F, 0xFF9EEFFF, true);
-                addRing(fx, "Photon Portal Shards", 4.0F * safeScale, 0.0F, 2.0F, 44, 0.45F, 0.055F, 0xFFFFFFFF, true);
+                addRing(fx, "Photon Portal Rim", 3.2F * safeScale, 0.0F, 5.0F, 100, 0.07F, 0.13F, 0xFF55DFFF, 1);
+                addRing(fx, "Photon Portal Inner", 2.5F * safeScale, 0.0F, 3.5F, 78, 0.11F, 0.09F, 0xFF9EEFFF, 1);
+                addRing(fx, "Photon Portal Shards", 4.0F * safeScale, 0.0F, 2.0F, 44, 0.45F, 0.055F, 0xFFFFFFFF, 1);
             }
             case BLACK_HOLE -> {
                 addRing(fx, "Photon Accretion Outer", 3.8F * safeScale, 0.0F, 4.0F, 95, 0.08F, 0.16F, 0xFFFFA34A);
@@ -160,11 +169,15 @@ public final class PhotonEffectBridge {
 
     private static void addRing(FX fx, String name, float radius, float y, float rate,
                                 int lifetime, float speed, float size, int color) {
-        addRing(fx, name, radius, y, rate, lifetime, speed, size, color, false);
+        addRing(fx, name, radius, y, rate, lifetime, speed, size, color, 0);
     }
 
+    /**
+     * Crea un anillo con una orientación 3D y movimiento orbital calculado por Photon.
+     * plane 0 = XZ, 1 = XY, 2 = YZ.
+     */
     private static void addRing(FX fx, String name, float radius, float y, float rate,
-                                int lifetime, float speed, float size, int color, boolean vertical) {
+                                int lifetime, float speed, float size, int color, int plane) {
         ParticleEmitter emitter = new ParticleEmitter();
         emitter.setName(name);
         ParticleConfig config = emitter.config;
@@ -182,8 +195,56 @@ public final class PhotonEffectBridge {
         circle.setRadiusThickness(0.88F);
         config.shape.setShape(circle);
         config.shape.setPosition(new NumberFunction3(0.0F, y, 0.0F));
-        config.shape.setRotation(new NumberFunction3(vertical ? 90.0F : 0.0F, 0.0F, 0.0F));
+        config.shape.setRotation(new NumberFunction3(
+                plane == 1 ? 90.0F : 0.0F, 0.0F, plane == 2 ? 90.0F : 0.0F));
         config.shape.setScale(new NumberFunction3(radius, 1.0F, radius));
+        config.velocityOverLifetime.setEnable(true);
+        config.velocityOverLifetime.setOrbitalMode(
+                com.lowdragmc.photon.client.gameobject.emitter.data.VelocityOverLifetimeSetting.OrbitalMode.AngularVelocity);
+        config.velocityOverLifetime.setOrbital(switch (plane) {
+            case 1 -> new NumberFunction3(0.0F, 0.0F, 0.14F);
+            case 2 -> new NumberFunction3(0.14F, 0.0F, 0.0F);
+            default -> new NumberFunction3(0.0F, 0.14F, 0.0F);
+        });
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /** Emisor nativo de Photon para estrellas descendentes con estelas persistentes. */
+    private static void addFallingStarEmitter(FX fx, float scale, int color) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName("Photon Falling Stars and Trails");
+        ParticleConfig config = emitter.config;
+        config.setDuration(120);
+        config.setLooping(true);
+        config.setStartLifetime(NumberFunction.constant(32));
+        config.setStartSpeed(NumberFunction.constant(0.12F));
+        config.setStartSize(new NumberFunction3(0.075F, 0.075F, 0.075F));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(1400);
+        config.emission.setEmissionRate(NumberFunction.constant(12.0F));
+
+        Circle circle = new Circle();
+        circle.setRadius(1.0F);
+        circle.setRadiusThickness(1.0F);
+        config.shape.setShape(circle);
+        config.shape.setPosition(new NumberFunction3(0.0F, 20.0F, 0.0F));
+        config.shape.setScale(new NumberFunction3(22.0F * scale, 1.0F, 22.0F * scale));
+
+        // La velocidad vertical y la estela se simulan dentro del sistema de partículas de Photon.
+        config.velocityOverLifetime.setEnable(true);
+        config.velocityOverLifetime.setLinear(new NumberFunction3(0.0F, -10.0F, 0.0F));
+
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.94F);
+        config.trails.setInheritParticleColor(true);
+        config.trails.config.setTime(14);
+        config.trails.config.setMinVertexDistance(0.03F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(0.12F));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
+
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
