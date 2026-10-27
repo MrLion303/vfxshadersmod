@@ -18,10 +18,10 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 /** Campo de estrellas veloces con estelas curvas alrededor de un punto de fuga en el horizonte. */
 public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "starsspeed");
-    private static final int SEGMENTS = 144;
-    private static final int BANDS = 64;
-    private static final int STAR_COUNT = 1200;
-    private static final double SKY_RADIUS = 224.0D;
+    private static final int SEGMENTS = 192;
+    private static final int BANDS = 80;
+    private static final int STAR_COUNT = 1800;
+    private static final double SKY_RADIUS = 512.0D;
     private static volatile int requestedColor = 0x3478FF;
 
     private int color = requestedColor;
@@ -113,9 +113,8 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
             double seed2 = fract(Math.sin((i + 1) * 311.7D) * 24634.6345D);
             // El ángulo polar cubre la esfera celeste completa, no solo el horizonte.
             double polar = 0.022D + seed2 * (Math.PI - 0.044D);
-            double speed = 0.009D + seed * 0.014D;
-            // Rotación alrededor de un eje fijo de mundo: no depende de hacia dónde mira el jugador.
-            double angle = seed * Math.PI * 2.0D + time * speed;
+            // El movimiento individual ahora es claramente visible incluso a simple vista.
+            double angle = seed * Math.PI * 2.0D + time * (0.025D + seed * 0.014D);
             double trailAngle = 0.12D + seed * 0.30D;
             double tailAngle = angle - trailAngle;
 
