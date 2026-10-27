@@ -21,6 +21,7 @@ Motor de efectos en tiempo real para Minecraft Java Edition, orientado a Forge 1
 - `/vfx enable falling_stars`: activa una lluvia continua de estrellas diagonales arcoíris.
 - `/vfx enable sky_portal`: abre un portal circular cinematográfico en el cielo.
 - `/vfxonce scan <x> <y> <z> <color>`: lanza una única onda de escaneo que se adapta al relieve.
+- `/vfxonce trampolin <x> <y> <z> [potencia] [radio] [velocidad]`: onda circular sobre el suelo; deforma visualmente la superficie y lanza a los jugadores cuando los alcanza.
 
 Los comandos VFX están disponibles en el cliente y en el servidor. Desde bloques de comandos, el servidor envía las órdenes visuales a los clientes conectados en la misma dimensión. Instala el mod tanto en el servidor como en los clientes. Los comandos de servidor requieren permiso de operador de nivel 2. Los comandos de movimiento modifican únicamente a los jugadores seleccionados y se limpian al desconectarse.
 
