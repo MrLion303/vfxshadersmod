@@ -10,7 +10,6 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -70,7 +69,7 @@ public final class VfxForceFieldSystem {
                     continue;
                 }
 
-                double falloff = 1.0D - distance / field.influenceRadius;
+                double falloff = 1.0D - distance / field.influenceRadius();
                 // Campo gravitacional suave: evita singularidades y no secuestra el movimiento
                 // de entidades que están fuera del radio de influencia.
                 double acceleration = Math.min(MAX_ACCELERATION,
