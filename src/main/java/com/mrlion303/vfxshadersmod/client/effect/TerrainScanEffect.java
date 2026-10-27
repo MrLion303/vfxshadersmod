@@ -30,6 +30,14 @@ public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
     private int color = requestedColor;
     private long age;
 
+    public static Vec3 configuredOrigin() {
+        return requestedOrigin;
+    }
+
+    public static int configuredColor() {
+        return 0xFF000000 | requestedColor;
+    }
+
     public static void configure(Vec3 position, int rgb) {
         requestedOrigin = position;
         requestedColor = rgb & 0xFFFFFF;
