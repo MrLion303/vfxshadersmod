@@ -52,7 +52,8 @@ public final class ClientVfxEvents {
     public static void onRenderLevel(RenderLevelStageEvent event) {
         ClientVfxManager.render(event);
         // La lente antigua copiaba la pantalla completa y podía dejar el framebuffer negro.
-        // El agujero negro ahora usa una superficie local y no procesa toda la imagen.    }
+        // El agujero negro ahora usa una superficie local y no procesa toda la imagen.
+    }
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
