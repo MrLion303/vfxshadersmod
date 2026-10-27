@@ -64,7 +64,7 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 - **sky_portal:** anillos Photon que crecen durante la apertura y fragmentos orbitales con estelas alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
 - **scan:** onda Photon con radio animado por curva, complementada por un aro propio que sigue la superficie de los bloques cargados.
 
-La lente de pantalla del agujero negro colocado está temporalmente desactivada porque causaba un framebuffer negro en algunas configuraciones. Su horizonte y disco de acreción siguen activos. El efecto visual no simula relatividad general ni altera bloques o colisiones; el aspecto final debe comprobarse dentro de Minecraft.
+La lente de pantalla del agujero negro colocado usa una zona de influencia limitada alrededor del horizonte para conservar una distorsión gravitacional sutil sin crear un contorno exterior enorme. El horizonte 3D y el disco de acreción siguen activos. El efecto visual no simula relatividad general ni altera bloques o colisiones; el aspecto final debe comprobarse dentro de Minecraft.
 
 ## Probar la migración
 

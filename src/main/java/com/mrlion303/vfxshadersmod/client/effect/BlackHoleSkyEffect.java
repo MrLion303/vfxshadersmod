@@ -110,7 +110,7 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 center = centerOffset;
         double horizonRadius = SKY_HALF_WIDTH * 0.245D;
         double innerDiskRadius = horizonRadius * 1.065D;
-        double outerDiskRadius = SKY_HALF_WIDTH * 0.455D;
+        double outerDiskRadius = SKY_HALF_WIDTH * 0.405D;
         double maximumHalfThickness = horizonRadius * 0.15D;
 
         // Ligeramente inclinado respecto a la línea de visión: la silueta no es un círculo plano.

@@ -171,11 +171,11 @@ public final class PhotonEffectBridge {
                 addExpandingRing(fx, "Photon Terrain Scan Core", 0.2F, radius, 70, 6, 24.0F, 0.035F, 0xFFFFFFFF, 2, false);
             }
             case VORTEX -> {
-                addVortexLayer(fx, "Photon Vortex Outer Cloud", 132.0F, 25.0F, -4.0F,
+                addVortexLayer(fx, "Photon Vortex Outer Cloud", 88.0F, 25.0F, -4.0F,
                         4.0F, 0.14F, 0xFF651016, 0.55F, 42, true);
-                addVortexLayer(fx, "Photon Vortex Mid Cloud", 94.0F, 22.0F, 1.5F,
+                addVortexLayer(fx, "Photon Vortex Mid Cloud", 68.0F, 22.0F, 1.5F,
                         4.0F, 0.17F, 0xFFB12413, 0.82F, 36, true);
-                addVortexLayer(fx, "Photon Vortex Inner Plasma", 56.0F, 15.0F, 4.0F,
+                addVortexLayer(fx, "Photon Vortex Inner Plasma", 46.0F, 15.0F, 4.0F,
                         3.0F, 0.20F, 0xFFFF5414, 1.05F, 28, true);
                 addVortexLayer(fx, "Photon Vortex Hot Core", 18.0F, 8.0F, 0.0F,
                         3.0F, 0.28F, 0xFFFFD49A, 1.20F, 14, false);
@@ -190,12 +190,12 @@ public final class PhotonEffectBridge {
             }
             case BLACK_HOLE -> {
                 // El disco para agujeros colocados permanece casi horizontal sobre el horizonte.
-                addRing(fx, "Photon Accretion Outer", 3.8F * safeScale, 0.0F, 4.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
+                addRing(fx, "Photon Accretion Outer", 2.95F * safeScale, 0.0F, 4.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
                 addRing(fx, "Photon Accretion Inner", 2.0F * safeScale, 0.0F, 3.0F, 85, 0.04F, 0.11F, 0xFFFFF1CE, 0);
             }
             case BLACK_HOLE_SKY -> {
                 // En el cielo, el disco se orienta hacia el observador y coincide con la escala del shader.
-                addRing(fx, "Photon Sky Accretion Outer", 4.55F * safeScale, 0.0F, 6.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
+                addRing(fx, "Photon Sky Accretion Outer", 4.05F * safeScale, 0.0F, 6.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
                 addRing(fx, "Photon Sky Accretion Mid", 3.70F * safeScale, 0.0F, 4.5F, 88, 0.06F, 0.13F, 0xFFFFB95F, 0);
                 addRing(fx, "Photon Sky Accretion Inner", 2.60F * safeScale, 0.0F, 3.0F, 80, 0.04F, 0.11F, 0xFFFFF1CE, 0);
             }

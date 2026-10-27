@@ -15,7 +15,7 @@ in vec2 texCoord;
 out vec4 fragColor;
 
 // Screen-space lensing: map visible rays back to their source directions.
-// The radial fold near the Einstein radius approximates a secondary image.
+// A restrained radial fold near the Einstein radius approximates a secondary image without a huge outer contour.
 vec2 bendAroundHole(vec2 uv, vec4 hole, float aspect) {
     if (hole.z <= 0.0) return uv;
 
@@ -26,14 +26,14 @@ vec2 bendAroundHole(vec2 uv, vec4 hole, float aspect) {
     if (d < 0.00001) return uv;
 
     float strength = clamp(hole.w, 0.0, 1.45);
-    float reach = horizonRadius * 3.6;
-    float fade = 1.0 - smoothstep(horizonRadius * 1.05, reach, d);
+    float reach = horizonRadius * 2.05;
+    float fade = 1.0 - smoothstep(horizonRadius * 1.02, reach, d);
 
     // Deflection grows toward the hole and folds at the approximate Einstein radius.
-    float einsteinRadius = horizonRadius * 1.55;
+    float einsteinRadius = horizonRadius * 1.30;
     float deflection = (einsteinRadius * einsteinRadius)
             / max(d, horizonRadius * 0.24);
-    deflection = min(deflection, horizonRadius * 1.9);
+    deflection = min(deflection, horizonRadius * 1.45);
     float mappedDistance = d - deflection * strength * fade;
 
     vec2 direction = metric / d;

@@ -25,7 +25,7 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     private static final int DISK_RADIAL_STEPS = 8;
     private static final int SPHERE_LATITUDES = 32;
     private static final int SPHERE_LONGITUDES = 64;
-    private static final Vec3 DISK_NORMAL = new Vec3(0.22D, 0.91D, 0.35D).normalize();
+    private static final Vec3 DISK_NORMAL = new Vec3(0.20D, 0.76D, 0.62D).normalize();
 
     /** Normal exacta del disco renderizado, reutilizada por el emisor Photon de acreción. */
     public static Vec3 diskNormal() {
@@ -60,7 +60,7 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
             return;
         }
         double innerDiskRadius = horizonRadius * 1.045D;
-        double outerDiskRadius = horizonRadius * 1.8D;
+        double outerDiskRadius = horizonRadius * 1.65D;
         Vec3 center = context.toCameraRelative(instance.position());
 
         Vec3 reference = new Vec3(0.0D, 1.0D, 0.0D);

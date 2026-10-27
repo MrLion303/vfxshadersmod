@@ -148,8 +148,8 @@ void main() {
                         vfxNoise3(local * 9.1 + vec3(2.3, -4.7, VortexTime * 0.008)),
                         vfxNoise3(local * 11.7 + vec3(-6.1, 1.9, -VortexTime * 0.006))
                         ) - 0.5) * 0.035;
-                vec2 guideCenter = vec2(112.0 / 256.0, 133.0 / 256.0);
-                vec2 guideExtent = vec2(150.0 * 0.64 / 256.0, 140.0 * 0.64 / 256.0);
+                vec2 guideCenter = vec2(122.0 / 256.0, 125.0 / 256.0);
+                vec2 guideExtent = vec2(150.0 * 0.73 / 256.0, 140.0 * 0.73 / 256.0);
                 vec2 guideUv = guideCenter + vec2(
                         guideLocal.x * guideExtent.x,
                         -guideLocal.y * guideExtent.y);
