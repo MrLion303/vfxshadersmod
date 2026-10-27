@@ -73,6 +73,11 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
         return centerOffset;
     }
 
+    /** Normal usada por el disco GLSL/3D para orientar el disco Photon en el mismo plano. */
+    public static Vec3 diskNormal() {
+        return direction.add(planeRight.scale(0.30D)).normalize();
+    }
+
     public static Vec3 planeRight() {
         return planeRight;
     }
