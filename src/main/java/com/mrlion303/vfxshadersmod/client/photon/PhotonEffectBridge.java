@@ -56,10 +56,10 @@ public final class PhotonEffectBridge {
             case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE, 0, 3.0F);
             case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 3.0F);
             case "starsspeed" -> play(level, anchor, Preset.FALLING_STARS, 0xFF8ABEFF, 2.0F);
-            case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, 0xFF58DFFF, 2.4F);
+            case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
-            case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, 0xFF3478FF, 1.6F);
-            case "trampolin" -> play(level, anchor, Preset.GROUND_WAVE, 0xFF58DFFF, 2.5F);
+            case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
+            case "trampolin" -> play(level, anchor, Preset.GROUND_WAVE, 0xFF58DFFF, (float) (TrampolineWaveEffect.configuredRadius() / 14.0D));
             case "sky_portal" -> play(level, anchor, Preset.PORTAL, 0, 4.0F);
             default -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
         };
