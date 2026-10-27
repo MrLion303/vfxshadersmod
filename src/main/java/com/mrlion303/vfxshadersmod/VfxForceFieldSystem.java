@@ -1,5 +1,6 @@
 package com.mrlion303.vfxshadersmod;
 
+import com.mrlion303.vfxshadersmod.core.physics.VfxFieldMath;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -69,12 +70,12 @@ public final class VfxForceFieldSystem {
                     continue;
                 }
 
-                double falloff = 1.0D - distance / field.influenceRadius();
+                double falloff = VfxFieldMath.radialFalloff(distance, field.influenceRadius());
                 // Campo gravitacional suave: evita singularidades y no secuestra el movimiento
                 // de entidades que están fuera del radio de influencia.
                 double acceleration = Math.min(MAX_ACCELERATION,
-                        (0.004D + field.diameter * 0.00045D) * falloff * falloff);
-                Vec3 radial = toward.scale(1.0D / distance);
+                        (0.004D + field.diameter * 0.00045D) * falloff);
+                Vec3 radial = VfxFieldMath.safeDirection(toward);
                 Vec3 up = new Vec3(0.0D, 1.0D, 0.0D);
                 Vec3 tangent = radial.cross(up);
                 if (tangent.lengthSqr() > 1.0E-6D) {
