@@ -6,6 +6,7 @@ import com.lowdragmc.photon.client.gameobject.emitter.data.number.NumberFunction
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.NumberFunction3;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.Curve;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.ECBCurves;
+import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Box;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Circle;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Sphere;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleConfig;
@@ -56,7 +57,7 @@ public final class PhotonEffectBridge {
      */
     public static boolean usesPhotonAsPrimaryRenderer(String effectPath) {
         return switch (effectPath) {
-            case "demo_orbit", "falling_stars" -> true;
+            case "demo_orbit", "falling_stars", "music_horizon_bars" -> true;
             default -> false;
         };
     }
@@ -130,10 +131,7 @@ public final class PhotonEffectBridge {
                 addRing(fx, "Photon Orbit Inner", 1.1F * safeScale, 1.0F, 1.8F, 48, 0.08F, 0.10F, 0xFF4FE6FF, 1);
                 addRing(fx, "Photon Orbit Accent", 0.65F * safeScale, 1.0F, 0.9F, 40, 0.10F, 0.08F, 0xFFFF65B8, 2);
             }
-            case HORIZON -> {
-                addRing(fx, "Photon Horizon Cyan", 12.0F * safeScale, 0.0F, 3.0F, 100, 0.06F, 0.12F, 0xFF55DFFF);
-                addRing(fx, "Photon Horizon Violet", 16.0F * safeScale, 2.0F, 2.0F, 90, 0.05F, 0.16F, 0xFF966CFF);
-            }
+            case HORIZON -> addHorizonBars(fx);
             case RAINBOW -> {
                 int[] colors = {0xFFFF4545, 0xFFFFA43A, 0xFFFFFF4A, 0xFF56FF76, 0xFF48E6FF, 0xFF6575FF, 0xFFE86BFF};
                 for (int i = 0; i < colors.length; i++) {
@@ -239,6 +237,68 @@ public final class PhotonEffectBridge {
     }
 
     /**
+     * Ecualizador circular compuesto por emisores Box de Photon. Cada columna tiene
+     * un color fijo por ángulo y una curva de altura con fase desfasada respecto a las demás.
+     */
+    private static void addHorizonBars(FX fx) {
+        final int barCount = 96;
+        final int duration = 100;
+        final float radius = 42.0F;
+        final int[] palette = {
+                0xFFFF5555, 0xFFFF973D, 0xFFFFFF55, 0xFF65FF72,
+                0xFF4FEAFF, 0xFF6680FF, 0xFFE874FF
+        };
+
+        for (int i = 0; i < barCount; i++) {
+            double angle = Math.PI * 2.0D * i / barCount;
+            float x = (float) (Math.cos(angle) * radius);
+            float z = (float) (Math.sin(angle) * radius);
+            int color = palette[i * palette.length / barCount];
+
+            ParticleEmitter emitter = new ParticleEmitter();
+            emitter.setName("Photon Horizon Bar " + (i + 1));
+            emitter.setDelay(i * duration / barCount);
+            ParticleConfig config = emitter.config;
+            config.setDuration(duration);
+            config.setLooping(true);
+            config.setStartLifetime(NumberFunction.constant(5));
+            config.setStartSpeed(NumberFunction.constant(0.0F));
+            config.setStartSize(new NumberFunction3(0.22F, 0.22F, 0.22F));
+            config.setStartColor(NumberFunction.color(color));
+            config.setMaxParticles(24);
+            config.emission.setEmissionRate(NumberFunction.constant(3.0F));
+
+            Box box = new Box();
+            box.setEmitFrom(Box.Type.Volume);
+            config.shape.setShape(box);
+
+            Curve heightCurve = new Curve(0.0F, duration, 0.75F, 7.25F,
+                    2.5F, "duration", "bar height");
+            heightCurve.setCurves(horizonPulseCurve());
+            Curve centerCurve = new Curve(0.0F, duration, -0.625F, 2.625F,
+                    0.625F, "duration", "bar center");
+            centerCurve.setCurves(horizonPulseCurve());
+
+            config.shape.setPosition(new NumberFunction3(
+                    NumberFunction.constant(x), centerCurve, NumberFunction.constant(z)));
+            config.shape.setScale(new NumberFunction3(1.05F, heightCurve, 0.68F));
+            config.renderer.setBloomEffect(true);
+            config.renderer.setBloomColor(color);
+            config.physics.setEnable(false);
+            fx.getMainFX().objects().add(emitter);
+        }
+    }
+
+    private static ECBCurves horizonPulseCurve() {
+        return new ECBCurves(
+                0.0F, 0.18F, 0.25F, 0.98F, 0.06F, 0.18F, 0.18F, 0.98F,
+                0.25F, 0.98F, 0.50F, 0.34F, 0.32F, 0.98F, 0.43F, 0.34F,
+                0.50F, 0.34F, 0.75F, 0.88F, 0.57F, 0.34F, 0.68F, 0.88F,
+                0.75F, 0.88F, 1.0F, 0.18F, 0.82F, 0.88F, 0.94F, 0.18F
+        );
+    }
+
+    /**
      * Anillo de partículas impulsado por la curva temporal de escala de Photon.
      * El radio crece en la propia ShapeSetting: no se anima una malla dibujada por el mod.
      */
@@ -268,8 +328,9 @@ public final class PhotonEffectBridge {
 
         Curve radiusCurve = new Curve(0.0F, duration, startRadius, endRadius,
                 startRadius, "duration", "radius");
-        radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 0.1F, 0.1F,
-                0.9F, 0.9F, 1.0F, 1.0F));
+        // ECBCurves recibe primero los extremos y después los dos puntos de control.
+        radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 1.0F, 1.0F,
+                0.1F, 0.1F, 0.9F, 0.9F));
         config.shape.setScale(new NumberFunction3(radiusCurve,
                 NumberFunction.constant(1.0F), radiusCurve));
 
