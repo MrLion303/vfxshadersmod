@@ -7,6 +7,7 @@ import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
 import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.effect.FallingStarsEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
+import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
 import com.mrlion303.vfxshadersmod.client.effect.SkyPortalEffect;
 import com.mrlion303.vfxshadersmod.client.effect.DemoOrbitEffect;
 import com.mrlion303.vfxshadersmod.client.effect.MusicHorizonBarsEffect;
@@ -107,6 +108,14 @@ public final class ClientVfxCatalog {
                 VfxEffectCategory.PARTICLE_SYSTEM,
                 TerrainScanEffect::new
         );
+        EffectRegistry.register(
+                TrampolineWaveEffect.ID,
+                "Onda de trampolín",
+                "Una onda circular deforma visualmente el suelo y su cresta eleva a los jugadores al alcanzarlos.",
+                VfxEffectCategory.WORLD_ANCHORED,
+                TrampolineWaveEffect::new
+        );
+
         EffectRegistry.register(
                 SkyPortalEffect.ID,
                 "Portal celeste",
