@@ -204,6 +204,7 @@ public final class VfxServerCommands {
     }
 
     private static int disableAll(CommandContext<CommandSourceStack> context) {
+        VfxForceFieldSystem.clearBlackHoles(context.getSource().getLevel());
         send(context.getSource().getLevel(), VfxCommandPacket.DISABLE_ALL, "", 0.0F, Vec3.ZERO);
         active(context.getSource().getLevel()).clear();
         context.getSource().sendSuccess(() -> Component.literal("Se limpiaron todos los VFX de los clientes de esta dimensión."), true);
