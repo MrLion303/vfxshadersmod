@@ -58,7 +58,7 @@ public final class PhotonEffectBridge {
      */
     public static boolean usesPhotonAsPrimaryRenderer(String effectPath) {
         return switch (effectPath) {
-            case "demo_orbit", "falling_stars", "music_horizon_bars", "rainbow_aurora" -> true;
+            case "demo_orbit", "falling_stars", "music_horizon_bars", "rainbow_aurora", "cloud_vortex" -> true;
             default -> false;
         };
     }
@@ -72,7 +72,7 @@ public final class PhotonEffectBridge {
             case "rainbow_aurora" -> play(level, anchor, Preset.RAINBOW_AURORA, 0, 1.0F);
             case "rainbow_sky" -> play(level, anchor, Preset.RAINBOW, 0, 4.0F);
             case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE, 0, 3.0F);
-            case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 3.0F);
+            case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 1.0F);
             case "starsspeed" -> play(level, anchor, Preset.STARSSPEED,
                     0xFF000000 | StarsspeedEffect.configuredColor(), 2.0F);
             case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
@@ -177,9 +177,14 @@ public final class PhotonEffectBridge {
                 addExpandingRing(fx, "Photon Terrain Scan Core", 0.2F, radius, 70, 70, 24.0F, 0.035F, 0xFFFFFFFF, 2, false);
             }
             case VORTEX -> {
-                addRing(fx, "Photon Vortex Outer", 7.0F * safeScale, -1.5F, 4.0F, 82, 0.10F, 0.20F, 0xFF9A1618);
-                addRing(fx, "Photon Vortex Mid", 4.6F * safeScale, 0.8F, 4.5F, 90, 0.13F, 0.16F, 0xFFFF4A0A);
-                addRing(fx, "Photon Vortex Inner", 2.4F * safeScale, 1.7F, 3.0F, 80, 0.09F, 0.13F, 0xFFFFD49A);
+                addVortexLayer(fx, "Photon Vortex Outer Cloud", 132.0F, 25.0F, -4.0F,
+                        4.0F, 0.14F, 0xFF651016, 0.55F, 42, true);
+                addVortexLayer(fx, "Photon Vortex Mid Cloud", 94.0F, 22.0F, 1.5F,
+                        4.0F, 0.17F, 0xFFB12413, 0.82F, 36, true);
+                addVortexLayer(fx, "Photon Vortex Inner Plasma", 56.0F, 15.0F, 4.0F,
+                        3.0F, 0.20F, 0xFFFF5414, 1.05F, 28, true);
+                addVortexLayer(fx, "Photon Vortex Hot Core", 18.0F, 8.0F, 0.0F,
+                        3.0F, 0.28F, 0xFFFFD49A, 1.20F, 14, false);
             }
             case PORTAL -> {
                 addRing(fx, "Photon Portal Rim", 3.2F * safeScale, 0.0F, 5.0F, 100, 0.07F, 0.13F, 0xFF55DFFF, 1);
@@ -236,6 +241,63 @@ public final class PhotonEffectBridge {
             case 2 -> new NumberFunction3(0.14F, 0.0F, 0.0F);
             default -> new NumberFunction3(0.0F, 0.14F, 0.0F);
         });
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /**
+     * Capa de un vórtice volumétrico basada en partículas esféricas de Photon,
+     * con ruido, rotación orbital y estelas que se curvan alrededor del núcleo.
+     */
+    private static void addVortexLayer(
+            FX fx, String name, float radius, float height, float y,
+            float rate, float size, int color, float orbitalSpeed, int trailTime, boolean withTrails
+    ) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName(name);
+        emitter.setDelay((int) (radius / 10.0F) % 7);
+        ParticleConfig config = emitter.config;
+        config.setDuration(120);
+        config.setLooping(true);
+        config.setStartLifetime(NumberFunction.constant(76));
+        config.setStartSpeed(NumberFunction.constant(0.0F));
+        config.setStartSize(new NumberFunction3(size, size, size));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(900);
+        config.emission.setEmissionRate(NumberFunction.constant(rate));
+
+        Sphere sphere = new Sphere();
+        sphere.setRadius(1.0F);
+        sphere.setRadiusThickness(0.34F);
+        config.shape.setShape(sphere);
+        config.shape.setPosition(new NumberFunction3(0.0F, y, 0.0F));
+        config.shape.setScale(new NumberFunction3(radius, height, radius));
+
+        config.velocityOverLifetime.setEnable(true);
+        config.velocityOverLifetime.setOrbitalMode(
+                com.lowdragmc.photon.client.gameobject.emitter.data.VelocityOverLifetimeSetting.OrbitalMode.AngularVelocity);
+        config.velocityOverLifetime.setOrbital(new NumberFunction3(0.0F, orbitalSpeed, 0.0F));
+
+        config.noise.setEnable(true);
+        config.noise.setFrequency(0.22F);
+        config.noise.setPosition(new NumberFunction3(0.22F, 0.16F, 0.22F));
+        config.noise.setRotation(NumberFunction.constant(4.0F));
+        config.noise.setSize(NumberFunction.constant(0.06F));
+
+        if (withTrails) {
+            config.trails.setEnable(true);
+            config.trails.setRatio(0.82F);
+            config.trails.setLifetime(NumberFunction.constant(0.48F));
+            config.trails.setInheritParticleColor(true);
+            config.trails.setSizeAffectsWidth(false);
+            config.trails.config.setTime(trailTime);
+            config.trails.config.setMinVertexDistance(0.07F);
+            config.trails.config.setWidthOverTrail(NumberFunction.constant(Math.max(0.07F, size * 0.9F)));
+            config.trails.config.setColorOverTrail(NumberFunction.color(color));
+        }
+
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
