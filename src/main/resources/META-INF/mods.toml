@@ -22,3 +22,10 @@ mandatory=true
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="photon"
+mandatory=true
+versionRange="[1.1.17,)"
+ordering="AFTER"
+side="BOTH"
