@@ -68,7 +68,7 @@ public final class TerrainScanEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 camera = event.getCamera().getPosition();
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        RenderType type = VfxRenderTypes.colorQuads();
+        RenderType type = VfxRenderTypes.additiveQuads();
         VertexConsumer vertices = buffers.getBuffer(type);
 
         double time = age + partialTick;
