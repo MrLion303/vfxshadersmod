@@ -11,7 +11,7 @@ float hash21(vec2 p) {
     return fract(p.x * p.y);
 }
 
-float bhSurfaceNoise2(vec2 p) {
+float noise2(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
@@ -25,74 +25,75 @@ float bhSurfaceNoise2(vec2 p) {
 float fbm2(vec2 p) {
     float value = 0.0;
     float amplitude = 0.55;
-    for (int i = 0; i < 3; i++) {
-        value += bhSurfaceNoise2(p) * amplitude;
-        p = p * 2.07 + vec2(5.7, 9.2);
+    for (int i = 0; i < 4; i++) {
+        value += noise2(p) * amplitude;
+        p = p * 2.03 + vec2(7.1, -3.8);
         amplitude *= 0.48;
     }
-    return value / 0.9196;
+    return value / 0.9375;
 }
 
 void main() {
     vec2 p = texCoord * 2.0 - 1.0;
+    float radius = length(vec2(p.x, p.y * 1.22));
 
-    // Horizon elíptico y disco horizontal: fuera del agujero no se dibuja un cielo falso.
-    float horizonRadius = length(vec2(p.x, p.y * 1.10));
-    float diskRadius = length(vec2(p.x, p.y * 1.30));
-    if (horizonRadius > 0.245 && diskRadius > 0.78) {
+    // Solo se dibuja el objeto astronómico: fuera del disco y del horizonte hay transparencia.
+    if (radius > 0.49) {
         discard;
     }
 
-    float time = BlackHoleTime * 0.002;
-    float angle = atan(p.y * 1.30, p.x);
-    float logRadius = log(max(diskRadius, 0.035));
+    float angle = atan(p.y * 1.22, p.x);
+    float time = BlackHoleTime * 0.0055;
+    float logRadius = log(max(radius, 0.025));
     vec2 flow = vec2(
-        angle * 2.1 + logRadius * 1.25 - time * 1.85,
-        logRadius * 4.7 - angle * 0.62 + time * 0.74
+        angle * 2.4 + logRadius * 1.6 - time * 2.0,
+        logRadius * 5.3 - angle * 0.72 + time * 0.82
     );
-    vec2 warp = vec2(
-        fbm2(flow * 1.35),
-        fbm2(flow * 1.35 + vec2(7.1, -4.6))
-    ) - 0.5;
-    float turbulence = fbm2(flow * 2.65 + warp * 2.2);
-    float filaments = fbm2(flow * 5.5 + vec2(warp.y, -warp.x) * 3.2);
-    float fineDetail = bhSurfaceNoise2(flow * 13.0 + vec2(time * 0.4, -time * 0.7));
 
-    float innerEdge = smoothstep(0.162, 0.222, diskRadius + (turbulence - 0.5) * 0.018);
-    float outerEdge = 1.0 - smoothstep(
-        0.51 + (turbulence - 0.5) * 0.035,
-        0.66 + (filaments - 0.5) * 0.035,
-        diskRadius
-    );
-    float clumps = smoothstep(0.29, 0.69,
-        turbulence * 0.57 + filaments * 0.33 + fineDetail * 0.10);
-    float streamers = 0.62 + 0.38 * smoothstep(0.36, 0.82, filaments);
-    float diskDensity = innerEdge * outerEdge * clumps * streamers;
+    float broad = fbm2(flow * 1.25);
+    float detail = fbm2(flow * 3.4 + vec2(time * 0.45, -time * 0.7));
+    float filaments = fbm2(flow * 6.2 + vec2(detail * 2.7, -broad * 2.0));
+    float edgeWarp = (broad - 0.5) * 0.018 + (detail - 0.5) * 0.009;
 
-    float temperature = 1.0 - smoothstep(0.19, 0.67, diskRadius);
-    vec3 gasColor = mix(vec3(0.19, 0.004, 0.006), vec3(1.0, 0.17, 0.025), temperature);
-    gasColor = mix(gasColor, vec3(1.0, 0.56, 0.22), pow(temperature, 2.7) * 0.82);
-    gasColor = mix(gasColor, vec3(1.0, 0.91, 0.76),
-        pow(temperature, 5.6) * smoothstep(0.43, 0.79, filaments) * 0.72);
-    gasColor *= 0.64 + turbulence * 0.83 + max(fineDetail - 0.56, 0.0) * 0.55;
+    // Plasma caliente junto al horizonte, con filamentos y turbulencia asimétrica.
+    float innerEdge = smoothstep(0.153 + edgeWarp, 0.184 + edgeWarp, radius);
+    float outerEdge = 1.0 - smoothstep(0.365 + edgeWarp, 0.455 + edgeWarp, radius);
+    float clumps = smoothstep(0.30, 0.69, broad * 0.62 + detail * 0.38);
+    float threads = pow(max(0.0, sin(angle * 21.0 + filaments * 9.0 - time * 2.9)), 8.0);
+    float diskDensity = innerEdge * outerEdge * (0.54 + clumps * 0.46)
+                      * (0.74 + threads * 0.26);
 
-    // La región negra es el horizonte; el anillo de fotones es estrecho, no una gran aureola.
-    float horizonNoise = fbm2(p * 17.0 + vec2(time * 0.13, -time * 0.09));
-    float horizonEdge = 0.153 + (horizonNoise - 0.5) * 0.0045;
-    float eventHorizon = 1.0 - smoothstep(horizonEdge, horizonEdge + 0.008, horizonRadius);
-    float photonRadius = 0.164 + (horizonNoise - 0.5) * 0.005;
-    float photonRing = exp(-pow((horizonRadius - photonRadius) / 0.007, 2.0));
-    float innerRelativisticGlow = exp(-pow((horizonRadius - 0.177) / 0.018, 2.0));
+    float temperature = 1.0 - smoothstep(0.17, 0.445, radius);
+    vec3 gasColor = mix(vec3(0.24, 0.006, 0.004), vec3(0.92, 0.085, 0.012),
+                        smoothstep(0.10, 0.78, temperature));
+    gasColor = mix(gasColor, vec3(1.0, 0.37, 0.075), pow(temperature, 2.1) * 0.82);
+    gasColor = mix(gasColor, vec3(1.0, 0.83, 0.57),
+                   pow(temperature, 4.6) * smoothstep(0.40, 0.77, filaments) * 0.82);
+    gasColor *= 0.62 + broad * 0.78 + max(detail - 0.54, 0.0) * 0.52;
+
+    // El plasma se ve más luminoso en el lado que avanza hacia el observador.
+    float beaming = 0.58 + 0.70 * smoothstep(-0.72, 0.76, cos(angle + 0.48));
+    gasColor *= beaming;
+
+    // Horizonte negro y anillo de fotones estrecho: sin aureola externa gigante.
+    float horizonNoise = fbm2(p * 19.0 + vec2(time * 0.13, -time * 0.08));
+    float horizonRadius = length(vec2(p.x, p.y * 1.08));
+    float horizonEdge = 0.145 + (horizonNoise - 0.5) * 0.003;
+    float eventHorizon = 1.0 - smoothstep(horizonEdge, horizonEdge + 0.006, horizonRadius);
+    float photonRadius = 0.154 + (horizonNoise - 0.5) * 0.003;
+    float photonRing = exp(-pow((horizonRadius - photonRadius) / 0.0048, 2.0));
+    float innerGlow = exp(-pow((horizonRadius - 0.169) / 0.015, 2.0));
 
     vec3 color = gasColor * diskDensity;
-    color += vec3(1.0, 0.84, 0.62) * photonRing * 1.4;
-    color += vec3(1.0, 0.31, 0.075) * innerRelativisticGlow * 0.42;
-    color = mix(color, vec3(0.0001, 0.0001, 0.0002), eventHorizon);
+    color += vec3(1.0, 0.86, 0.65) * photonRing * 1.55;
+    color += vec3(1.0, 0.28, 0.045) * innerGlow * 0.34;
+    color = mix(color, vec3(0.00005, 0.00004, 0.00008), eventHorizon);
 
-    float alpha = max(diskDensity * 0.96, eventHorizon);
-    alpha = max(alpha, max(photonRing * 0.98, innerRelativisticGlow * 0.54));
+    float alpha = max(diskDensity * 0.97, eventHorizon);
+    alpha = max(alpha, max(photonRing * 0.99, innerGlow * 0.42));
     if (alpha < 0.012) {
         discard;
     }
+
     fragColor = vec4(max(color, vec3(0.0)), clamp(alpha, 0.0, 1.0));
 }

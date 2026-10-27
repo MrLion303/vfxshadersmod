@@ -13,9 +13,9 @@ uniform float VortexTime;
 in vec2 texCoord;
 out vec4 fragColor;
 
-const float VORTEX_DISTANCE = 224.0;
-const vec3 VORTEX_RADII = vec3(90.0, 62.0, 74.0);
-const int RAY_STEPS = 14;
+const float VORTEX_DISTANCE = 196.0;
+const vec3 VORTEX_RADII = vec3(108.0, 78.0, 86.0);
+const int RAY_STEPS = 24;
 
 float hash31(vec3 p) {
     p = fract(p * 0.1031);
@@ -53,8 +53,8 @@ float cloudDensity(vec3 local, out float broad, out float billows, out float rad
     float angle = atan(local.y, local.x);
 
     // Domain warp gives the cloud banks a spiral flow instead of circular rings.
-    float turn = (1.0 - clamp(radius, 0.0, 1.0)) * 3.7
-               + local.z * 0.43 - VortexTime * 0.008;
+    float turn = (1.0 - clamp(radius, 0.0, 1.0)) * 4.25
+               + local.z * 0.48 - VortexTime * 0.012;
     float cs = cos(turn);
     float sn = sin(turn);
     vec2 rotated = mat2(cs, -sn, sn, cs) * local.xy;
@@ -66,7 +66,7 @@ float cloudDensity(vec3 local, out float broad, out float billows, out float rad
     billows = vfxNoise3(warpedDetail);
     float fine = vfxNoise3(warpedDetail * 1.95 + vec3(-3.7, 8.1, VortexTime * 0.012));
 
-    float spiralBand = sin(angle * 3.7 - radius * 13.8 + local.z * 2.6 - VortexTime * 0.018);
+    float spiralBand = sin(angle * 2.65 - radius * 10.6 + local.z * 2.35 - VortexTime * 0.028);
     float armNoise = spiralBand + (billows - 0.5) * 1.0 + (fine - 0.5) * 0.48;
     float arms = mix(0.32, 1.0, smoothstep(-0.96, 0.45, armNoise));
 
@@ -78,7 +78,7 @@ float cloudDensity(vec3 local, out float broad, out float billows, out float rad
     float depthFade = 1.0 - smoothstep(0.70 + (billows - 0.5) * 0.10,
                                         1.02, abs(local.z));
     float volumeFade = 1.0 - smoothstep(0.79, 1.0, length(local));
-    float centralOpening = smoothstep(0.012, 0.105, radius);
+    float centralOpening = smoothstep(0.012, 0.19, radius);
 
     return wisps * perimeter * depthFade * volumeFade * centralOpening * arms;
 }
@@ -138,17 +138,17 @@ void main() {
                 float density = cloudDensity(local, broad, billows, radius);
 
                 // An emissive core remains visible through gaps in the outer cloud banks.
-                float core = exp(-radius * 10.5)
-                           * (1.0 - smoothstep(0.22, 0.68, abs(local.z)));
-                density = max(density, core * 0.92);
+                float core = exp(-radius * 6.7)
+                           * (1.0 - smoothstep(0.30, 0.82, abs(local.z)));
+                density = max(density, core * 1.15);
 
                 if (density > 0.012) {
                     float opticalDepth = density * stepLength * 0.028;
                     float sampleAlpha = 1.0 - exp(-opticalDepth);
                     float lighting = clamp(
-                        0.32 + broad * 1.10 + billows * 0.20
-                        + (1.0 - radius) * 0.20 + local.y * 0.10,
-                        0.10, 1.45
+                        0.38 + broad * 1.14 + billows * 0.28
+                        + (1.0 - radius) * 0.24 + local.y * 0.10,
+                        0.10, 1.62
                     );
 
                     vec3 cloudColor = mix(
@@ -162,8 +162,10 @@ void main() {
                                      smoothstep(0.54, 0.78, billows) * 0.56);
                     cloudColor *= lighting;
                     cloudColor = mix(cloudColor, vec3(1.0, 0.96, 0.82),
-                                     clamp(core * 1.20, 0.0, 1.0));
-                    cloudColor += vec3(0.30, 0.12, 0.025) * core;
+                                     clamp(pow(core, 0.72) * 1.28, 0.0, 1.0));
+                    cloudColor += vec3(0.42, 0.16, 0.035) * core;
+                    cloudColor = mix(cloudColor, vec3(1.0, 0.35, 0.075),
+                                     smoothstep(0.18, 0.55, core) * 0.52);
 
                     float contribution = transmittance * sampleAlpha;
                     accumulated += cloudColor * contribution;
