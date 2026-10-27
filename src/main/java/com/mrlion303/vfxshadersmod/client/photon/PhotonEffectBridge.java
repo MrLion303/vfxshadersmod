@@ -34,6 +34,7 @@ public final class PhotonEffectBridge {
         HORIZON,
         RAINBOW,
         FALLING_STARS,
+        STARSSPEED,
         GROUND_WAVE,
         TERRAIN_SCAN,
         VORTEX,
@@ -66,7 +67,7 @@ public final class PhotonEffectBridge {
             case "rainbow_sky" -> play(level, anchor, Preset.RAINBOW, 0, 4.0F);
             case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE, 0, 3.0F);
             case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 3.0F);
-            case "starsspeed" -> play(level, anchor, Preset.FALLING_STARS, 0xFF8ABEFF, 2.0F);
+            case "starsspeed" -> play(level, anchor, Preset.STARSSPEED, 0xFF8ABEFF, 2.0F);
             case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
             case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
@@ -135,8 +136,19 @@ public final class PhotonEffectBridge {
                             1.5F, 72, 0.055F, 0.10F, colors[i]);
                 }
             }
-            case FALLING_STARS -> addFallingStarEmitter(
-                    fx, safeScale, color == 0 ? 0xFFFFFFFF : color);
+            case FALLING_STARS -> {
+                if (color == 0) {
+                    int[] rainbow = {0xFFFF5555, 0xFFFFA347, 0xFFFFFF55, 0xFF67FF77,
+                            0xFF4FEAFF, 0xFF6680FF, 0xFFE874FF};
+                    for (int i = 0; i < rainbow.length; i++) {
+                        addFallingStarEmitter(fx, safeScale, rainbow[i],
+                                12.0F / rainbow.length, i * 0.025F);
+                    }
+                } else {
+                    addFallingStarEmitter(fx, safeScale, color, 12.0F, 0.0F);
+                }
+            }
+            case STARSSPEED -> addStarsspeedEmitter(fx, safeScale, color);
             case GROUND_WAVE -> {
                 addRing(fx, "Photon Ground Wave Bright", 2.8F * safeScale, 0.10F, 4.0F, 55, 0.32F, 0.18F, color);
                 addRing(fx, "Photon Ground Wave Halo", 4.0F * safeScale, 0.18F, 3.0F, 65, 0.25F, 0.24F, tint(color, 0.55F));
@@ -213,7 +225,7 @@ public final class PhotonEffectBridge {
     }
 
     /** Emisor nativo de Photon para estrellas descendentes con estelas persistentes. */
-    private static void addFallingStarEmitter(FX fx, float scale, int color) {
+    private static void addFallingStarEmitter(FX fx, float scale, int color, float rate, float layerOffset) {
         ParticleEmitter emitter = new ParticleEmitter();
         emitter.setName("Photon Falling Stars and Trails");
         ParticleConfig config = emitter.config;
@@ -223,14 +235,14 @@ public final class PhotonEffectBridge {
         config.setStartSpeed(NumberFunction.constant(0.12F));
         config.setStartSize(new NumberFunction3(0.075F, 0.075F, 0.075F));
         config.setStartColor(NumberFunction.color(color));
-        config.setMaxParticles(1400);
-        config.emission.setEmissionRate(NumberFunction.constant(12.0F));
+        config.setMaxParticles(360);
+        config.emission.setEmissionRate(NumberFunction.constant(rate));
 
         Circle circle = new Circle();
         circle.setRadius(1.0F);
         circle.setRadiusThickness(1.0F);
         config.shape.setShape(circle);
-        config.shape.setPosition(new NumberFunction3(0.0F, 20.0F, 0.0F));
+        config.shape.setPosition(new NumberFunction3(layerOffset, 20.0F + layerOffset, -layerOffset));
         config.shape.setScale(new NumberFunction3(22.0F * scale, 1.0F, 22.0F * scale));
 
         // La velocidad vertical y la estela se simulan dentro del sistema de partículas de Photon.
@@ -240,9 +252,46 @@ public final class PhotonEffectBridge {
         config.trails.setEnable(true);
         config.trails.setRatio(0.94F);
         config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
         config.trails.config.setTime(14);
         config.trails.config.setMinVertexDistance(0.03F);
         config.trails.config.setWidthOverTrail(NumberFunction.constant(0.12F));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
+
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /** Campo de velocidad estelar creado por Photon; las partículas salen del volumen esférico y dejan estelas. */
+    private static void addStarsspeedEmitter(FX fx, float scale, int color) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName("Photon Starsspeed Warp Field");
+        ParticleConfig config = emitter.config;
+        config.setDuration(120);
+        config.setLooping(true);
+        config.setStartLifetime(NumberFunction.constant(84));
+        config.setStartSpeed(NumberFunction.constant(4.0F));
+        config.setStartSize(new NumberFunction3(0.045F, 0.045F, 0.045F));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(1000);
+        config.emission.setEmissionRate(NumberFunction.constant(9.0F));
+
+        Sphere sphere = new Sphere();
+        sphere.setRadius(1.0F);
+        sphere.setRadiusThickness(0.96F);
+        config.shape.setShape(sphere);
+        config.shape.setPosition(new NumberFunction3(0.0F, 10.0F, 0.0F));
+        config.shape.setScale(new NumberFunction3(58.0F * scale, 42.0F * scale, 58.0F * scale));
+
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.98F);
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(12);
+        config.trails.config.setMinVertexDistance(0.025F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(0.075F));
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
         config.renderer.setBloomEffect(true);
