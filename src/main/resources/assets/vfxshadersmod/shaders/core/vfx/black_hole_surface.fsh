@@ -1,6 +1,7 @@
 #version 150
 
 uniform float BlackHoleTime;
+uniform sampler2D BlackHoleReference;
 
 in vec2 texCoord;
 out vec4 fragColor;
@@ -60,8 +61,15 @@ void main() {
     float outerEdge = 1.0 - smoothstep(0.365 + edgeWarp, 0.455 + edgeWarp, radius);
     float clumps = smoothstep(0.30, 0.69, broad * 0.62 + detail * 0.38);
     float threads = pow(max(0.0, sin(angle * 21.0 + filaments * 9.0 - time * 2.9)), 8.0);
-    float diskDensity = innerEdge * outerEdge * (0.54 + clumps * 0.46)
-                      * (0.74 + threads * 0.26);
+    vec2 referenceUv = vec2(fract(angle / 6.28318530718),
+            clamp((radius - 0.16) / 0.295, 0.0, 1.0));
+    vec4 referenceDisk = texture(BlackHoleReference, referenceUv);
+    float referenceDensity = smoothstep(0.035, 0.42, referenceDisk.a);
+    float proceduralDensity = innerEdge * outerEdge * (0.54 + clumps * 0.46)
+                            * (0.74 + threads * 0.26);
+    float referenceMask = referenceDensity * smoothstep(0.15, 0.20, radius)
+                        * (1.0 - smoothstep(0.43, 0.47, radius));
+    float diskDensity = max(proceduralDensity * 0.38, referenceMask);
 
     float temperature = 1.0 - smoothstep(0.17, 0.445, radius);
     vec3 gasColor = mix(vec3(0.24, 0.006, 0.004), vec3(0.92, 0.085, 0.012),
@@ -70,6 +78,8 @@ void main() {
     gasColor = mix(gasColor, vec3(1.0, 0.83, 0.57),
                    pow(temperature, 4.6) * smoothstep(0.40, 0.77, filaments) * 0.82);
     gasColor *= 0.62 + broad * 0.78 + max(detail - 0.54, 0.0) * 0.52;
+    gasColor = mix(gasColor, referenceDisk.rgb * 1.30,
+            smoothstep(0.08, 0.40, referenceDisk.a) * referenceMask * 0.92);
 
     // El plasma se ve más luminoso en el lado que avanza hacia el observador.
     float beaming = 0.58 + 0.70 * smoothstep(-0.72, 0.76, cos(angle + 0.48));

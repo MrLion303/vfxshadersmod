@@ -41,6 +41,7 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         if (diskShader == null) {
             return;
         }
+        VfxReferenceTextures.bind(diskShader, "BlackHoleReference", "textures/vfx/blackhole_disk_reference.png");
         double diameter = instance.parameters().getOrDefault(
                 "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
         double configuredRadius = Math.max(0.5D, diameter * 0.5D);

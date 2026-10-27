@@ -86,6 +86,8 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
         if (shader == null) {
             return;
         }
+        com.mrlion303.vfxshadersmod.client.render.VfxReferenceTextures.bind(
+                shader, "BlackHoleReference", "textures/vfx/blackhole_disk_reference.png");
         if (shader.getUniform("BlackHoleTime") != null) {
             shader.getUniform("BlackHoleTime").set((float) (age + partialTick));
         }
