@@ -6,6 +6,7 @@ import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffect;
+import com.mrlion303.vfxshadersmod.core.physics.VfxFieldMath;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -73,14 +74,14 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
                 double thickness1 = (2.0D + 7.0D * Math.sin(t1 * Math.PI))
                         * (0.65D + 0.35D * Math.sin((i + 1) * 1.71D + arm * 4.0D));
                 Vec3 p0 = center.add(right.scale(Math.cos(a0) * r0)).add(up.scale(Math.sin(a0) * r0))
-                        .add(axis.scale(Math.sin(a0 * 1.7D) * 10.0D));
+                        .add(axis.scale(Math.sin(a0 * 1.7D + time * 0.018D) * (10.0D + 18.0D * t0)));
                 Vec3 p1 = center.add(right.scale(Math.cos(a1) * r1)).add(up.scale(Math.sin(a1) * r1))
-                        .add(axis.scale(Math.sin(a1 * 1.7D) * 10.0D));
+                        .add(axis.scale(Math.sin(a1 * 1.7D + time * 0.018D) * (10.0D + 18.0D * t1)));
                 Vec3 radial0 = right.scale(Math.cos(a0)).add(up.scale(Math.sin(a0))).normalize();
                 Vec3 radial1 = right.scale(Math.cos(a1)).add(up.scale(Math.sin(a1))).normalize();
                 Vec3 side0 = radial0.cross(axis).normalize().scale(thickness0);
                 Vec3 side1 = radial1.cross(axis).normalize().scale(thickness1);
-                float brightness = 0.55F + 0.45F * (float) Math.sin(t0 * Math.PI);
+                float brightness = 0.55F + 0.45F * (float) VfxFieldMath.smoothstep(0.0D, 1.0D, 0.5D + 0.5D * Math.sin(t0 * Math.PI));
                 int color = mixRgb(0x4A0508, 0xFF4A08, brightness);
                 emit(out, pose, p0.subtract(side0), color, 0.86F);
                 emit(out, pose, p0.add(side0), color, 0.86F);
@@ -94,7 +95,8 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
             double seed = i * 12.9898D;
             double angle = seed + time * (0.006D + (i % 7) * 0.001D);
             double radius = 18.0D + fract(Math.sin(seed * 1.73D) * 43758.5453D) * (halfSize * 0.42D);
-            double axial = (fract(Math.sin(seed * 0.91D) * 24634.6345D) - 0.5D) * 34.0D;
+            double axial = (fract(Math.sin(seed * 0.91D) * 24634.6345D) - 0.5D) * 34.0D
+                    + Math.sin(angle * 1.3D + time * 0.015D) * 9.0D;
             Vec3 radial = right.scale(Math.cos(angle)).add(up.scale(Math.sin(angle)));
             Vec3 p = center.add(radial.scale(radius)).add(axis.scale(axial));
             double size = 0.35D + fract(Math.sin(seed * 2.31D) * 1347.12D) * 1.5D;
