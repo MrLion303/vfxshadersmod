@@ -22,6 +22,7 @@ import java.util.Set;
  */
 public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     private static final int DISK_SEGMENTS = 96;
+    private static final int DISK_RADIAL_STEPS = 8;
     private static final int SPHERE_LATITUDES = 32;
     private static final int SPHERE_LONGITUDES = 64;
     private static final Vec3 DISK_NORMAL = new Vec3(0.22D, 0.91D, 0.35D).normalize();
@@ -61,8 +62,8 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         PoseStack.Pose pose = context.poseStack().last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
 
-        // Dibujamos primero el disco en orden de profundidad: su forma está en un plano
-        // fijo del mundo y cambia de perspectiva al rodearlo; no es un billboard hacia la cámara.
+        // El disco no es un plano: se genera una carcasa de acreción con superficies
+        // superior/inferior y paredes en los bordes. La normal fija evita que sea un billboard.
         RenderType diskType = VfxRenderTypes.blackHoleDiskQuads();
         VertexConsumer diskVertices = buffers.getBuffer(diskType);
         Integer[] order = new Integer[DISK_SEGMENTS];
@@ -77,21 +78,45 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
             return instance.position().add(offset).distanceToSqr(context.cameraPosition());
         }).reversed());
 
+        double maximumHalfThickness = Math.max(0.12D, horizonRadius * 0.16D);
         for (int segment : order) {
-            double a = Math.PI * 2.0D * segment / DISK_SEGMENTS;
-            double b = Math.PI * 2.0D * (segment + 1) / DISK_SEGMENTS;
-            Vec3 innerA = diskPoint(center, diskRight, diskUp, a, innerDiskRadius);
-            Vec3 outerA = diskPoint(center, diskRight, diskUp, a, outerDiskRadius);
-            Vec3 outerB = diskPoint(center, diskRight, diskUp, b, outerDiskRadius);
-            Vec3 innerB = diskPoint(center, diskRight, diskUp, b, innerDiskRadius);
-            float ua = (float) (segment / (double) DISK_SEGMENTS);
-            float ub = (float) ((segment + 1) / (double) DISK_SEGMENTS);
-            emitUv(diskVertices, pose, innerA, ua, 0.0F);
-            emitUv(diskVertices, pose, outerA, ua, 1.0F);
-            emitUv(diskVertices, pose, outerB, ub, 1.0F);
-            emitUv(diskVertices, pose, innerB, ub, 0.0F);
-        }
-        buffers.endBatch(diskType);
+            double a0 = Math.PI * 2.0D * segment / DISK_SEGMENTS;
+            double a1 = Math.PI * 2.0D * (segment + 1) / DISK_SEGMENTS;
+            float u0 = (float) (segment / (double) DISK_SEGMENTS);
+            float u1 = (float) ((segment + 1) / (double) DISK_SEGMENTS);
+
+            for (int step = 0; step < DISK_RADIAL_STEPS; step++) {
+                double v0 = step / (double) DISK_RADIAL_STEPS;
+                double v1 = (step + 1) / (double) DISK_RADIAL_STEPS;
+                double r0 = innerDiskRadius + (outerDiskRadius - innerDiskRadius) * v0;
+                double r1 = innerDiskRadius + (outerDiskRadius - innerDiskRadius) * v1;
+                double h0 = diskThickness(v0, maximumHalfThickness);
+                double h1 = diskThickness(v1, maximumHalfThickness);
+
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, r0, h0), u0, (float) v0);
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, r1, h1), u0, (float) v1);
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, r1, h1), u1, (float) v1);
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, r0, h0), u1, (float) v0);
+
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, r0, -h0), u0, (float) v0);
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, r0, -h0), u1, (float) v0);
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, r1, -h1), u1, (float) v1);
+                emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, r1, -h1), u0, (float) v1);
+            }
+
+            // Cierra los bordes interior y exterior para que el perfil conserve volumen al verlo de lado.
+            double innerThickness = diskThickness(0.08D, maximumHalfThickness);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, innerDiskRadius, innerThickness), u0, 0.08F);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, innerDiskRadius, innerThickness), u1, 0.08F);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, innerDiskRadius, -innerThickness), u1, 0.08F);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, innerDiskRadius, -innerThickness), u0, 0.08F);
+
+            double outerThickness = diskThickness(0.90D, maximumHalfThickness);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, outerDiskRadius, outerThickness), u0, 0.90F);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a0, outerDiskRadius, -outerThickness), u0, 0.90F);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, outerDiskRadius, -outerThickness), u1, 0.90F);
+            emitUv(diskVertices, pose, diskPoint(center, diskRight, diskUp, DISK_NORMAL, a1, outerDiskRadius, outerThickness), u1, 0.90F);
+        }        buffers.endBatch(diskType);
 
         // El horizonte es una esfera opaca de verdad; su tamaño depende únicamente
         // del parámetro del efecto, por lo que crece al acercarse en lugar de encogerse.
@@ -117,9 +142,17 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         buffers.endBatch(sphereType);
     }
 
-    private static Vec3 diskPoint(Vec3 center, Vec3 right, Vec3 up, double angle, double radius) {
+    private static double diskThickness(double radialCoordinate, double maximumHalfThickness) {
+        return maximumHalfThickness * (0.20D + 0.80D * Math.sin(Math.PI * radialCoordinate));
+    }
+
+    private static Vec3 diskPoint(
+            Vec3 center, Vec3 right, Vec3 up, Vec3 normal,
+            double angle, double radius, double height
+    ) {
         return center.add(right.scale(Math.cos(angle) * radius))
-                .add(up.scale(Math.sin(angle) * radius));
+                .add(up.scale(Math.sin(angle) * radius))
+                .add(normal.scale(height));
     }
 
     private static Vec3 sphereNormal(double latitude, double longitude) {
