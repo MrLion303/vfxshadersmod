@@ -57,17 +57,17 @@ void main() {
     float edgeWarp = (broad - 0.5) * 0.018 + (detail - 0.5) * 0.009;
 
     // Plasma caliente junto al horizonte, con filamentos y turbulencia asimétrica.
-    float innerEdge = smoothstep(0.153 + edgeWarp, 0.184 + edgeWarp, radius);
-    float outerEdge = 1.0 - smoothstep(0.365 + edgeWarp, 0.455 + edgeWarp, radius);
+    float innerEdge = smoothstep(0.247 + edgeWarp, 0.270 + edgeWarp, radius);
+    float outerEdge = 1.0 - smoothstep(0.380 + edgeWarp, 0.455 + edgeWarp, radius);
     float clumps = smoothstep(0.30, 0.69, broad * 0.62 + detail * 0.38);
     float threads = pow(max(0.0, sin(angle * 21.0 + filaments * 9.0 - time * 2.9)), 8.0);
     vec2 referenceUv = vec2(fract(angle / 6.28318530718),
-            clamp((radius - 0.16) / 0.295, 0.0, 1.0));
+            clamp((radius - 0.245) / 0.210, 0.0, 1.0));
     vec4 referenceDisk = texture(BlackHoleReference, referenceUv);
     float referenceDensity = smoothstep(0.035, 0.42, referenceDisk.a);
     float proceduralDensity = innerEdge * outerEdge * (0.54 + clumps * 0.46)
                             * (0.74 + threads * 0.26);
-    float referenceMask = referenceDensity * smoothstep(0.15, 0.20, radius)
+    float referenceMask = referenceDensity * smoothstep(0.242, 0.263, radius)
                         * (1.0 - smoothstep(0.43, 0.47, radius));
     float diskDensity = max(proceduralDensity * 0.38, referenceMask);
 
@@ -88,11 +88,11 @@ void main() {
     // Horizonte negro y anillo de fotones estrecho: sin aureola externa gigante.
     float horizonNoise = fbm2(p * 19.0 + vec2(time * 0.13, -time * 0.08));
     float horizonRadius = length(vec2(p.x, p.y * 1.08));
-    float horizonEdge = 0.145 + (horizonNoise - 0.5) * 0.003;
+    float horizonEdge = 0.245 + (horizonNoise - 0.5) * 0.003;
     float eventHorizon = 1.0 - smoothstep(horizonEdge, horizonEdge + 0.006, horizonRadius);
-    float photonRadius = 0.154 + (horizonNoise - 0.5) * 0.003;
+    float photonRadius = 0.255 + (horizonNoise - 0.5) * 0.003;
     float photonRing = exp(-pow((horizonRadius - photonRadius) / 0.0048, 2.0));
-    float innerGlow = exp(-pow((horizonRadius - 0.169) / 0.015, 2.0));
+    float innerGlow = exp(-pow((horizonRadius - 0.270) / 0.015, 2.0));
 
     vec3 color = gasColor * diskDensity;
     color += vec3(1.0, 0.86, 0.65) * photonRing * 1.55;
