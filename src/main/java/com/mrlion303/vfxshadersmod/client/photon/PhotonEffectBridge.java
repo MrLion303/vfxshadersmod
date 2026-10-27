@@ -62,7 +62,7 @@ public final class PhotonEffectBridge {
      */
     public static boolean usesPhotonAsPrimaryRenderer(String effectPath) {
         return switch (effectPath) {
-            case "demo_orbit", "falling_stars", "music_horizon_bars", "rainbow_aurora", "cloud_vortex" -> true;
+            case "demo_orbit", "falling_stars", "music_horizon_bars", "rainbow_aurora" -> true;
             default -> false;
         };
     }

@@ -2,33 +2,40 @@ package com.mrlion303.vfxshadersmod.client.effect;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
-import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
+import com.mrlion303.vfxshadersmod.client.render.VfxReferenceTextures;
+import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffect;
-import com.mrlion303.vfxshadersmod.core.physics.VfxFieldMath;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
+import org.joml.Vector3f;
 
-/** Vórtice de nubes rojo-anaranjadas con textura procedural y un núcleo incandescente. */
+/**
+ * Vórtice celeste volumétrico. El shader traza el volumen 3D y usa la imagen guía
+ * como mapa animado de densidad y color; Photon añade partículas y estelas secundarias.
+ */
 public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "cloud_vortex");
     private static final double SKY_DISTANCE = 224.0D;
     private static final double SKY_ELEVATION = Math.toRadians(28.0D);
 
-    /** Centro exacto del fenómeno, compartido con el emisor Photon. */
+    private long age;
+
+    /** Centro del volumen respecto a la cámara, compartido con el emisor Photon. */
     public static Vec3 centerOffset() {
         return new Vec3(0.0D,
                 SKY_DISTANCE * Math.sin(SKY_ELEVATION),
                 -SKY_DISTANCE * Math.cos(SKY_ELEVATION));
     }
-
-    private long age;
 
     @Override
     public EffectId id() {
@@ -45,6 +52,10 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
         age++;
     }
 
+    /**
+     * El pase ocupa la pantalla, pero no es un plano 2D: cada píxel lanza un rayo
+     * contra el elipsoide 3D del vórtice y acumula capas de nube con transparencia.
+     */
     @Override
     public void render(RenderLevelStageEvent event, float partialTick) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY
@@ -53,118 +64,78 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        PoseStack poseStack = event.getPoseStack();
-        PoseStack.Pose pose = poseStack.last();
-        MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
-        RenderType type = VfxRenderTypes.additiveQuads();
-        VertexConsumer out = buffers.getBuffer(type);
-        float time = (float) (age + partialTick);
-
-        // El vórtice se construye como una malla 3D fija en el mundo:
-        // múltiples brazos helicoidales, capas de nubes y una esfera central.
-        double halfSize = 160.0D;
-        Vec3 center = centerOffset();
-        Vec3 axis = new Vec3(0.0D, 0.32D, -1.0D).normalize();
-        Vec3 right = axis.cross(new Vec3(0.0D, 1.0D, 0.0D)).normalize();
-        Vec3 up = right.cross(axis).normalize();
-        int arms = 5;
-        int segments = 140;
-        for (int arm = 0; arm < arms; arm++) {
-            for (int i = 0; i < segments; i++) {
-                double t0 = i / (double) segments;
-                double t1 = (i + 1) / (double) segments;
-                double a0 = t0 * Math.PI * 5.4D + arm * Math.PI * 2.0D / arms - time * 0.012D;
-                double a1 = t1 * Math.PI * 5.4D + arm * Math.PI * 2.0D / arms - time * 0.012D;
-                double r0 = 5.0D + t0 * (halfSize * 0.56D);
-                double r1 = 5.0D + t1 * (halfSize * 0.56D);
-                double thickness0 = (2.0D + 7.0D * Math.sin(t0 * Math.PI))
-                        * (0.65D + 0.35D * Math.sin(i * 1.71D + arm * 4.0D));
-                double thickness1 = (2.0D + 7.0D * Math.sin(t1 * Math.PI))
-                        * (0.65D + 0.35D * Math.sin((i + 1) * 1.71D + arm * 4.0D));
-                Vec3 p0 = center.add(right.scale(Math.cos(a0) * r0)).add(up.scale(Math.sin(a0) * r0))
-                        .add(axis.scale(Math.sin(a0 * 1.7D + time * 0.018D) * (10.0D + 18.0D * t0)));
-                Vec3 p1 = center.add(right.scale(Math.cos(a1) * r1)).add(up.scale(Math.sin(a1) * r1))
-                        .add(axis.scale(Math.sin(a1 * 1.7D + time * 0.018D) * (10.0D + 18.0D * t1)));
-                Vec3 radial0 = right.scale(Math.cos(a0)).add(up.scale(Math.sin(a0))).normalize();
-                Vec3 radial1 = right.scale(Math.cos(a1)).add(up.scale(Math.sin(a1))).normalize();
-                Vec3 side0 = radial0.cross(axis).normalize().scale(thickness0);
-                Vec3 side1 = radial1.cross(axis).normalize().scale(thickness1);
-                float brightness = 0.55F + 0.45F * (float) VfxFieldMath.smoothstep(0.0D, 1.0D, 0.5D + 0.5D * Math.sin(t0 * Math.PI));
-                int color = mixRgb(0x4A0508, 0xFF4A08, brightness);
-                emit(out, pose, p0.subtract(side0), color, 0.86F);
-                emit(out, pose, p0.add(side0), color, 0.86F);
-                emit(out, pose, p1.add(side1), color, 0.86F);
-                emit(out, pose, p1.subtract(side1), color, 0.86F);
-            }
+        ShaderInstance shader = VfxShaderLibrary.cloudVortex();
+        if (shader == null) {
+            return;
         }
 
-        // Capas de escombros/plasma en órbitas distintas: no son una textura plana.
-        for (int i = 0; i < 420; i++) {
-            double seed = i * 12.9898D;
-            double angle = seed + time * (0.006D + (i % 7) * 0.001D);
-            double radius = 18.0D + fract(Math.sin(seed * 1.73D) * 43758.5453D) * (halfSize * 0.42D);
-            double axial = (fract(Math.sin(seed * 0.91D) * 24634.6345D) - 0.5D) * 34.0D
-                    + Math.sin(angle * 1.3D + time * 0.015D) * 9.0D;
-            Vec3 radial = right.scale(Math.cos(angle)).add(up.scale(Math.sin(angle)));
-            Vec3 p = center.add(radial.scale(radius)).add(axis.scale(axial));
-            double size = 0.35D + fract(Math.sin(seed * 2.31D) * 1347.12D) * 1.5D;
-            Vec3 side = radial.cross(axis).normalize().scale(size);
-            Vec3 vertical = axis.scale(size * (1.0D + (i % 3) * 0.45D));
-            int color = (i % 5 == 0) ? 0xFFD7A0 : ((i % 3 == 0) ? 0xFF741D : 0x9D1416);
-            emit(out, pose, p.subtract(side).subtract(vertical), color, 0.74F);
-            emit(out, pose, p.add(side).subtract(vertical), color, 0.74F);
-            emit(out, pose, p.add(side).add(vertical), color, 0.74F);
-            emit(out, pose, p.subtract(side).add(vertical), color, 0.74F);
+        VfxReferenceTextures.bind(shader, "VortexReference", "textures/vfx/vortex_reference.png");
+        setFloat(shader, "VortexTime", (float) (age + partialTick));
+
+        Vec3 direction = centerOffset().normalize();
+        Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
+        Vec3 vortexRight = direction.cross(worldUp).normalize();
+        if (vortexRight.lengthSqr() < 1.0E-6D) {
+            vortexRight = new Vec3(1.0D, 0.0D, 0.0D);
         }
-        buffers.endBatch(type);
+        Vec3 vortexUp = vortexRight.cross(direction).normalize();
 
-        // Núcleo esférico 3D: malla de triángulos con gradiente radial.
-        RenderType opaque = VfxRenderTypes.colorOpaqueQuads();
-        VertexConsumer core = buffers.getBuffer(opaque);
-        double coreRadius = 9.0D;
-        for (int lat = 0; lat < 24; lat++) {
-            double p0 = -Math.PI / 2.0D + Math.PI * lat / 24.0D;
-            double p1 = -Math.PI / 2.0D + Math.PI * (lat + 1) / 24.0D;
-            for (int lon = 0; lon < 48; lon++) {
-                double a0 = Math.PI * 2.0D * lon / 48.0D;
-                double a1 = Math.PI * 2.0D * (lon + 1) / 48.0D;
-                Vec3 v0 = sphere(center, coreRadius, p0, a0, right, up, axis);
-                Vec3 v1 = sphere(center, coreRadius, p0, a1, right, up, axis);
-                Vec3 v2 = sphere(center, coreRadius, p1, a1, right, up, axis);
-                Vec3 v3 = sphere(center, coreRadius, p1, a0, right, up, axis);
-                emit(core, pose, v0, 0xFF3A08, 1.0F);
-                emit(core, pose, v1, 0xFF3A08, 1.0F);
-                emit(core, pose, v2, 0xFFF0B2, 1.0F);
-                emit(core, pose, v3, 0xFFF0B2, 1.0F);
-            }
+        var camera = event.getCamera();
+        Vector3f look = camera.getLookVector();
+        Vector3f left = camera.getLeftVector();
+        Vector3f cameraUp = camera.getUpVector();
+        setVector(shader, "CameraForward", new Vec3(look.x, look.y, look.z));
+        // Camera.getLeftVector() apunta hacia la izquierda; el shader usa derecha positiva.
+        setVector(shader, "CameraRight", new Vec3(-left.x, -left.y, -left.z));
+        setVector(shader, "CameraUp", new Vec3(cameraUp.x, cameraUp.y, cameraUp.z));
+        setVector(shader, "VortexDirection", direction);
+        setVector(shader, "VortexRight", vortexRight);
+        setVector(shader, "VortexUp", vortexUp);
+
+        float projectionY = Math.abs(event.getProjectionMatrix().m11());
+        if (projectionY > 1.0E-4F) {
+            setFloat(shader, "TanHalfFov", 1.0F / projectionY);
         }
-        buffers.endBatch(opaque);
+        var target = minecraft.getMainRenderTarget();
+        if (target.width <= 0 || target.height <= 0) {
+            return;
+        }
+        setFloat(shader, "ScreenAspect", (float) target.width / (float) target.height);
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.disableCull();
+        try {
+            RenderSystem.setShader(() -> shader);
+            BufferBuilder builder = Tesselator.getInstance().getBuilder();
+            builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+            builder.vertex(-1.0F, -1.0F, 0.0F).uv(0.0F, 0.0F).endVertex();
+            builder.vertex( 1.0F, -1.0F, 0.0F).uv(1.0F, 0.0F).endVertex();
+            builder.vertex( 1.0F,  1.0F, 0.0F).uv(1.0F, 1.0F).endVertex();
+            builder.vertex(-1.0F,  1.0F, 0.0F).uv(0.0F, 1.0F).endVertex();
+            BufferUploader.drawWithShader(builder.end());
+        } finally {
+            RenderSystem.enableCull();
+            RenderSystem.depthMask(true);
+            RenderSystem.enableDepthTest();
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+        }
     }
 
-    private static Vec3 sphere(Vec3 center, double radius, double latitude, double longitude,
-                               Vec3 right, Vec3 up, Vec3 axis) {
-        double horizontal = Math.cos(latitude) * radius;
-        return center.add(right.scale(Math.cos(longitude) * horizontal))
-                .add(up.scale(Math.sin(longitude) * horizontal))
-                .add(axis.scale(Math.sin(latitude) * radius));
+    private static void setVector(ShaderInstance shader, String name, Vec3 value) {
+        var uniform = shader.getUniform(name);
+        if (uniform != null) {
+            uniform.set((float) value.x, (float) value.y, (float) value.z);
+        }
     }
 
-    private static double fract(double value) {
-        return value - Math.floor(value);
+    private static void setFloat(ShaderInstance shader, String name, float value) {
+        var uniform = shader.getUniform(name);
+        if (uniform != null) {
+            uniform.set(value);
+        }
     }
-
-    private static int mixRgb(int a, int b, float t) {
-        int r = Math.round(((a >> 16) & 255) * (1.0F - t) + ((b >> 16) & 255) * t);
-        int g = Math.round(((a >> 8) & 255) * (1.0F - t) + ((b >> 8) & 255) * t);
-        int bl = Math.round((a & 255) * (1.0F - t) + (b & 255) * t);
-        return (r << 16) | (g << 8) | bl;
-    }
-
-    private static void emit(VertexConsumer consumer, PoseStack.Pose pose, Vec3 p, int rgb, float alpha) {
-        consumer.vertex(pose.pose(), (float) p.x, (float) p.y, (float) p.z)
-                .color(((rgb >> 16) & 255) / 255.0F, ((rgb >> 8) & 255) / 255.0F,
-                        (rgb & 255) / 255.0F, alpha).endVertex();
-    }
-
-
 }

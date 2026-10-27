@@ -5,7 +5,11 @@
     "Position",
     "UV0"
   ],
-  "samplers": [],
+  "samplers": [
+    {
+      "name": "BlackHoleReference"
+    }
+  ],
   "uniforms": [
     {
       "name": "ModelViewMat",

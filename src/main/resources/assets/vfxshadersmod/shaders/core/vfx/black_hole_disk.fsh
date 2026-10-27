@@ -1,6 +1,7 @@
 #version 150
 
 uniform float BlackHoleDiskTime;
+uniform sampler2D BlackHoleReference;
 
 in vec2 texCoord;
 out vec4 fragColor;
@@ -37,6 +38,9 @@ void main() {
     float angle = texCoord.x * 6.28318530718;
     float radius = clamp(texCoord.y, 0.0, 1.0);
     float time = BlackHoleDiskTime * 0.012;
+    // Mapa de color extraído del disco de acreción de la imagen guía.
+    vec4 guide = texture(BlackHoleReference, vec2(fract(texCoord.x), radius));
+    float guideDensity = clamp(guide.a, 0.0, 1.0);
 
     // El gas gira alrededor del horizonte. Ruido deformado produce hebras y cúmulos,
     // mientras que la geometría anular le da una perspectiva 3D real.
@@ -69,6 +73,13 @@ void main() {
     float beaming = 0.56 + 0.78 * smoothstep(-0.65, 0.75, cos(angle + 0.45));
     gas *= beaming;
     gas += vec3(1.0, 0.76, 0.47) * thread * pow(temperature, 2.0) * 0.65;
+
+    // Conserva la estructura naranja/crema de la referencia sin congelar el disco:
+    // el shader procedimental sigue moviendo el plasma y añade variación entre fotogramas.
+    vec3 guideColor = pow(max(guide.rgb, vec3(0.0)), vec3(1.08));
+    float guideWeight = smoothstep(0.035, 0.72, guideDensity) * 0.88;
+    gas = mix(gas, guideColor, guideWeight);
+    alpha = max(alpha * 0.28, guideDensity * 0.96);
 
     if (alpha < 0.012) discard;
     fragColor = vec4(gas, clamp(alpha, 0.0, 0.94));

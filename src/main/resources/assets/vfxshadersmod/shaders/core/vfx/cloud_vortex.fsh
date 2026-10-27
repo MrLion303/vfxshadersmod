@@ -9,11 +9,12 @@ uniform vec3 VortexUp;
 uniform float TanHalfFov;
 uniform float ScreenAspect;
 uniform float VortexTime;
+uniform sampler2D VortexReference;
 
 in vec2 texCoord;
 out vec4 fragColor;
 
-const float VORTEX_DISTANCE = 196.0;
+const float VORTEX_DISTANCE = 224.0;
 const vec3 VORTEX_RADII = vec3(90.0, 74.0, 78.0);
 const int RAY_STEPS = 72;
 
@@ -135,6 +136,25 @@ void main() {
                 float radius;
                 float density = cloudDensity(local, broad, billows, radius);
 
+                // La guía real se usa dentro del volumen 3D como mapa de densidad y color.
+                // Cada capa de profundidad recibe un giro diferente para evitar un aspecto plano.
+                float guideRadius = length(local.xy);
+                float guideAngle = atan(local.y, local.x);
+                float guideTwist = (1.0 - clamp(guideRadius, 0.0, 1.0)) * 0.28
+                        + local.z * 0.18 - VortexTime * 0.0025
+                        + 0.018 * sin(guideRadius * 24.0 - VortexTime * 0.055);
+                vec2 guideLocal = vec2(cos(guideAngle + guideTwist),
+                        sin(guideAngle + guideTwist)) * guideRadius;
+                guideLocal += vec2(
+                        sin(local.y * 13.0 + VortexTime * 0.035),
+                        cos(local.x * 17.0 - VortexTime * 0.031)) * 0.012;
+                vec2 guideUv = vec2(0.5 + guideLocal.x * 0.5,
+                        0.5 - guideLocal.y * 0.5);
+                vec4 guide = texture(VortexReference, clamp(guideUv, vec2(0.001), vec2(0.999)));
+                float guideDepth = 1.0 - smoothstep(0.66, 0.98, abs(local.z));
+                float guideDensity = pow(clamp(guide.a, 0.0, 1.0), 0.72) * guideDepth;
+                density = max(density * 0.62, guideDensity * 0.94);
+
                 // An emissive core remains visible through gaps in the outer cloud banks.
                 float core = exp(-radius * 6.7)
                            * (1.0 - smoothstep(0.30, 0.82, abs(local.z)));
@@ -165,6 +185,12 @@ void main() {
                     cloudColor += vec3(0.42, 0.16, 0.035) * core;
                     cloudColor = mix(cloudColor, vec3(1.0, 0.35, 0.075),
                                      smoothstep(0.18, 0.55, core) * 0.52);
+
+                    // El plasma tomado de la referencia manda en las zonas luminosas;
+                    // el ruido procedural conserva volumen y animación en el resto.
+                    vec3 guideColor = pow(max(guide.rgb, vec3(0.0)), vec3(1.08));
+                    float guideWeight = smoothstep(0.06, 0.72, guide.a) * 0.86;
+                    cloudColor = mix(cloudColor, guideColor, guideWeight);
 
                     float contribution = transmittance * sampleAlpha;
                     accumulated += cloudColor * contribution;

@@ -3,6 +3,7 @@ package com.mrlion303.vfxshadersmod.client.effect;
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
+import com.mrlion303.vfxshadersmod.client.render.VfxReferenceTextures;
 import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
@@ -101,6 +102,7 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
         if (diskShader == null) {
             return;
         }
+        VfxReferenceTextures.bind(diskShader, "BlackHoleReference", "textures/vfx/blackhole_disk_reference.png");
         if (diskShader.getUniform("BlackHoleDiskTime") != null) {
             diskShader.getUniform("BlackHoleDiskTime").set((float) (age + partialTick));
         }
