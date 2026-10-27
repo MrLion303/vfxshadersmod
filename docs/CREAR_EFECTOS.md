@@ -20,7 +20,7 @@
 - BlackHoleLensingPass: pase GLSL que deforma la imagen alrededor de agujeros negros.
 - EffectRegistry y ClientVfxCatalog: definiciones, metadatos y registro.
 
-## Materiales compartidos estilo Photon
+## Materiales del renderer propio
 
 El renderizador centraliza los materiales reutilizables en `VfxRenderTypes`:
 
@@ -34,6 +34,19 @@ El renderizador centraliza los materiales reutilizables en `VfxRenderTypes`:
 Para un efecto con acabado de producción, separa la silueta/base de sus capas de brillo: una capa define la forma, otra más ancha y tenue produce el halo y los detalles finos aportan el núcleo. Evita usar un único quad plano para simular un objeto que deba verse volumétrico. Las animaciones deben derivarse del tiempo del efecto y usar curvas suaves de entrada/salida, evitando saltos al empezar o terminar.
 
 Usa los materiales comunes antes de crear otro RenderType. Conserva las mecánicas de servidor separadas del renderizado del cliente; un material aditivo no sustituye partículas, colisiones ni fuerzas físicas.
+
+## Usar el motor real de Photon
+
+Los efectos de partículas deben preferir el runtime de Photon en vez de escribir un renderer manual de quads para cada partícula. `PhotonEffectBridge` crea un objeto `FX`, agrega `ParticleEmitter` al `mainFX` y lo ejecuta con `FXEffect`/ `FXRuntime`. Para estelas, configura `ParticleConfig.trails`; para órbitas, utiliza `velocityOverLifetime` y la forma `Circle` o `Sphere`.
+
+Al añadir un preset:
+
+1. Agrega su identificador a `PhotonEffectBridge.Preset` y relaciónalo en `playForEffect`.
+2. Construye sus emisores con los parámetros de Photon; evita dibujar una segunda copia con un `ClientVfxRenderer`.
+3. Marca el efecto con `usesPhotonAsPrimaryRenderer` solo si Photon puede sustituir toda su representación. Si una capa especial sigue siendo necesaria, consulta `ClientVfxManager.isPhotonRunning` para que el renderer propio solo cubra esa capa y no duplique las partículas.
+4. Libera el runtime al desactivar el efecto y actualiza el ancla para los efectos que siguen al jugador.
+
+Photon no sustituye automáticamente el posprocesamiento de cámara, una cúpula para tintar todo el cielo ni una mecánica autoritativa del servidor. Esas partes se mantienen separadas hasta que tengan una implementación compatible y probada.
 
 ## Crear un efecto colocado
 
