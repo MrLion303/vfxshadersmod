@@ -45,6 +45,40 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType ADDITIVE_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":additive_quads",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS,
+            32768,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(ADDITIVE_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
+    private static final RenderType SKY_ADDITIVE_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":sky_additive_quads",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS,
+            32768,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(ADDITIVE_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(NO_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private static final RenderType COLOR_OPAQUE_QUADS = RenderType.create(
             VfxShadersMod.MOD_ID + ":color_opaque_quads",
             DefaultVertexFormat.POSITION_COLOR,
@@ -219,6 +253,16 @@ public final class VfxRenderTypes extends RenderType {
     /** Quads translúcidos que respetan la profundidad sin escribirla. */
     public static RenderType colorQuads() {
         return COLOR_QUADS;
+    }
+
+    /** Material aditivo para halos, plasma y partículas luminosas; no escribe profundidad. */
+    public static RenderType additiveQuads() {
+        return ADDITIVE_QUADS;
+    }
+
+    /** Material aditivo para VFX celestes que deben renderizarse detrás del mundo. */
+    public static RenderType skyAdditiveQuads() {
+        return SKY_ADDITIVE_QUADS;
     }
 
     /** Quads opacos que escriben profundidad, usados para el horizonte del agujero negro. */
