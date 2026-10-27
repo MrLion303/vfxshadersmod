@@ -1,7 +1,6 @@
 #version 150
 
 uniform float BlackHoleDiskTime;
-uniform sampler2D BlackHoleReference;
 
 in vec2 texCoord;
 out vec4 fragColor;
@@ -55,10 +54,8 @@ void main() {
     float innerFade = smoothstep(0.0, 0.075, radius);
     float outerFade = 1.0 - smoothstep(0.83, 1.0, radius);
     float turbulentMass = smoothstep(0.20, 0.73, broad * 0.66 + fine * 0.34);
-    vec4 referenceDisk = texture(BlackHoleReference, vec2(fract(texCoord.x), radius));
-    float referenceDensity = smoothstep(0.035, 0.42, referenceDisk.a);
     float proceduralDensity = innerFade * outerFade * (0.42 + 0.34 * turbulentMass + 0.24 * thread);
-    float alpha = max(proceduralDensity * 0.42, referenceDensity * innerFade * outerFade);
+    float alpha = proceduralDensity * 0.78;
 
     float temperature = 1.0 - radius;
     vec3 gas = mix(vec3(0.22, 0.004, 0.006), vec3(0.91, 0.075, 0.012),
@@ -72,8 +69,6 @@ void main() {
     float beaming = 0.56 + 0.78 * smoothstep(-0.65, 0.75, cos(angle + 0.45));
     gas *= beaming;
     gas += vec3(1.0, 0.76, 0.47) * thread * pow(temperature, 2.0) * 0.65;
-    float referenceWeight = smoothstep(0.08, 0.40, referenceDisk.a) * 0.92;
-    gas = mix(gas, referenceDisk.rgb * 1.28, referenceWeight);
 
     if (alpha < 0.012) discard;
     fragColor = vec4(gas, clamp(alpha, 0.0, 0.94));
