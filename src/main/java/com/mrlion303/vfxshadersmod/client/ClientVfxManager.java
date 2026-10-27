@@ -194,6 +194,12 @@ public final class ClientVfxManager {
         }
     }
 
+    /** Indica si el efecto dispone de un runtime Photon vivo en este cliente. */
+    public static boolean isPhotonRunning(EffectId id) {
+        PhotonEffectBridge.Handle handle = PHOTON_ACTIVE.get(id);
+        return handle != null && handle.isRunning();
+    }
+
     public static boolean isActive(EffectId id) {
         return ACTIVE.containsKey(id) || ClientWorldVfxInstances.hasInstances(id);
     }
