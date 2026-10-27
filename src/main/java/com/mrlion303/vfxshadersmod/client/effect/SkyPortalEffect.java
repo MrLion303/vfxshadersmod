@@ -32,6 +32,11 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
                 -SKY_DISTANCE * Math.cos(ELEVATION));
     }
 
+    /** Normal del plano del portal; la orientación Photon usa el mismo eje del shader. */
+    public static Vec3 portalNormal() {
+        return new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
+    }
+
     private long age;
 
     @Override
@@ -72,7 +77,7 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         var portalTexture = textureManager.getTexture(portalTextureId);
         shader.setSampler("PortalSampler", (java.util.function.IntSupplier) portalTexture::getId);
 
-        Vec3 direction = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
+        Vec3 direction = portalNormal();
         Vec3 center = centerOffset();
         Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
         Vec3 right = direction.cross(worldUp).normalize();
