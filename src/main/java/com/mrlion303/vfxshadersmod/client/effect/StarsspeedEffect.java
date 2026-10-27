@@ -18,9 +18,9 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 /** Campo de estrellas veloces con estelas curvas alrededor de un punto de fuga en el horizonte. */
 public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "starsspeed");
-    private static final int SEGMENTS = 192;
-    private static final int BANDS = 80;
-    private static final int STAR_COUNT = 1800;
+    private static final int SEGMENTS = 128;
+    private static final int BANDS = 36;
+    private static final int STAR_COUNT = 420;
     private static final double SKY_RADIUS = 512.0D;
     private static volatile int requestedColor = 0x3478FF;
 

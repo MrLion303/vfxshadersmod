@@ -87,12 +87,9 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         double progress = Math.min(1.0D, time / 72.0D);
         double eased = 1.0D - Math.pow(1.0D - progress, 3.0D);
         double radius = 0.18D + eased * MAX_RADIUS;
-        double opening = Math.min(1.0D, Math.pow(Math.max(0.0D, (progress - 0.10D) / 0.48D), 1.12D));
-        double radiusX = radius * Math.max(0.025D, opening);
-
-        if (shader.getUniform("PortalTime") != null) {
-            shader.getUniform("PortalTime").set((float) time);
-        }
+        // El portal nace como un punto y crece en ambas direcciones a la vez.
+        // La abertura permanece circular durante toda la animación.
+        double radiusX = radius;
 
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
@@ -116,8 +113,8 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         float crackReveal = (float) Math.min(1.0D, time / 12.0D);
         float crackAlpha = crackReveal * (float) Math.min(1.0D, 0.18D + progress * 1.2D);
 
-        for (int i = 0; i < 52; i++) {
-            double angle = Math.PI * 2.0D * i / 52.0D
+        for (int i = 0; i < 40; i++) {
+            double angle = Math.PI * 2.0D * i / 40.0D
                     + Math.sin(time * 0.006D + i * 2.7D) * 0.012D;
             double startR = radius * (0.84D + 0.10D * fract(Math.sin(i * 17.3D) * 817.2D));
             double endR = radius * (1.02D + 0.17D * fract(Math.sin(i * 31.1D) * 123.7D));
@@ -134,7 +131,7 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
             emitLine(cracks, pose, start, middle, 0x55DFFF, pulse * crackAlpha * 0.88F);
             emitLine(cracks, pose, middle, end, 0x9BEFFF, pulse * crackAlpha * 0.74F);
 
-            if (i % 3 == 0) {
+            if (i % 4 == 0) {
                 double branchAngle = angle + (i % 2 == 0 ? 1.0D : -1.0D) * 0.07D;
                 Vec3 branch = point(center, right, portalUp,
                         Math.cos(branchAngle) * endR * 1.12D * radiusX / radius,

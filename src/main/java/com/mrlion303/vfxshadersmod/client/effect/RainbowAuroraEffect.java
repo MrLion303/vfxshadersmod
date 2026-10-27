@@ -55,7 +55,8 @@ public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 playerPosition = player.getPosition(partialTick);
         Vec3 cameraPosition = event.getCamera().getPosition();
         double centerX = playerPosition.x - cameraPosition.x;
-        double centerY = playerPosition.y - cameraPosition.y;
+        // Eleva las cortinas para que floten claramente por encima del terreno.
+        double centerY = playerPosition.y + 20.0D - cameraPosition.y;
         double centerZ = playerPosition.z - cameraPosition.z;
         double time = age + partialTick;
 
@@ -118,13 +119,13 @@ public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
     }
 
     private static double bottomWave(double angle, double time, int layer) {
-        return 9.0D
+        return 14.0D
                 + Math.sin(angle * 4.0D + time * 0.021D + layer * 1.1D) * 2.0D
                 + Math.sin(angle * 9.0D - time * 0.032D + layer * 0.7D) * 0.85D;
     }
 
     private static double topWave(double angle, double time, int layer, double bottom) {
-        double height = 21.0D
+        double height = 30.0D
                 + Math.sin(angle * 3.0D - time * 0.016D + layer * 1.7D) * 4.2D
                 + Math.sin(angle * 8.0D + time * 0.027D + layer) * 2.5D;
         return Math.max(bottom + 9.0D, height);

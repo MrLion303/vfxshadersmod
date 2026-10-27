@@ -56,14 +56,6 @@
         0,
         1
       ]
-    },
-    {
-      "name": "PortalTime",
-      "type": "float",
-      "count": 1,
-      "values": [
-        0
-      ]
     }
   ]
 }
