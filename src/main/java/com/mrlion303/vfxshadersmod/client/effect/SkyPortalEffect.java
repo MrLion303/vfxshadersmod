@@ -62,7 +62,7 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
             textureManager.register(portalTextureId, new SimpleTexture(portalTextureId));
         }
         var portalTexture = textureManager.getTexture(portalTextureId);
-        shader.setSampler("PortalSampler", portalTexture::getId);
+        shader.setSampler("PortalSampler", (java.util.function.IntSupplier) portalTexture::getId);
 
         Vec3 direction = new Vec3(0.0D, Math.sin(ELEVATION), -Math.cos(ELEVATION)).normalize();
         Vec3 center = direction.scale(SKY_DISTANCE);
