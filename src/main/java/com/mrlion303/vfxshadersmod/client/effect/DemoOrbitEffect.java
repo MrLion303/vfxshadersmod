@@ -54,7 +54,7 @@ public final class DemoOrbitEffect implements VfxEffect, ClientVfxRenderer {
         double phase = (age + partialTick) * 0.045D;
 
         PoseStack.Pose pose = event.getPoseStack().last();
-        RenderType lineType = VfxRenderTypes.colorLines();
+        RenderType lineType = VfxRenderTypes.additiveLines();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         VertexConsumer vertices = buffers.getBuffer(lineType);
 
