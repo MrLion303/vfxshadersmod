@@ -169,13 +169,13 @@ tasks.named('processResources').configure {
 repositories {
     maven { url = 'https://maven.minecraftforge.net' }
     mavenCentral()
-    // Motor real de partículas, trails y materiales Photon para Forge 1.20.1.
-    maven { url = 'https://maven.firstdarkdev.xyz/snapshots' }
+    // Archivo oficial de Photon para Forge 1.20.1.
+    maven { url = 'https://cursemaven.com' }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    implementation fg.deobf("com.lowdragmc.photon:photon-forge-1.20.1:1.1.17")
+    implementation fg.deobf("curse.maven:photon-871522:7501597") { transitive = false }
 }
 
 tasks.named('processResources').configure {
