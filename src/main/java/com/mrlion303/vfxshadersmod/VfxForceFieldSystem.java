@@ -66,7 +66,7 @@ public final class VfxForceFieldSystem {
             for (BlackHoleField field : fields) {
                 Vec3 toward = field.center.subtract(position);
                 double distance = toward.length();
-                if (distance < 1.25D || distance > field.influenceRadius) {
+                if (distance < 1.25D || distance > field.influenceRadius()) {
                     continue;
                 }
 
