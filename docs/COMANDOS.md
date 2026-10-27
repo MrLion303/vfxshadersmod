@@ -52,7 +52,7 @@ Ejemplos:
 /vfxmove empujon @a
 ```
 
-Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no buffers gráficos. La pasada de lente de pantalla del agujero negro colocado está temporalmente desactivada porque causaba un framebuffer negro en algunas configuraciones. El horizonte y el disco siguen activos; la forma visual no altera la geometría ni la física de los bloques.
+Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no buffers gráficos. La lente gravitacional de pantalla está activa alrededor del agujero negro colocado. Si la cámara queda dentro o demasiado cerca del horizonte, el objeto se oculta temporalmente para evitar que la esfera negra envuelva toda la vista; este efecto no altera los bloques ni sus colisiones.
 
 ## Efectos incluidos
 
@@ -76,7 +76,7 @@ Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no b
 
 ## Efectos nuevos
 
-- `/vfx enable cloud_vortex` y `/vfx disable cloud_vortex`: vórtice celeste naranja rojizo que gira sobre su eje.
+- `/vfx enable cloud_vortex` y `/vfx disable cloud_vortex`: vórtice de nubes celeste naranja rojizas en volumen 3D, con turbulencia y centro luminoso guiados por la imagen de referencia.
 - `/vfx enable starsspeed <color>`: cielo de color uniforme con estelas rápidas y luz en el horizonte. El color es opcional; por defecto, azul.
 - `/vfx enable ground_aurora <x> <y> <z> <color>`: ondas de aurora sobre el terreno que se expanden desde el punto indicado.
 - `/vfx enable falling_stars` y `/vfx disable falling_stars`: lluvia de estrellas arcoíris diagonales.

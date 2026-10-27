@@ -27,7 +27,7 @@ Entra a un mundo de prueba, activa un efecto a la vez y revisa su posición, mov
 
 ### Efectos clásicos y compuestos
 
-Las barras musicales, la aurora clásica y Starsspeed usan sus renderizadores originales. El vórtice combina la textura de referencia con partículas Photon.
+Las barras musicales, la aurora clásica y Starsspeed usan sus renderizadores originales. El vórtice usa raymarching volumétrico 3D con la referencia integrada como mapa de densidad/color y partículas Photon secundarias.
 
 ```text
 /vfx enable music_horizon_bars
@@ -76,7 +76,7 @@ Para limpiar los efectos locales antes de seguir probando:
 - Las ondas de escaneo, aurora del suelo y trampolín deben seguir la superficie del terreno mediante su capa especializada. El trampolín también debe lanzar a los jugadores cuando el frente los alcanza.
 - Los discos Photon del agujero negro colocado y del agujero negro celeste deben compartir el plano de sus respectivos discos visuales.
 - En `trampolin`, comprueba que se vea el frente cian y que las crestas sobresalgan del terreno; la altura depende de la configuración de potencia.
-- La lente de pantalla del agujero negro colocado queda desactivada temporalmente para evitar el fallo de pantalla negra; el horizonte y el disco de acreción siguen dibujándose.
+- La lente gravitacional de pantalla está activa alrededor del agujero negro colocado. Si la cámara queda dentro o demasiado cerca del horizonte, el objeto se oculta temporalmente para evitar que la esfera negra envuelva toda la vista.
 - Activa efectos individualmente antes de probar varios a la vez para detectar cualquier caída de rendimiento.
 
 La compilación automática valida Java, recursos JSON y shaders GLSL, pero no puede confirmar el resultado visual de la GPU. La verificación final de aspecto y rendimiento requiere abrir Minecraft con Photon instalado. Los presets se generan mediante la API de Photon en tiempo de ejecución; no están empaquetados como archivos `.fx` editables en el editor de Photon.

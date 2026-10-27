@@ -54,9 +54,9 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 - **music_horizon_bars:** barras geométricas originales alrededor del horizonte, con alturas y colores animados. Se conserva el renderizador previo a la migración a Photon; no analiza audio real.
 - **rainbow_aurora:** aurora arcoíris clásica con cortinas geométricas ondulantes y gradientes de color, restaurada a su renderizador original.
 - **rainbow_sky:** pinta uniformemente el cielo y va cambiando de azul a rojo y a los demás colores del arcoíris. Cubre el cenit y tiñe las nubes sin recolorear los bloques cercanos.
-- **blackhole:** agujero negro en coordenadas del mundo, con horizonte compacto y disco de acreción amplio. La pasada de lente gravitacional de pantalla está temporalmente desactivada para evitar el fallo que dejaba la pantalla negra.
+- **blackhole:** agujero negro en coordenadas del mundo con horizonte negro compacto, disco de acreción blanco-dorado/naranja y lente gravitacional de pantalla. Si la cámara queda dentro del horizonte, se oculta temporalmente el objeto para evitar envolver la vista en negro.
 - **blackhole_sky:** versión gigantesca colocada en el cielo con el disco de partículas de Photon alineado con la acreción GLSL; los agujeros negros colocados usan un preset Photon separado con el disco casi horizontal.
-- **cloud_vortex:** nube-vórtice basada en una textura recortada de la imagen guía, proyectada en una dirección fija del cielo con distorsión animada sutil; Photon añade partículas y estelas.
+- **cloud_vortex:** vórtice de nubes rojo-anaranjadas con raymarching volumétrico 3D. La imagen guía aporta el mapa de densidad y color en cada capa de profundidad, mientras Photon añade partículas y estelas.
 - **rainbow_aurora_photon:** variante independiente de la aurora arcoíris, con bandas orbitales, bloom y estelas largas de Photon.
 - **starsspeed:** campo original de estrellas veloces y estelas curvas sobre una cúpula celeste tintada. Permite seleccionar el color y conserva el renderer previo a Photon.
 - **ground_aurora:** ondas Photon de radio creciente acompañadas por bandas propias que se adaptan al relieve; permite personalizar el color.
@@ -72,7 +72,7 @@ Consulta [la guía de instalación y pruebas de Photon](docs/PROBAR_PHOTON.md) p
 
 ## Motor Photon real
 
-El mod usa **Photon para Forge 1.20.1, versión 1.1.17**, como motor real de partículas. Los emisores, formas, curvas de escala, rotación orbital, bloom y estelas se construyen con la API de Photon. Las órbitas, la lluvia de estrellas y `rainbow_aurora_photon` usan Photon como renderizador principal. Las barras musicales, la aurora clásica y `starsspeed` conservan sus renderizadores originales; otros efectos combinan Photon con shaders o geometría especializada.
+El mod usa **Photon para Forge 1.20.1, versión 1.1.17**, como motor real de partículas. Los emisores, formas, curvas de escala, rotación orbital, bloom y estelas se construyen con la API de Photon. Las órbitas, la lluvia de estrellas y `rainbow_aurora_photon` usan Photon como renderizador principal. Las barras musicales, la aurora clásica y `starsspeed` conservan sus renderizadores originales; el vórtice usa volumen 3D propio junto con partículas Photon, y otros efectos combinan Photon con shaders o geometría especializada.
 
 Photon debe estar instalado junto con este mod. [Proyecto oficial de Photon](https://github.com/Low-Drag-MC/Photon) · [Versión Forge 1.20.1](https://modrinth.com/mod/photon-editor/version/mc1.20.1-1.1.17-forge).
 

@@ -51,9 +51,16 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         double diameter = instance.parameters().getOrDefault(
                 "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
         double configuredRadius = Math.max(0.5D, diameter * 0.5D);
-        double horizonRadius = configuredRadius * 0.12D;
+        double horizonRadius = configuredRadius * 0.35D;
+        // Nunca dibujar la esfera opaca desde dentro del horizonte: una esfera que
+        // envuelve la cámara hace que toda la pantalla se vuelva negra. Desde fuera
+        // se recupera el horizonte completo y el disco de acreción.
+        double cameraDistance = Math.sqrt(instance.position().distanceToSqr(context.cameraPosition()));
+        if (cameraDistance <= horizonRadius * 1.15D) {
+            return;
+        }
         double innerDiskRadius = horizonRadius * 1.045D;
-        double outerDiskRadius = configuredRadius * 0.63D;
+        double outerDiskRadius = horizonRadius * 1.8D;
         Vec3 center = context.toCameraRelative(instance.position());
 
         Vec3 reference = new Vec3(0.0D, 1.0D, 0.0D);
