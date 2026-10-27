@@ -148,6 +148,23 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType BLACK_HOLE_DISK_QUADS = RenderType.create(
+            VfxShadersMod.MOD_ID + ":black_hole_disk_quads",
+            DefaultVertexFormat.POSITION_TEX,
+            VertexFormat.Mode.QUADS,
+            32768,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::blackHoleDisk))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private static final RenderType PORTAL_QUADS = RenderType.create(
             VfxShadersMod.MOD_ID + ":portal_quads",
             DefaultVertexFormat.POSITION_TEX,
@@ -200,6 +217,11 @@ public final class VfxRenderTypes extends RenderType {
     /** Superficie procedural del agujero negro colocado en el mundo. */
     public static RenderType blackHoleWorldQuads() {
         return BLACK_HOLE_WORLD_QUADS;
+    }
+
+    /** Anillo de acreción 3D para agujeros negros colocados en el mundo. */
+    public static RenderType blackHoleDiskQuads() {
+        return BLACK_HOLE_DISK_QUADS;
     }
 
     /** Plano del portal con recorte en shader. */

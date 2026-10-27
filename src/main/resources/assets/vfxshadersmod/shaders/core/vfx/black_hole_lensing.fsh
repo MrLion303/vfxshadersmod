@@ -22,7 +22,7 @@ vec2 bendAroundHole(vec2 uv, vec4 hole, float aspect) {
     vec2 delta = uv - hole.xy;
     vec2 metric = vec2(delta.x * aspect, delta.y);
     float d = length(metric);
-    float horizonRadius = clamp(hole.z, 0.001, 0.25);
+    float horizonRadius = clamp(hole.z, 0.001, 0.46);
     if (d < 0.00001) return uv;
 
     float strength = clamp(hole.w, 0.0, 1.45);
@@ -45,7 +45,7 @@ float eventHorizonMask(vec2 screenUv, vec4 hole, float aspect) {
     if (hole.z <= 0.0) return 0.0;
     vec2 delta = screenUv - hole.xy;
     float d = length(vec2(delta.x * aspect, delta.y));
-    float radius = clamp(hole.z, 0.001, 0.25);
+    float radius = clamp(hole.z, 0.001, 0.46);
     return 1.0 - smoothstep(radius * 0.87, radius * 1.08, d);
 }
 

@@ -21,7 +21,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 /** Ondas luminosas continuas que viajan por el terreno desde una coordenada. */
 public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "ground_aurora");
-    private static final int SEGMENTS = 220;
+    private static final int SEGMENTS = 440;
     private static final double MAX_RADIUS = 50.0D;
     private static volatile Vec3 requestedOrigin = Vec3.ZERO;
     private static volatile int requestedColor = 0x58DFFF;
@@ -69,25 +69,25 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
         double time = age + partialTick;
 
         // Varias crestas de distintos ritmos mantienen el fenómeno en marcha sin superar los 50 bloques.
-        for (int layer = 0; layer < 6; layer++) {
+        for (int layer = 0; layer < 4; layer++) {
             double speed = 0.42D + layer * 0.025D;
             double cycle = MAX_RADIUS + 12.0D;
-            double phase = layer * (cycle / 6.0D);
+            double phase = layer * (cycle / 4.0D);
             double radius = (time * speed + phase) % cycle;
             double edgeT = Math.max(0.0D, Math.min(1.0D, (MAX_RADIUS - radius) / 8.0D));
             double nearT = Math.max(0.0D, Math.min(1.0D, radius / 4.0D));
             double edgeFade = edgeT * edgeT * (3.0D - 2.0D * edgeT);
             double nearFade = nearT * nearT * (3.0D - 2.0D * nearT);
-            float alpha = (float) ((0.38D - layer * 0.032D) * edgeFade * nearFade);
-            double width = 0.65D + (layer % 3) * 0.18D;
+            float alpha = (float) ((0.36D - layer * 0.045D) * edgeFade * nearFade);
+            double width = 0.16D + (layer % 2) * 0.075D;
             int ringColor = layer % 3 == 0 ? lighten(color, 0.38F) : color;
 
             drawWave(vertices, pose, level, camera, time, radius, width * 1.7D,
-                    ringColor, alpha * 0.24F, layer);
+                    ringColor, alpha * 0.13F, layer);
             drawWave(vertices, pose, level, camera, time, radius, width,
                     ringColor, alpha, layer);
             drawWave(vertices, pose, level, camera, time, radius, 0.07D,
-                    0xE9FFFF, alpha * 0.92F, layer);
+                    0xE9FFFF, alpha * 0.72F, layer);
         }
         buffers.endBatch(type);
     }
@@ -122,16 +122,14 @@ public final class GroundAuroraEffect implements VfxEffect, ClientVfxRenderer {
         int yBound = (int) Math.max(level.getMinBuildHeight(),
                 Math.min(level.getMaxBuildHeight() - 1, origin.y));
         BlockPos sample = BlockPos.containing(x, yBound, z);
-        double groundY = origin.y + 0.15D;
+        double groundY = origin.y + 0.025D;
         if (level.hasChunkAt(sample)) {
             groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, (int) Math.floor(x), (int) Math.floor(z)) + 0.12D;
         }
 
-        // Altura ondulada: parece una marea luminosa, sin rellenar el mundo como agua.
-        double wave = 0.12D
-                + Math.sin(angle * 4.0D - time * 0.055D + layer * 0.6D) * 0.11D
-                + Math.sin(angle * 9.0D + time * 0.035D + layer * 0.7D) * 0.035D;
-        return new Vec3(x - camera.x, groundY + 0.24D + wave - camera.y, z - camera.z);
+        // Sin onda vertical: cada vértice toma la altura real del terreno debajo.
+        // La banda es estrecha y los segmentos más densos evitan puentes sobre las laderas.
+        return new Vec3(x - camera.x, groundY + 0.025D - camera.y, z - camera.z);
     }
 
     private static int lighten(int rgb, float amount) {

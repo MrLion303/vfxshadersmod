@@ -19,9 +19,9 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "starsspeed");
     private static final int SEGMENTS = 144;
-    private static final int BANDS = 52;
-    private static final int STAR_COUNT = 640;
-    private static final double SKY_RADIUS = 176.0D;
+    private static final int BANDS = 64;
+    private static final int STAR_COUNT = 1200;
+    private static final double SKY_RADIUS = 224.0D;
     private static volatile int requestedColor = 0x3478FF;
 
     private int color = requestedColor;
@@ -65,8 +65,9 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         for (int band = 0; band < BANDS; band++) {
             double f0 = (double) band / BANDS;
             double f1 = (double) (band + 1) / BANDS;
-            double latA = -0.18D + (Math.PI * 0.5D + 0.18D) * f0;
-            double latB = -0.18D + (Math.PI * 0.5D + 0.18D) * f1;
+            // Cúpula completa: desde el horizonte inferior hasta el cenit y el cielo trasero.
+            double latA = -Math.PI * 0.5D + 0.006D + (Math.PI - 0.012D) * f0;
+            double latB = -Math.PI * 0.5D + 0.006D + (Math.PI - 0.012D) * f1;
             for (int segment = 0; segment < SEGMENTS; segment++) {
                 double a = Math.PI * 2.0D * segment / SEGMENTS;
                 double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
@@ -106,12 +107,15 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
 
         VertexConsumer stars = buffers.getBuffer(skyType);
         int haloColor = brighten(color, 0.82F);
+        double time = age + partialTick;
         for (int i = 0; i < STAR_COUNT; i++) {
             double seed = fract(Math.sin((i + 1) * 127.1D) * 43758.5453D);
             double seed2 = fract(Math.sin((i + 1) * 311.7D) * 24634.6345D);
-            double polar = 0.075D + seed2 * 1.38D;
-            // Coordenadas deterministas: las estelas no orbitan ni cambian de sitio con el tiempo.
-            double angle = seed * Math.PI * 2.0D;
+            // El ángulo polar cubre la esfera celeste completa, no solo el horizonte.
+            double polar = 0.022D + seed2 * (Math.PI - 0.044D);
+            double speed = 0.009D + seed * 0.014D;
+            // Rotación alrededor de un eje fijo de mundo: no depende de hacia dónde mira el jugador.
+            double angle = seed * Math.PI * 2.0D + time * speed;
             double trailAngle = 0.12D + seed * 0.30D;
             double tailAngle = angle - trailAngle;
 

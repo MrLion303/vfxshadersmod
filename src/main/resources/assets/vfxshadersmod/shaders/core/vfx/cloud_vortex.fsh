@@ -15,7 +15,7 @@ out vec4 fragColor;
 
 const float VORTEX_DISTANCE = 224.0;
 const vec3 VORTEX_RADII = vec3(90.0, 62.0, 74.0);
-const int RAY_STEPS = 10;
+const int RAY_STEPS = 14;
 
 float hash31(vec3 p) {
     p = fract(p * 0.1031);
@@ -68,12 +68,12 @@ float cloudDensity(vec3 local, out float broad, out float billows, out float rad
 
     float spiralBand = sin(angle * 3.7 - radius * 13.8 + local.z * 2.6 - VortexTime * 0.018);
     float armNoise = spiralBand + (billows - 0.5) * 1.0 + (fine - 0.5) * 0.48;
-    float arms = mix(0.38, 1.0, smoothstep(-0.92, 0.47, armNoise));
+    float arms = mix(0.32, 1.0, smoothstep(-0.96, 0.45, armNoise));
 
-    float cloudField = broad + (billows - 0.5) * 0.56 - (fine - 0.5) * 0.24;
-    float wisps = smoothstep(0.28, 0.62, cloudField);
-    float edgeRadius = 0.84 + (broad - 0.5) * 0.22
-            + (billows - 0.5) * 0.26 + (fine - 0.5) * 0.10;
+    float cloudField = broad + (billows - 0.5) * 0.62 - (fine - 0.5) * 0.30;
+    float wisps = smoothstep(0.265, 0.61, cloudField);
+    float edgeRadius = 0.82 + (broad - 0.5) * 0.24
+            + (billows - 0.5) * 0.30 + (fine - 0.5) * 0.14;
     float perimeter = 1.0 - smoothstep(edgeRadius - 0.12, edgeRadius + 0.16, radius);
     float depthFade = 1.0 - smoothstep(0.70 + (billows - 0.5) * 0.10,
                                         1.02, abs(local.z));
@@ -112,7 +112,7 @@ void main() {
     float closestRadius = length(toVortexLocal(nearest));
     float halo = exp(-max(closestRadius - 0.78, 0.0) * 4.2)
                * (1.0 - smoothstep(1.05, 1.85, closestRadius));
-    float haloAlpha = halo * 0.115;
+    float haloAlpha = halo * 0.075;
 
     vec3 accumulated = vec3(0.090, 0.0025, 0.009) * haloAlpha;
     float accumulatedAlpha = haloAlpha;

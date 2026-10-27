@@ -24,6 +24,7 @@ public final class VfxShaderLibrary {
     private static ShaderInstance portalWindow;
     private static ShaderInstance cloudVortex;
     private static ShaderInstance blackHoleSurface;
+    private static ShaderInstance blackHoleDisk;
 
     private VfxShaderLibrary() {
     }
@@ -59,6 +60,12 @@ public final class VfxShaderLibrary {
                 shader -> blackHoleSurface = shader
         );
 
+        ResourceLocation blackHoleDiskId = new ResourceLocation(VfxShadersMod.MOD_ID, "vfx/black_hole_disk");
+        event.registerShader(
+                new ShaderInstance(event.getResourceProvider(), blackHoleDiskId, DefaultVertexFormat.POSITION_TEX),
+                shader -> blackHoleDisk = shader
+        );
+
         BlackHoleLensingPass.releaseTarget();
     }
 
@@ -82,8 +89,13 @@ public final class VfxShaderLibrary {
         return cloudVortex;
     }
 
-    /** Shader procedural de lente gravitacional y disco de acreción. */
+    /** Shader procedural del agujero negro celeste. */
     public static ShaderInstance blackHoleSurface() {
         return blackHoleSurface;
+    }
+
+    /** Shader del gas de acreción aplicado a una malla anular 3D. */
+    public static ShaderInstance blackHoleDisk() {
+        return blackHoleDisk;
     }
 }

@@ -90,20 +90,18 @@ public final class BlackHoleLensingPass {
                 }
                 double diameter = hole.parameters().getOrDefault(
                         "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
-                double radius = Math.max(0.5D, diameter * 0.5D);
+                double configuredRadius = Math.max(0.5D, diameter * 0.5D);
+                double horizonRadius = configuredRadius * 0.35D;
                 double distance = hole.position().distanceTo(cameraPosition);
 
-                // Al entrar en el horizonte se mantiene la distorsión en pantalla,
-                // en lugar de perderla por la proyección de un punto demasiado cercano.
-                if (distance <= radius) {
-                    float spread = (float) Math.min(0.07D,
-                            0.012D + 0.045D * (1.0D - distance / radius));
-                    screenHoles.add(new float[]{0.5F, 0.5F, spread, 0.95F});
+                // Si la cámara cruza el horizonte físico, la sombra debe ocupar la vista.
+                // Fuera de él la proyección es perspectiva y crece al acercarse.
+                if (distance <= horizonRadius) {
+                    screenHoles.add(new float[]{0.5F, 0.5F, 0.48F, 1.45F});
                     continue;
                 }
 
                 float[] center = project(hole.position(), camera, event);
-                double horizonRadius = radius * 0.35D;
                 Vec3 edgePosition = hole.position().add(
                         cameraLeft.x * horizonRadius,
                         cameraLeft.y * horizonRadius,
@@ -116,9 +114,10 @@ public final class BlackHoleLensingPass {
 
                 float dx = (edge[0] - center[0]) * aspect;
                 float dy = edge[1] - center[1];
-                float projectedRadius = Math.min(0.07F,
+                float projectedRadius = Math.min(0.46F,
                         Math.max(0.0015F, (float) Math.sqrt(dx * dx + dy * dy)));
-                float strength = (float) (1.0D + 0.35D * Math.max(0.0D, 1.0D - distance / 192.0D));
+                float strength = (float) Math.min(1.45D,
+                        1.12D + 0.33D * Math.max(0.0D, 1.0D - distance / 192.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
             }
 
