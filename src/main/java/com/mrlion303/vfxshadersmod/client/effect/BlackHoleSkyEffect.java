@@ -21,6 +21,9 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
     public static final double SKY_DISTANCE = 512.0D;
     public static final double SKY_DIAMETER = 2340.0D;
     public static final double SKY_ELEVATION_DEGREES = 14.0D;
+    // Unidades visuales normalizadas para que 780 -> 2340 sea realmente un aumento de 3×
+    // sin que el plano completo desborde la cámara y convierta el disco en un borde gigante.
+    public static final double SKY_HALF_WIDTH = SKY_DIAMETER * 0.90D / 10.5D;
 
     private static final Vec3 WORLD_DIRECTION = new Vec3(
             0.0D,
@@ -93,7 +96,7 @@ public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         Vec3 center = centerOffset;
-        double halfWidth = SKY_DIAMETER * 0.90D;
+        double halfWidth = SKY_HALF_WIDTH;
         double halfHeight = halfWidth / 2.07D;
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = Minecraft.getInstance().renderBuffers().bufferSource();
