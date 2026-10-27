@@ -72,12 +72,16 @@ void main() {
         cos(local.x * 13.0 - time * 3.6)
     ) * 0.006;
 
-    vec2 uv = vec2(0.5 + warped.x * 0.5, 0.5 - warped.y * 0.5);
+    // Centro y escala corresponden al recorte real del PNG: el vórtice no está
+    // centrado en la captura original, así que no se usa el centro genérico (0.5, 0.5).
+    vec2 guideCenter = vec2(122.0 / 256.0, 90.0 / 256.0);
+    vec2 guideExtent = vec2(150.0 * 0.53 / 256.0, 140.0 * 0.53 / 256.0);
+    vec2 uv = guideCenter + vec2(warped.x * guideExtent.x, -warped.y * guideExtent.y);
     vec4 guide = texture(VortexReference, clamp(uv, vec2(0.001), vec2(0.999)));
     if (guide.a < 0.015) discard;
 
     // Segunda capa discreta para dar profundidad sin dibujar una esfera ni un halo circular.
-    vec2 detailUv = vec2(0.5) + (uv - vec2(0.5)) * 1.035
+    vec2 detailUv = guideCenter + (uv - guideCenter) * 1.035
                   + vec2(time * 0.002, -time * 0.0013);
     vec4 detail = texture(VortexReference, clamp(detailUv, vec2(0.001), vec2(0.999)));
     float turbulence = noise21(warped * 18.0 + vec2(time * 1.5, -time));

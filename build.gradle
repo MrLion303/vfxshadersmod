@@ -94,8 +94,8 @@ tasks.register('generateVfxReferenceTextures') {
 
                 // Máscara ovalada centrada en el vórtice: elimina el cielo rojizo de la
                 // captura y los objetos del escenario, conservando las nubes de la periferia.
-                double dx = (x - 122.0d) / 128.0d
-                double dy = (y - 90.0d) / 118.0d
+                double dx = (x - 122.0d) / 150.0d
+                double dy = (y - 90.0d) / 140.0d
                 double radial = Math.sqrt(dx * dx + dy * dy * 1.08d)
                 double silhouette = 1.0d
                 if (radial >= 0.53d) {
