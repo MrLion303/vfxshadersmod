@@ -36,14 +36,14 @@ float fbm2(vec2 p) {
 
 void main() {
     vec2 p = texCoord * 2.0 - 1.0;
-    float radius = length(vec2(p.x, p.y * 1.22));
+    float radius = length(vec2(p.x, p.y * 0.84));
 
     // Solo se dibuja el objeto astronómico: fuera del disco y del horizonte hay transparencia.
     if (radius > 0.49) {
         discard;
     }
 
-    float angle = atan(p.y * 1.22, p.x);
+    float angle = atan(p.y * 0.84, p.x);
     float time = BlackHoleTime * 0.0055;
     float logRadius = log(max(radius, 0.025));
     vec2 flow = vec2(
@@ -87,7 +87,7 @@ void main() {
 
     // Horizonte negro y anillo de fotones estrecho: sin aureola externa gigante.
     float horizonNoise = fbm2(p * 19.0 + vec2(time * 0.13, -time * 0.08));
-    float horizonRadius = length(vec2(p.x, p.y * 1.08));
+    float horizonRadius = length(vec2(p.x, p.y * 0.95));
     float horizonEdge = 0.245 + (horizonNoise - 0.5) * 0.003;
     float eventHorizon = 1.0 - smoothstep(horizonEdge, horizonEdge + 0.006, horizonRadius);
     float photonRadius = 0.255 + (horizonNoise - 0.5) * 0.003;
