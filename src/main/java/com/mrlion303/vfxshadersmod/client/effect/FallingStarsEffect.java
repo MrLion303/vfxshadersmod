@@ -62,7 +62,7 @@ public final class FallingStarsEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 billboardUp = new Vec3(cameraUp.x, cameraUp.y, cameraUp.z).normalize();
         PoseStack.Pose pose = event.getPoseStack().last();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
-        RenderType type = VfxRenderTypes.colorQuads();
+        RenderType type = VfxRenderTypes.additiveQuads();
         VertexConsumer stars = buffers.getBuffer(type);
 
         for (int i = 0; i < STAR_COUNT; i++) {
