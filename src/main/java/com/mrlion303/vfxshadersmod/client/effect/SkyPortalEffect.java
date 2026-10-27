@@ -22,7 +22,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "sky_portal");
     private static final double SKY_DISTANCE = 150.0D;
-    private static final double ELEVATION = Math.toRadians(24.0D);
+    private static final double ELEVATION = Math.toRadians(78.0D);
     private static final double MAX_RADIUS = 124.0D;
     private long age;
 
