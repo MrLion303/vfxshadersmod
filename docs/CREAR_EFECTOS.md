@@ -20,6 +20,21 @@
 - BlackHoleLensingPass: pase GLSL que deforma la imagen alrededor de agujeros negros.
 - EffectRegistry y ClientVfxCatalog: definiciones, metadatos y registro.
 
+## Materiales compartidos estilo Photon
+
+El renderizador centraliza los materiales reutilizables en `VfxRenderTypes`:
+
+- `colorQuads()`: superficies translúcidas con profundidad, para capas base.
+- `additiveQuads()`: halos, plasma y partículas que suman luz sin escribir profundidad.
+- `skyQuads()`: superficies celestes detrás del mundo.
+- `skyAdditiveQuads()`: brillo celeste aditivo.
+- `additiveLines()` y `skyAdditiveLines()`: trazos energéticos y grietas con mezcla aditiva.
+- Materiales específicos de shader para agujeros negros, portales y nubes procedurales.
+
+Para un efecto con acabado de producción, separa la silueta/base de sus capas de brillo: una capa define la forma, otra más ancha y tenue produce el halo y los detalles finos aportan el núcleo. Evita usar un único quad plano para simular un objeto que deba verse volumétrico. Las animaciones deben derivarse del tiempo del efecto y usar curvas suaves de entrada/salida, evitando saltos al empezar o terminar.
+
+Usa los materiales comunes antes de crear otro RenderType. Conserva las mecánicas de servidor separadas del renderizado del cliente; un material aditivo no sustituye partículas, colisiones ni fuerzas físicas.
+
 ## Crear un efecto colocado
 
 1. Crear una definición con EffectId.
