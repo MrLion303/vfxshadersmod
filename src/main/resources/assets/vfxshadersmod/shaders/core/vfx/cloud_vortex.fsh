@@ -9,36 +9,40 @@ uniform vec3 VortexUp;
 uniform float TanHalfFov;
 uniform float ScreenAspect;
 uniform float VortexTime;
-uniform sampler2D VortexReference;
 
 in vec2 texCoord;
 out vec4 fragColor;
 
 const float VORTEX_DISTANCE = 224.0;
 const vec3 VORTEX_RADII = vec3(90.0, 74.0, 78.0);
-const int RAY_STEPS = 72;
+const int RAY_STEPS = 12;
 
-float hash31(vec3 p) {
-    p = fract(p * 0.1031);
-    p += dot(p, p.yzx + 33.33);
-    return fract((p.x + p.y) * p.z);
+float hash21(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
 }
 
-float vfxNoise3(vec3 p) {
-    vec3 cell = floor(p);
-    vec3 f = fract(p);
+float noise2(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float n000 = hash31(cell);
-    float n100 = hash31(cell + vec3(1.0, 0.0, 0.0));
-    float n010 = hash31(cell + vec3(0.0, 1.0, 0.0));
-    float n110 = hash31(cell + vec3(1.0, 1.0, 0.0));
-    float n001 = hash31(cell + vec3(0.0, 0.0, 1.0));
-    float n101 = hash31(cell + vec3(1.0, 0.0, 1.0));
-    float n011 = hash31(cell + vec3(0.0, 1.0, 1.0));
-    float n111 = hash31(cell + vec3(1.0, 1.0, 1.0));
-    float z0 = mix(mix(n000, n100, f.x), mix(n010, n110, f.x), f.y);
-    float z1 = mix(mix(n001, n101, f.x), mix(n011, n111, f.x), f.y);
-    return mix(z0, z1, f.z);
+    float a = hash21(i);
+    float b = hash21(i + vec2(1.0, 0.0));
+    float c = hash21(i + vec2(0.0, 1.0));
+    float d = hash21(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm2(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < 3; i++) {
+        value += noise2(p) * amplitude;
+        p = p * 2.02 + vec2(7.1, -3.8);
+        amplitude *= 0.5;
+    }
+    return value / 0.875;
 }
 
 vec3 toVortexLocal(vec3 relativePosition) {
@@ -47,41 +51,6 @@ vec3 toVortexLocal(vec3 relativePosition) {
         dot(relativePosition, VortexUp) / VORTEX_RADII.y,
         dot(relativePosition, VortexDirection) / VORTEX_RADII.z
     );
-}
-
-float cloudDensity(vec3 local, out float broad, out float billows, out float radius) {
-    radius = length(local.xy);
-    float angle = atan(local.y, local.x);
-
-    // Domain warp gives the cloud banks a spiral flow instead of circular rings.
-    float turn = (1.0 - clamp(radius, 0.0, 1.0)) * 5.1
-               + local.z * 0.82 - VortexTime * 0.012;
-    float cs = cos(turn);
-    float sn = sin(turn);
-    vec2 rotated = mat2(cs, -sn, sn, cs) * local.xy;
-    vec3 flow = vec3(rotated * vec2(3.15, 2.72), local.z * 3.1);
-
-    broad = vfxNoise3(flow * 1.32 + vec3(0.0, 0.0, VortexTime * 0.003));
-    vec3 warpedDetail = flow * 3.85 + vec3((broad - 0.5) * 1.45,
-            (0.5 - broad) * 1.1, -VortexTime * 0.006);
-    billows = vfxNoise3(warpedDetail);
-    float fine = vfxNoise3(warpedDetail * 1.95 + vec3(-3.7, 8.1, VortexTime * 0.012));
-
-    float spiralBand = sin(angle * 2.35 - radius * 9.2 + local.z * 3.4 - VortexTime * 0.028);
-    float armNoise = spiralBand + (billows - 0.5) * 1.0 + (fine - 0.5) * 0.48;
-    float arms = mix(0.18, 1.0, smoothstep(-0.96, 0.45, armNoise));
-
-    float cloudField = broad + (billows - 0.5) * 0.62 - (fine - 0.5) * 0.30;
-    float wisps = smoothstep(0.30, 0.64, cloudField);
-    float edgeRadius = 0.84 + (broad - 0.5) * 0.30
-            + (billows - 0.5) * 0.34 + (fine - 0.5) * 0.18;
-    float perimeter = 1.0 - smoothstep(edgeRadius - 0.12, edgeRadius + 0.16, radius);
-    float depthFade = 1.0 - smoothstep(0.70 + (billows - 0.5) * 0.10,
-                                        1.02, abs(local.z));
-    float volumeFade = 1.0 - smoothstep(0.79, 1.0, length(local));
-    float centralOpening = smoothstep(0.012, 0.19, radius);
-
-    return wisps * perimeter * depthFade * volumeFade * centralOpening * arms;
 }
 
 void main() {
@@ -93,120 +62,90 @@ void main() {
     );
 
     vec3 center = VortexDirection * VORTEX_DISTANCE;
-    vec3 radiiInverse = 1.0 / VORTEX_RADII;
+    vec3 inverseRadii = 1.0 / VORTEX_RADII;
     vec3 rayOriginLocal = toVortexLocal(-center);
     vec3 rayDirectionLocal = vec3(
-        dot(rayDirection, VortexRight) * radiiInverse.x,
-        dot(rayDirection, VortexUp) * radiiInverse.y,
-        dot(rayDirection, VortexDirection) * radiiInverse.z
+        dot(rayDirection, VortexRight) * inverseRadii.x,
+        dot(rayDirection, VortexUp) * inverseRadii.y,
+        dot(rayDirection, VortexDirection) * inverseRadii.z
     );
 
-    // Exact ray/ellipsoid intersection bounds the march to the cloud volume.
     float a = dot(rayDirectionLocal, rayDirectionLocal);
     float b = dot(rayOriginLocal, rayDirectionLocal);
     float c = dot(rayOriginLocal, rayOriginLocal) - 1.0;
     float discriminant = b * b - a * c;
-
-    // Faint atmospheric red spill is smooth and has no rectangular silhouette.
-    float closestT = max(dot(center, rayDirection), 0.0);
-    vec3 nearest = rayDirection * closestT - center;
-    float closestRadius = length(toVortexLocal(nearest));
-    // No se dibuja una corona roja de color uniforme; la luz procede del volumen de nubes.
-    float haloAlpha = 0.0;
-
-    vec3 accumulated = vec3(0.090, 0.0025, 0.009) * haloAlpha;
-    float accumulatedAlpha = haloAlpha;
-    float transmittance = 1.0 - haloAlpha;
-
-    if (discriminant > 0.0 && a > 0.00001) {
-        float root = sqrt(discriminant);
-        float tEnter = max((-b - root) / a, 0.0);
-        float tExit = (-b + root) / a;
-
-        if (tExit > tEnter) {
-            float stepLength = (tExit - tEnter) / float(RAY_STEPS);
-            float jitter = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
-
-            for (int i = 0; i < RAY_STEPS; i++) {
-                float t = tEnter + (float(i) + 0.25 + jitter * 0.5) * stepLength;
-                vec3 relativePosition = rayDirection * t - center;
-                vec3 local = toVortexLocal(relativePosition);
-                float broad;
-                float billows;
-                float radius;
-                float density = cloudDensity(local, broad, billows, radius);
-
-                // La imagen guía se muestrea dentro de cada capa del elipsoide 3D,
-                // no como una imagen plana. El centro UV coincide con la nube real.
-                float guideRadius = length(local.xy);
-                float guideAngle = atan(local.y, local.x);
-                float guideTwist = local.z * 0.34 - VortexTime * 0.004
-                        + (1.0 - clamp(guideRadius, 0.0, 1.0)) * 0.20;
-                vec2 guideLocal = vec2(cos(guideAngle + guideTwist),
-                        sin(guideAngle + guideTwist)) * guideRadius;
-                guideLocal += (vec2(
-                        vfxNoise3(local * 9.1 + vec3(2.3, -4.7, VortexTime * 0.008)),
-                        vfxNoise3(local * 11.7 + vec3(-6.1, 1.9, -VortexTime * 0.006))
-                        ) - 0.5) * 0.035;
-                vec2 guideCenter = vec2(122.0 / 256.0, 125.0 / 256.0);
-                vec2 guideExtent = vec2(150.0 * 0.73 / 256.0, 140.0 * 0.73 / 256.0);
-                vec2 guideUv = guideCenter + vec2(
-                        guideLocal.x * guideExtent.x,
-                        -guideLocal.y * guideExtent.y);
-                vec4 guide = texture(VortexReference, clamp(guideUv, vec2(0.001), vec2(0.999)));
-                float guideDepth = 1.0 - smoothstep(0.66, 0.98, abs(local.z));
-                float guideDensity = pow(clamp(guide.a, 0.0, 1.0), 0.72) * guideDepth;
-                density = max(density * 0.58, guideDensity * 1.08);
-
-                // An emissive core remains visible through gaps in the outer cloud banks.
-                float core = exp(-radius * 6.7)
-                           * (1.0 - smoothstep(0.30, 0.82, abs(local.z)));
-                density = max(density, core * 1.15);
-
-                if (density > 0.012) {
-                    float opticalDepth = density * stepLength * 0.034;
-                    float sampleAlpha = 1.0 - exp(-opticalDepth);
-                    float lighting = clamp(
-                        0.22 + broad * 0.88 + billows * 0.46
-                        + (1.0 - radius) * 0.38 + local.y * 0.16
-                        + (vfxNoise3(local * 14.63 + vec3(-3.7, 8.1, VortexTime * 0.012)) - 0.5) * 0.22,
-                        0.06, 1.72
-                    );
-
-                    vec3 cloudColor = mix(
-                        vec3(0.018, 0.001, 0.003),
-                        vec3(0.34, 0.008, 0.012),
-                        smoothstep(0.30, 0.60, broad)
-                    );
-                    cloudColor = mix(cloudColor, vec3(0.82, 0.038, 0.008),
-                                     smoothstep(0.43, 0.68, broad) * 0.82);
-                    cloudColor = mix(cloudColor, vec3(1.0, 0.19, 0.028),
-                                     smoothstep(0.54, 0.78, billows) * 0.56);
-                    cloudColor *= lighting;
-                    cloudColor = mix(cloudColor, vec3(1.0, 0.96, 0.82),
-                                     clamp(pow(core, 0.72) * 1.28, 0.0, 1.0));
-                    cloudColor += vec3(0.42, 0.16, 0.035) * core;
-                    cloudColor = mix(cloudColor, vec3(1.0, 0.35, 0.075),
-                                     smoothstep(0.18, 0.55, core) * 0.52);
-
-                    // El color de la guía define el plasma caliente; el ruido 3D y
-                    // el cambio de UV entre profundidades mantienen una nube volumétrica.
-                    vec3 guideColor = pow(max(guide.rgb, vec3(0.0)), vec3(1.06));
-                    float guideWeight = smoothstep(0.06, 0.62, guide.a) * guideDepth * 0.82;
-                    cloudColor = mix(cloudColor, guideColor, guideWeight);
-
-                    float contribution = transmittance * sampleAlpha;
-                    accumulated += cloudColor * contribution;
-                    accumulatedAlpha += contribution;
-                    transmittance *= 1.0 - sampleAlpha;
-                }
-
-                if (transmittance < 0.035) break;
-            }
-        }
+    if (discriminant <= 0.0 || a <= 0.00001) {
+        fragColor = vec4(0.0);
+        return;
     }
 
-    if (accumulatedAlpha < 0.008) discard;
+    float root = sqrt(discriminant);
+    float tEnter = max((-b - root) / a, 0.0);
+    float tExit = (-b + root) / a;
+    if (tExit <= tEnter) {
+        fragColor = vec4(0.0);
+        return;
+    }
+
+    float stepLength = (tExit - tEnter) / float(RAY_STEPS);
+    float time = VortexTime * 0.018;
+    vec3 accumulated = vec3(0.0);
+    float accumulatedAlpha = 0.0;
+    float transmittance = 1.0;
+
+    for (int i = 0; i < RAY_STEPS; i++) {
+        float t = tEnter + (float(i) + 0.5) * stepLength;
+        vec3 local = toVortexLocal(rayDirection * t - center);
+        float radius = length(local.xy);
+        float angle = atan(local.y, local.x);
+
+        // Dos grandes brazos se enrollan alrededor del centro; el ruido rompe los bordes
+        // en bancos de nube de diferentes tamaños en lugar de crear anillos lisos.
+        vec2 flow = vec2(
+            angle * 2.35 + radius * 8.8 - time + local.z * 1.65,
+            radius * 11.5 + local.z * 3.2 + time * 0.32
+        );
+        float broad = fbm2(flow * 1.35);
+        float detail = fbm2(flow * 3.1 + vec2(4.7, -3.8));
+        float warp = (fbm2(vec2(angle * 1.65 + radius * 4.0 - time * 0.45,
+                                local.z * 2.4 + radius * 3.0)) - 0.5) * 1.7;
+        float spiral = sin(angle * 2.2 + radius * 10.2 - time * 0.92
+                           + warp + (broad - 0.5) * 2.2);
+        float arms = smoothstep(-0.72, 0.58, spiral + (detail - 0.5) * 0.70);
+
+        float edgeRadius = 0.80 + (broad - 0.5) * 0.13 + (detail - 0.5) * 0.08;
+        float perimeter = 1.0 - smoothstep(edgeRadius - 0.09, edgeRadius + 0.12, radius);
+        float depthFade = 1.0 - smoothstep(0.70, 1.04, abs(local.z));
+        float billows = smoothstep(0.34, 0.68, broad * 0.72 + detail * 0.28 + arms * 0.20);
+        float core = exp(-radius * 8.0) * (1.0 - smoothstep(0.30, 0.90, abs(local.z)));
+        float density = billows * perimeter * depthFade * (0.22 + arms * 0.78);
+        density = max(density, core * 1.15);
+        if (density < 0.012) continue;
+
+        float lighting = clamp(0.28 + broad * 0.75 + detail * 0.28
+                               + arms * 0.20 + (1.0 - radius) * 0.18, 0.08, 1.45);
+        vec3 cloudColor = mix(vec3(0.055, 0.0015, 0.004),
+                              vec3(0.46, 0.012, 0.006), smoothstep(0.28, 0.62, broad));
+        cloudColor = mix(cloudColor, vec3(0.96, 0.075, 0.008),
+                         smoothstep(0.38, 0.72, detail) * 0.82);
+        cloudColor = mix(cloudColor, vec3(1.0, 0.28, 0.025),
+                         smoothstep(0.48, 0.80, broad + arms * 0.18) * 0.74);
+        cloudColor = mix(cloudColor, vec3(1.0, 0.82, 0.54),
+                         clamp(pow(core, 0.68) * 1.25, 0.0, 1.0));
+        cloudColor *= lighting;
+
+        float sampleAlpha = 1.0 - exp(-density * stepLength * 0.040);
+        float contribution = transmittance * sampleAlpha;
+        accumulated += cloudColor * contribution;
+        accumulatedAlpha += contribution;
+        transmittance *= 1.0 - sampleAlpha;
+        if (transmittance < 0.035) break;
+    }
+
+    if (accumulatedAlpha < 0.008) {
+        fragColor = vec4(0.0);
+        return;
+    }
     vec3 color = accumulated / max(accumulatedAlpha, 0.0001);
     fragColor = vec4(color, clamp(accumulatedAlpha, 0.0, 0.97));
 }

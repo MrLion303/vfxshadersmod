@@ -5,11 +5,7 @@
     "Position",
     "UV0"
   ],
-  "samplers": [
-    {
-      "name": "VortexReference"
-    }
-  ],
+  "samplers": [],
   "uniforms": [
     {
       "name": "VortexTime",

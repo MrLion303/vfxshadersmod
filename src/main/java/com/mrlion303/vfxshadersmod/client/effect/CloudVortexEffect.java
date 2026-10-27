@@ -2,7 +2,6 @@ package com.mrlion303.vfxshadersmod.client.effect;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
-import com.mrlion303.vfxshadersmod.client.render.VfxReferenceTextures;
 import com.mrlion303.vfxshadersmod.client.shader.VfxShaderLibrary;
 import com.mrlion303.vfxshadersmod.core.effect.EffectContext;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
@@ -20,8 +19,8 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import org.joml.Vector3f;
 
 /**
- * Vórtice celeste volumétrico. El shader traza el volumen 3D y usa la imagen guía
- * como mapa animado de densidad y color; Photon añade partículas y estelas secundarias.
+ * Vórtice celeste reconstruido mediante un volumen de nubes espirales procedurales.
+ * El núcleo luminoso y los bancos naranja/rojos se generan en GLSL, sin imagen plana ni duplicados Photon.
  */
 public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "cloud_vortex");
@@ -69,7 +68,6 @@ public final class CloudVortexEffect implements VfxEffect, ClientVfxRenderer {
             return;
         }
 
-        VfxReferenceTextures.bind(shader, "VortexReference", "textures/vfx/vortex_reference.png");
         setFloat(shader, "VortexTime", (float) (age + partialTick));
 
         Vec3 direction = centerOffset().normalize();
