@@ -64,6 +64,10 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 
 La lente es una aproximación cinematográfica en pantalla: deforma el fondo, dibuja la sombra y el disco luminoso. No simula relatividad general ni altera bloques o colisiones. La apariencia final debe comprobarse dentro de Minecraft; una compilación correcta no garantiza la salida visual en todos los drivers.
 
+## Probar la migración
+
+Consulta [la guía de instalación y pruebas de Photon](docs/PROBAR_PHOTON.md) para descargar el JAR de GitHub Actions, preparar la instancia y probar cada efecto con comandos concretos.
+
 ## Motor Photon real
 
 El mod usa **Photon para Forge 1.20.1, versión 1.1.17**, como motor real de partículas. Los emisores, formas, curvas de escala, rotación orbital, ruido, bloom y estelas se construyen con la API de Photon, no con un renderizador que solo imita su estilo. Las órbitas, las estrellas, el ecualizador de partículas, la aurora arcoíris y el vórtice usan Photon como renderer principal. Los efectos compuestos mantienen las capas que exigen capacidades distintas: sombreado de cielo, lente de pantalla, superficies que siguen el terreno, interior del portal o física del servidor.
