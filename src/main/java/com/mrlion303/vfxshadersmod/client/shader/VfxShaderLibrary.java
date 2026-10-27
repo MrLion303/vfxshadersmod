@@ -25,6 +25,7 @@ public final class VfxShaderLibrary {
     private static ShaderInstance cloudVortex;
     private static ShaderInstance blackHoleSurface;
     private static ShaderInstance blackHoleDisk;
+    private static ShaderInstance trampolineWave;
 
     private VfxShaderLibrary() {
     }
@@ -66,7 +67,14 @@ public final class VfxShaderLibrary {
                 shader -> blackHoleDisk = shader
         );
 
+        ResourceLocation trampolineWaveId = new ResourceLocation(VfxShadersMod.MOD_ID, "vfx/trampoline_wave");
+        event.registerShader(
+                new ShaderInstance(event.getResourceProvider(), trampolineWaveId, DefaultVertexFormat.POSITION_TEX),
+                shader -> trampolineWave = shader
+        );
+
         BlackHoleLensingPass.releaseTarget();
+        com.mrlion303.vfxshadersmod.client.postprocess.TrampolineWaveDistortionPass.releaseTarget();
     }
 
     /** Puede ser null antes de terminar la carga de shaders. */
@@ -97,5 +105,10 @@ public final class VfxShaderLibrary {
     /** Shader del gas de acreción aplicado a una malla anular 3D. */
     public static ShaderInstance blackHoleDisk() {
         return blackHoleDisk;
+    }
+
+    /** Shader de pantalla que deforma las superficies alcanzadas por la onda. */
+    public static ShaderInstance trampolineWave() {
+        return trampolineWave;
     }
 }

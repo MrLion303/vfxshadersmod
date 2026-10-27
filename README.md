@@ -63,6 +63,7 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 - **falling_stars:** lluvia de partículas arcoíris de Photon con estelas y colisiones que retiran las estrellas al tocar el terreno.
 - **sky_portal:** anillos Photon que crecen durante la apertura y fragmentos orbitales con estelas alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
 - **scan:** onda Photon con radio animado por curva, complementada por un aro propio que sigue la superficie de los bloques cargados.
+- **trampolin:** reconstruye la superficie visible desde el búfer de profundidad y desplaza las texturas y los bordes de los bloques según una cresta radial, sin modificar permanentemente el mapa.
 
 La lente de pantalla del agujero negro colocado usa una zona de influencia limitada alrededor del horizonte para conservar una distorsión gravitacional sutil sin crear un contorno exterior enorme. El horizonte 3D y el disco de acreción siguen activos. El efecto visual no simula relatividad general ni altera bloques o colisiones; el aspecto final debe comprobarse dentro de Minecraft.
 

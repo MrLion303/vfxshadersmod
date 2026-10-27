@@ -2,6 +2,8 @@ package com.mrlion303.vfxshadersmod.client;
 
 import com.mojang.logging.LogUtils;
 import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
+import com.mrlion303.vfxshadersmod.client.postprocess.TrampolineWaveDistortionPass;
+import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
 import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.ClientWorldVfxRendererRegistry;
@@ -124,6 +126,7 @@ public final class ClientVfxManager {
         ACTIVE.clear();
         ClientWorldVfxInstances.clear();
         BlackHoleLensingPass.releaseTarget();
+        TrampolineWaveDistortionPass.releaseTarget();
     }
 
     public static void tick(Level level) {
@@ -171,6 +174,10 @@ public final class ClientVfxManager {
                 }
 
                 try {
+                    if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL
+                            && entry.getValue() instanceof TrampolineWaveEffect trampoline) {
+                        TrampolineWaveDistortionPass.render(event, trampoline);
+                    }
                     renderer.render(event, event.getPartialTick());
                 } catch (RuntimeException exception) {
                     LOGGER.error("El renderizado del efecto VFX {} falló; se desactivará",

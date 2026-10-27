@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Pulso circular de un solo uso. Renderiza una malla transparente sobre la superficie
- * del terreno; el impulso físico de los jugadores se calcula en el servidor.
+ * Pulso circular de un solo uso. Deforma la superficie visible mediante profundidad
+ * de pantalla y añade una cresta sutil; el impulso de los jugadores es físico.
  */
 public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "trampolin");
@@ -90,6 +90,22 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
         return age >= (long) Math.ceil(radius / speed) + 10L;
     }
 
+    /** Parámetros de la onda usados por el pase que deforma las texturas del terreno. */
+    public Vec3 waveOrigin() { return origin; }
+    public double waveRadius() { return radius; }
+    public double waveFrontRadius(float partialTick) {
+        return Math.min(radius, (age + partialTick) * speed);
+    }
+    public double waveAmplitude() {
+        return Math.min(3.25D, 0.8D + Math.sqrt(power) * 0.30D);
+    }
+    public double waveEnergy(float partialTick) {
+        double time = age + partialTick;
+        double travelTime = radius / speed;
+        return smoothstep(0.0D, 3.5D, time)
+                * (1.0D - smoothstep(travelTime - 7.0D, travelTime + 3.0D, time));
+    }
+
     @Override
     public void render(RenderLevelStageEvent event, float partialTick) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
@@ -148,7 +164,8 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
 
                 double coverage = (p0.coverage + p1.coverage + p2.coverage + p3.coverage) * 0.25D;
                 double crest = (p0.crest + p1.crest + p2.crest + p3.crest) * 0.25D;
-                float alpha = (float) (energy * coverage * (0.25D + crest * 0.48D));
+                // El overlay solo acompaña a la deformación de los bloques, no la sustituye.
+                float alpha = (float) (energy * coverage * (0.10D + crest * 0.18D));
                 if (alpha < 0.012F) {
                     continue;
                 }
@@ -179,7 +196,7 @@ public final class TrampolineWaveEffect implements VfxEffect, ClientVfxRenderer 
         final int segments = 160;
         double innerRadius = Math.max(0.0D, frontRadius - 0.48D);
         double outerRadius = Math.min(radius, frontRadius + 0.48D);
-        float alpha = (float) Math.min(0.92D, energy * 0.88D);
+        float alpha = (float) Math.min(0.48D, energy * 0.42D);
         for (int i = 0; i < segments; i++) {
             double a0 = Math.PI * 2.0D * i / segments;
             double a1 = Math.PI * 2.0D * (i + 1) / segments;
