@@ -146,7 +146,7 @@ void main() {
                     float lighting = clamp(
                         0.22 + broad * 0.88 + billows * 0.46
                         + (1.0 - radius) * 0.38 + local.y * 0.16
-                        + (fine - 0.5) * 0.22,
+                        + (vfxNoise3(local * 14.63 + vec3(-3.7, 8.1, VortexTime * 0.012)) - 0.5) * 0.22,
                         0.06, 1.72
                     );
 
