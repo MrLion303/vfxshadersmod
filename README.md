@@ -49,24 +49,24 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 
 ## Efectos incluidos
 
-- **demo_orbit:** tres anillos de color alrededor del jugador local.
-- **music_horizon_bars:** barras musicales de neón alrededor del horizonte. La animación es procedural y aún no analiza audio real.
-- **rainbow_aurora:** cortinas luminosas ondulantes con ciclos continuos.
+- **demo_orbit:** anillos orbitales nativos de Photon, con movimiento de partículas, bloom y estelas.
+- **music_horizon_bars:** columnas de partículas Photon alrededor del horizonte, con altura animada por curvas y color según su posición. La animación es procedural y aún no analiza audio real.
+- **rainbow_aurora:** bandas de partículas arcoíris con movimiento orbital, bloom y estelas largas de Photon.
 - **rainbow_sky:** pinta uniformemente el cielo y va cambiando de azul a rojo y a los demás colores del arcoíris. Cubre el cenit y tiñe las nubes sin recolorear los bloques cercanos.
-- **blackhole:** agujero negro en coordenadas del mundo, con sombra oscura, disco de acreción blanco-dorado casi horizontal, halos curvados y lente gravitacional de pantalla.
-- **blackhole_sky:** versión gigantesca colocada en el cielo a 50° sobre el horizonte, con disco luminoso cálido y distorsión de la escena, inspirada visualmente en Gargantúa de *Interstellar*.
-- **cloud_vortex:** espiral animada de nubes rojo-anaranjadas con un centro brillante.
-- **starsspeed:** cúpula celeste de color uniforme, estelas de estrellas veloces y resplandor en el horizonte; permite seleccionar el color.
-- **ground_aurora:** ondas luminosas de color personalizable que recorren el terreno desde una coordenada.
-- **falling_stars:** lluvia de estrellas diagonales con tonos arcoíris y desvanecimiento al tocar el suelo.
-- **sky_portal:** grieta celeste animada que se abre como disco galáctico. Usa `panorama_overlay.png` de la raíz si está presente en la compilación; si falta, el shader crea un interior galáctico procedural.
-- **scan:** escaneo de un solo uso iniciado con `/vfxonce scan`; el aro sigue la superficie de los bloques cargados para rodear elevaciones y montañas.
+- **blackhole:** agujero negro en coordenadas del mundo, con sombra y lente gravitacional GLSL propias; Photon añade el disco de acreción luminoso, partículas y estelas orbitales.
+- **blackhole_sky:** versión gigantesca colocada en el cielo a 50° sobre el horizonte, con disco de partículas cálidas de Photon y distorsión GLSL de la escena, inspirada visualmente en Gargantúa de *Interstellar*.
+- **cloud_vortex:** vórtice volumétrico creado con emisores esféricos Photon, ruido, movimiento orbital y estelas rojizas y naranjas.
+- **starsspeed:** cielo tintado con un shader propio; Photon gestiona las partículas veloces y sus estelas. Permite seleccionar el color.
+- **ground_aurora:** ondas Photon de radio creciente acompañadas por bandas propias que se adaptan al relieve; permite personalizar el color.
+- **falling_stars:** lluvia de partículas arcoíris de Photon con estelas y colisiones que retiran las estrellas al tocar el terreno.
+- **sky_portal:** anillos y fragmentos con estelas Photon alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
+- **scan:** onda Photon con radio animado por curva, complementada por un aro propio que sigue la superficie de los bloques cargados.
 
 La lente es una aproximación cinematográfica en pantalla: deforma el fondo, dibuja la sombra y el disco luminoso. No simula relatividad general ni altera bloques o colisiones. La apariencia final debe comprobarse dentro de Minecraft; una compilación correcta no garantiza la salida visual en todos los drivers.
 
 ## Motor Photon real
 
-El mod usa **Photon para Forge 1.20.1, versión 1.1.17**, como motor de partículas para los presets luminosos. Photon controla sus emisores, formas, duración, velocidad, tamaño, color y bloom. Las animaciones ambientales y físicas específicas se mantienen donde requieren una cúpula de cielo, una lente de pantalla o interacción real con el mundo; no se sustituyen por partículas si eso cambia la mecánica solicitada.
+El mod usa **Photon para Forge 1.20.1, versión 1.1.17**, como motor real de partículas. Los emisores, formas, curvas de escala, rotación orbital, ruido, bloom y estelas se construyen con la API de Photon, no con un renderizador que solo imita su estilo. Las órbitas, las estrellas, el ecualizador de partículas, la aurora arcoíris y el vórtice usan Photon como renderer principal. Los efectos compuestos mantienen las capas que exigen capacidades distintas: sombreado de cielo, lente de pantalla, superficies que siguen el terreno, interior del portal o física del servidor.
 
 Photon debe estar instalado junto con este mod. [Proyecto oficial de Photon](https://github.com/Low-Drag-MC/Photon) · [Versión Forge 1.20.1](https://modrinth.com/mod/photon-editor/version/mc1.20.1-1.1.17-forge).
 
