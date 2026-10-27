@@ -87,10 +87,10 @@ tasks.register('generateVfxReferenceTextures') {
                 double blue = pixel & 255
                 double luminance = 0.2126d * red + 0.7152d * green + 0.0722d * blue
                 double warm = clamp01((red - Math.max(green * 0.72d, blue * 1.10d) + 14.0d) / 120.0d)
-                double bright = clamp01((luminance - 17.0d) / 105.0d)
+                double bright = clamp01((luminance - 38.0d) / 110.0d)
                 double alpha = warm * bright
                 alpha = alpha * alpha * (3.0d - 2.0d * alpha)
-                alpha *= clamp01((red - blue + 5.0d) / 65.0d)
+                alpha *= clamp01((red - blue + 5.0d) / 65.0d) * clamp01((green - 16.0d) / 70.0d)
 
                 // Máscara ovalada centrada en el vórtice: elimina el cielo rojizo de la
                 // captura y los objetos del escenario, conservando las nubes de la periferia.
