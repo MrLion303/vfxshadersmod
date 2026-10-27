@@ -74,12 +74,12 @@ void main() {
     float filaments = pow(max(0.0, sin(angle * 29.0 + flameNoise * 8.5 - time * 1.2)), 7.0);
     float hotRim = fire * (0.58 + flameNoise * 0.58 + filaments * 0.42);
 
-    vec3 rim = mix(vec3(0.16, 0.025, 0.46), vec3(1.0, 0.12, 0.018),
+    vec3 rim = mix(vec3(0.08, 0.42, 0.95), vec3(0.22, 0.92, 1.0),
                    smoothstep(0.24, 0.82, flameNoise));
-    rim = mix(rim, vec3(1.0, 0.72, 0.36), smoothstep(0.62, 0.96, hotRim) * 0.86);
-    rim = mix(rim, vec3(0.92, 0.32, 1.0), filaments * 0.20);
+    rim = mix(rim, vec3(0.78, 0.98, 1.0), smoothstep(0.62, 0.96, hotRim) * 0.86);
+    rim = mix(rim, vec3(0.34, 0.72, 1.0), filaments * 0.20);
     space = mix(space, rim * (1.10 + flameNoise * 0.95), clamp(hotRim, 0.0, 1.0));
-    space += vec3(0.42, 0.09, 0.025) * fire * 0.30;
+    space += vec3(0.035, 0.38, 0.62) * fire * 0.34;
 
     // Núcleo de energía púrpura. Ya no se dibujan la antigua columna azul ni naves planas.
     float core = exp(-radius * 5.2) * (0.6 + broad * 0.4);
