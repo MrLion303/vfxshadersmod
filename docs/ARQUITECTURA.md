@@ -4,6 +4,14 @@
 
 `EffectRegistry` guarda identificadores, categorías y fábricas de efectos. `ClientVfxManager` ejecuta los efectos en el hilo gráfico del cliente. Las apariciones colocadas en el mundo viven en `WorldVfxInstance`, con dimensión, coordenadas, escala, duración y parámetros.
 
+## Integración con el runtime real de Photon
+
+`PhotonEffectBridge` construye efectos con las clases oficiales `FX`, `FXEffect`, `ParticleEmitter` y `ParticleConfig` de Photon 1.1.17 para Forge 1.20.1. Los emisores, las formas, el movimiento orbital, el bloom y las estelas se procesan en el runtime de Photon; no es una imitación con un renderer propio.
+
+La migración se mantiene compuesta para no perder mecánicas que Photon no reemplaza por sí solo. `demo_orbit` y `falling_stars` usan Photon como renderer principal y no dibujan también sus versiones antiguas. En `starsspeed`, Photon dibuja las estrellas y sus estelas; el renderer propio conserva únicamente el tinte global del cielo. Los efectos que necesitan una lente de pantalla, una cúpula celeste, superficies que siguen el relieve o física del servidor mantienen esas capas especializadas junto con sus partículas Photon.
+
+Los presets actuales se crean en memoria mediante la API real de Photon; todavía no son archivos `.fx` editables desde el editor de Photon. La dependencia se resuelve desde el artefacto de Photon para Forge 1.20.1 junto con LowDragLib, sin copiar el código fuente de Photon.
+
 ## Composición visual y materiales
 
 Los VFX comparten materiales de renderizado en `VfxRenderTypes`. Las superficies base conservan profundidad cuando corresponde; los halos, estelas, grietas y partículas usan mezcla aditiva sin escribir profundidad. Los efectos de cielo tienen variantes que omiten la prueba de profundidad para permanecer detrás del mundo. Los efectos complejos se construyen por capas en lugar de depender de una sola superficie: base, volumen/estructura y brillo.
