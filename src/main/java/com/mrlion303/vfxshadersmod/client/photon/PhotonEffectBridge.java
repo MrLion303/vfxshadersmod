@@ -12,6 +12,9 @@ import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Sphere;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleConfig;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleEmitter;
 import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
+import com.mrlion303.vfxshadersmod.client.effect.BlackHoleSkyEffect;
+import com.mrlion303.vfxshadersmod.client.effect.CloudVortexEffect;
+import com.mrlion303.vfxshadersmod.client.effect.SkyPortalEffect;
 import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
@@ -36,7 +39,6 @@ public final class PhotonEffectBridge {
     public enum Preset {
         ORBIT,
         HORIZON,
-        RAINBOW,
         RAINBOW_AURORA,
         FALLING_STARS,
         STARSSPEED,
@@ -45,7 +47,8 @@ public final class PhotonEffectBridge {
         TERRAIN_SCAN,
         VORTEX,
         PORTAL,
-        BLACK_HOLE
+        BLACK_HOLE,
+        BLACK_HOLE_SKY
     }
 
     /**
@@ -70,8 +73,9 @@ public final class PhotonEffectBridge {
             case "demo_orbit" -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
             case "music_horizon_bars" -> play(level, anchor, Preset.HORIZON, 0xFF55DFFF, 2.4F);
             case "rainbow_aurora" -> play(level, anchor, Preset.RAINBOW_AURORA, 0, 1.0F);
-            case "rainbow_sky" -> play(level, anchor, Preset.RAINBOW, 0, 4.0F);
-            case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE, 0, 3.0F);
+            // El tinte integral del cielo requiere el shader propio; Photon no simula una cúpula de color.
+            case "rainbow_sky" -> Handle.empty();
+            case "blackhole_sky" -> play(level, anchor, Preset.BLACK_HOLE_SKY, 0, 20.0F);
             case "cloud_vortex" -> play(level, anchor, Preset.VORTEX, 0, 1.0F);
             case "starsspeed" -> play(level, anchor, Preset.STARSSPEED,
                     0xFF000000 | StarsspeedEffect.configuredColor(), 2.0F);
@@ -79,7 +83,7 @@ public final class PhotonEffectBridge {
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
             case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
             case "trampolin" -> play(level, anchor, Preset.TRAMPOLINE, 0xFF58DFFF, (float) (TrampolineWaveEffect.configuredRadius() / 14.0D));
-            case "sky_portal" -> play(level, anchor, Preset.PORTAL, 0, 4.0F);
+            case "sky_portal" -> play(level, anchor, Preset.PORTAL, 0, 20.0F);
             default -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
         };
     }
@@ -93,7 +97,7 @@ public final class PhotonEffectBridge {
 
     private static boolean followsPlayer(String effectPath) {
         return switch (effectPath) {
-            case "demo_orbit", "music_horizon_bars", "rainbow_aurora", "rainbow_sky",
+            case "demo_orbit", "music_horizon_bars", "rainbow_aurora",
                     "blackhole_sky", "cloud_vortex", "starsspeed", "falling_stars", "sky_portal" -> true;
             default -> false;
         };
@@ -106,14 +110,9 @@ public final class PhotonEffectBridge {
             case "ground_aurora" -> GroundAuroraEffect.configuredOrigin();
             case "scan" -> TerrainScanEffect.configuredOrigin();
             case "trampolin" -> TrampolineWaveEffect.configuredOrigin();
-            case "blackhole_sky" -> base.add(0.0D, 26.0D, -65.0D);
-            case "cloud_vortex" -> base.add(0.0D, 35.0D, -72.0D);
-            case "sky_portal" -> {
-                if (player == null) yield base;
-                Vec3 look = player.getLookAngle().normalize();
-                yield base.add(look.scale(65.0D)).add(0.0D, 18.0D, 0.0D);
-            }
-            case "rainbow_sky" -> base.add(0.0D, 12.0D, 0.0D);
+            case "blackhole_sky" -> base.add(BlackHoleSkyEffect.centerOffset());
+            case "cloud_vortex" -> base.add(CloudVortexEffect.centerOffset());
+            case "sky_portal" -> base.add(SkyPortalEffect.centerOffset());
             default -> base;
         };
     }
@@ -132,13 +131,6 @@ public final class PhotonEffectBridge {
                 addRing(fx, "Photon Orbit Accent", 0.65F * safeScale, 1.0F, 0.9F, 40, 0.10F, 0.08F, 0xFFFF65B8, 2);
             }
             case HORIZON -> addHorizonBars(fx);
-            case RAINBOW -> {
-                int[] colors = {0xFFFF4545, 0xFFFFA43A, 0xFFFFFF4A, 0xFF56FF76, 0xFF48E6FF, 0xFF6575FF, 0xFFE86BFF};
-                for (int i = 0; i < colors.length; i++) {
-                    addRing(fx, "Photon Rainbow " + i, (8.0F + i * 1.45F) * safeScale, i * 0.9F,
-                            1.5F, 72, 0.055F, 0.10F, colors[i]);
-                }
-            }
             case RAINBOW_AURORA -> {
                 int[] colors = {0xFFFF4545, 0xFFFFA43A, 0xFFFFFF4A, 0xFF56FF76, 0xFF48E6FF, 0xFF6575FF, 0xFFE86BFF};
                 for (int i = 0; i < colors.length; i++) {
@@ -187,13 +179,23 @@ public final class PhotonEffectBridge {
                         3.0F, 0.28F, 0xFFFFD49A, 1.20F, 14, false);
             }
             case PORTAL -> {
-                addRing(fx, "Photon Portal Rim", 3.2F * safeScale, 0.0F, 5.0F, 100, 0.07F, 0.13F, 0xFF55DFFF, 1);
-                addRing(fx, "Photon Portal Inner", 2.5F * safeScale, 0.0F, 3.5F, 78, 0.11F, 0.09F, 0xFF9EEFFF, 1);
-                addRing(fx, "Photon Portal Shards", 4.0F * safeScale, 0.0F, 2.0F, 44, 0.45F, 0.055F, 0xFFFFFFFF, 1);
+                // El frente crece durante la misma ventana de apertura del portal.
+                float radius = 6.2F * safeScale;
+                addExpandingRing(fx, "Photon Portal Outer Energy Ring", 0.2F, radius, 72, 6, 48.0F, 0.055F, 0xFF55DFFF, 0, false);
+                addExpandingRing(fx, "Photon Portal Middle Energy Ring", 0.2F, radius * 0.80F, 72, 6, 36.0F, 0.075F, 0xFF9EEFFF, 2, false);
+                addExpandingRing(fx, "Photon Portal Inner Energy Ring", 0.2F, radius * 0.62F, 72, 6, 28.0F, 0.040F, 0xFFFFFFFF, 4, false);
+                addRing(fx, "Photon Portal Orbiting Shards", 5.5F * safeScale, 0.0F, 3.0F, 54, 0.24F, 0.045F, 0xFFFFFFFF, 0);
             }
             case BLACK_HOLE -> {
-                addRing(fx, "Photon Accretion Outer", 3.8F * safeScale, 0.0F, 4.0F, 95, 0.08F, 0.16F, 0xFFFFA34A);
-                addRing(fx, "Photon Accretion Inner", 2.0F * safeScale, 0.0F, 3.0F, 85, 0.04F, 0.11F, 0xFFFFF1CE);
+                // El disco para agujeros colocados permanece casi horizontal sobre el horizonte.
+                addRing(fx, "Photon Accretion Outer", 3.8F * safeScale, 0.0F, 4.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
+                addRing(fx, "Photon Accretion Inner", 2.0F * safeScale, 0.0F, 3.0F, 85, 0.04F, 0.11F, 0xFFFFF1CE, 0);
+            }
+            case BLACK_HOLE_SKY -> {
+                // En el cielo, el disco se orienta hacia el observador y coincide con la escala del shader.
+                addRing(fx, "Photon Sky Accretion Outer", 4.55F * safeScale, 0.0F, 6.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 1);
+                addRing(fx, "Photon Sky Accretion Mid", 3.70F * safeScale, 0.0F, 4.5F, 88, 0.06F, 0.13F, 0xFFFFB95F, 1);
+                addRing(fx, "Photon Sky Accretion Inner", 2.60F * safeScale, 0.0F, 3.0F, 80, 0.04F, 0.11F, 0xFFFFF1CE, 1);
             }
         }
 
