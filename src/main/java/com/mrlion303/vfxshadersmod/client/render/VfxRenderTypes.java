@@ -45,6 +45,42 @@ public final class VfxRenderTypes extends RenderType {
                     .createCompositeState(false)
     );
 
+    private static final RenderType ADDITIVE_LINES = RenderType.create(
+            VfxShadersMod.MOD_ID + ":additive_lines",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.LINES,
+            8192,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(ADDITIVE_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(LEQUAL_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setLineState(new LineStateShard(OptionalDouble.of(2.0D)))
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
+    private static final RenderType SKY_ADDITIVE_LINES = RenderType.create(
+            VfxShadersMod.MOD_ID + ":sky_additive_lines",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.LINES,
+            16384,
+            false,
+            false,
+            CompositeState.builder()
+                    .setShaderState(new ShaderStateShard(VfxShaderLibrary::basicColor))
+                    .setTransparencyState(ADDITIVE_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setDepthTestState(NO_DEPTH_TEST)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .setLineState(new LineStateShard(OptionalDouble.of(2.5D)))
+                    .setOutputState(MAIN_TARGET)
+                    .createCompositeState(false)
+    );
+
     private static final RenderType ADDITIVE_QUADS = RenderType.create(
             VfxShadersMod.MOD_ID + ":additive_quads",
             DefaultVertexFormat.POSITION_COLOR,
@@ -253,6 +289,16 @@ public final class VfxRenderTypes extends RenderType {
     /** Quads translúcidos que respetan la profundidad sin escribirla. */
     public static RenderType colorQuads() {
         return COLOR_QUADS;
+    }
+
+    /** Líneas aditivas para bordes energéticos y geometría luminosa cercana. */
+    public static RenderType additiveLines() {
+        return ADDITIVE_LINES;
+    }
+
+    /** Líneas aditivas sin prueba de profundidad para grietas y estructuras celestes. */
+    public static RenderType skyAdditiveLines() {
+        return SKY_ADDITIVE_LINES;
     }
 
     /** Material aditivo para halos, plasma y partículas luminosas; no escribe profundidad. */
