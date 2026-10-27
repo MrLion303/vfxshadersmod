@@ -22,6 +22,8 @@
 
 ## Materiales del renderer propio
 
+Usa el renderizador propio solo cuando el efecto necesite una malla conformada al terreno, una cúpula completa o un shader de pantalla. Para partículas, emisores, rotación orbital, ruido, bloom y estelas, prefiere el runtime real de Photon.
+
 El renderizador centraliza los materiales reutilizables en `VfxRenderTypes`:
 
 - `colorQuads()`: superficies translúcidas con profundidad, para capas base.
@@ -46,7 +48,7 @@ Al añadir un preset:
 3. Marca el efecto con `usesPhotonAsPrimaryRenderer` solo si Photon puede sustituir toda su representación. Si una capa especial sigue siendo necesaria, consulta `ClientVfxManager.isPhotonRunning` para que el renderer propio solo cubra esa capa y no duplique las partículas.
 4. Libera el runtime al desactivar el efecto y actualiza el ancla para los efectos que siguen al jugador.
 
-Photon no sustituye automáticamente el posprocesamiento de cámara, una cúpula para tintar todo el cielo ni una mecánica autoritativa del servidor. Esas partes se mantienen separadas hasta que tengan una implementación compatible y probada.
+Photon no sustituye automáticamente el posprocesamiento de cámara, una cúpula para tintar todo el cielo ni una mecánica autoritativa del servidor. Esas partes se mantienen separadas hasta que tengan una implementación compatible y probada. En la versión actual, los presets se crean en memoria con la API de Photon; aún no están empaquetados como archivos `.fx` editables directamente desde el editor.
 
 ## Crear un efecto colocado
 
