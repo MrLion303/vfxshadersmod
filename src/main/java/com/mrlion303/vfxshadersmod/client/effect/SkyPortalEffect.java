@@ -71,10 +71,10 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         Vec3 portalUp = right.cross(direction).normalize();
 
         double time = age + partialTick;
-        double progress = Math.min(1.0D, time / 48.0D);
+        double progress = Math.min(1.0D, time / 72.0D);
         double eased = 1.0D - Math.pow(1.0D - progress, 3.0D);
-        double radius = 0.35D + eased * MAX_RADIUS;
-        double opening = Math.min(1.0D, Math.pow(Math.max(0.0D, progress / 0.42D), 1.18D));
+        double radius = 0.18D + eased * MAX_RADIUS;
+        double opening = Math.min(1.0D, Math.pow(Math.max(0.0D, (progress - 0.10D) / 0.48D), 1.12D));
         double radiusX = radius * Math.max(0.025D, opening);
 
         if (shader.getUniform("PortalTime") != null) {
@@ -100,6 +100,8 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         RenderType lineType = VfxRenderTypes.skyLines();
         VertexConsumer cracks = buffers.getBuffer(lineType);
         float pulse = (float) (0.76D + 0.20D * Math.sin(time * 0.075D));
+        float crackReveal = (float) Math.min(1.0D, time / 12.0D);
+        float crackAlpha = crackReveal * (float) Math.min(1.0D, 0.18D + progress * 1.2D);
 
         for (int i = 0; i < 52; i++) {
             double angle = Math.PI * 2.0D * i / 52.0D
@@ -116,15 +118,15 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
             Vec3 end = point(center, right, portalUp,
                     Math.cos(angle + bend * 1.8D) * endR * radiusX / radius,
                     Math.sin(angle + bend * 1.8D) * endR);
-            emitLine(cracks, pose, start, middle, 0xFF6A2C, pulse * 0.88F);
-            emitLine(cracks, pose, middle, end, 0xFFC17A, pulse * 0.74F);
+            emitLine(cracks, pose, start, middle, 0x55DFFF, pulse * crackAlpha * 0.88F);
+            emitLine(cracks, pose, middle, end, 0x9BEFFF, pulse * crackAlpha * 0.74F);
 
             if (i % 3 == 0) {
                 double branchAngle = angle + (i % 2 == 0 ? 1.0D : -1.0D) * 0.07D;
                 Vec3 branch = point(center, right, portalUp,
                         Math.cos(branchAngle) * endR * 1.12D * radiusX / radius,
                         Math.sin(branchAngle) * endR * 1.12D);
-                emitLine(cracks, pose, middle, branch, 0xFF8A3B, pulse * 0.58F);
+                emitLine(cracks, pose, middle, branch, 0x55DFFF, pulse * crackAlpha * 0.58F);
             }
         }
 
