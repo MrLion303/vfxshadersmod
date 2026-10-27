@@ -22,8 +22,8 @@ import java.util.Set;
  */
 public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     private static final int DISK_SEGMENTS = 96;
-    private static final int SPHERE_LATITUDES = 24;
-    private static final int SPHERE_LONGITUDES = 48;
+    private static final int SPHERE_LATITUDES = 32;
+    private static final int SPHERE_LONGITUDES = 64;
     private static final Vec3 DISK_NORMAL = new Vec3(0.22D, 0.91D, 0.35D).normalize();
 
     @Override
@@ -44,9 +44,9 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
         double diameter = instance.parameters().getOrDefault(
                 "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
         double configuredRadius = Math.max(0.5D, diameter * 0.5D);
-        double horizonRadius = Math.max(0.04D, configuredRadius * 0.35D);
-        double innerDiskRadius = horizonRadius * 1.08D;
-        double outerDiskRadius = horizonRadius * 5.4D;
+        double horizonRadius = configuredRadius;
+        double innerDiskRadius = horizonRadius * 1.045D;
+        double outerDiskRadius = horizonRadius * 2.8D;
         Vec3 center = context.toCameraRelative(instance.position());
 
         Vec3 reference = new Vec3(0.0D, 1.0D, 0.0D);

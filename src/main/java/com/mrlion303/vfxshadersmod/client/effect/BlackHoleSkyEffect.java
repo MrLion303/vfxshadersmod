@@ -19,7 +19,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 public final class BlackHoleSkyEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "blackhole_sky");
     public static final double SKY_DISTANCE = 512.0D;
-    public static final double SKY_DIAMETER = 780.0D;
+    public static final double SKY_DIAMETER = 2340.0D;
     public static final double SKY_ELEVATION_DEGREES = 14.0D;
 
     private static final Vec3 WORLD_DIRECTION = new Vec3(

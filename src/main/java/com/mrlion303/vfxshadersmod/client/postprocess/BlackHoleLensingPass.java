@@ -91,7 +91,7 @@ public final class BlackHoleLensingPass {
                 double diameter = hole.parameters().getOrDefault(
                         "diameter", (double) BlackHoleEffect.DEFAULT_DIAMETER);
                 double configuredRadius = Math.max(0.5D, diameter * 0.5D);
-                double horizonRadius = configuredRadius * 0.35D;
+                double horizonRadius = configuredRadius;
                 double distance = hole.position().distanceTo(cameraPosition);
 
                 // Si la cámara cruza el horizonte físico, la sombra debe ocupar la vista.
@@ -117,7 +117,7 @@ public final class BlackHoleLensingPass {
                 float projectedRadius = Math.min(0.46F,
                         Math.max(0.0015F, (float) Math.sqrt(dx * dx + dy * dy)));
                 float strength = (float) Math.min(1.45D,
-                        1.12D + 0.33D * Math.max(0.0D, 1.0D - distance / 192.0D));
+                        1.22D + 0.23D * Math.max(0.0D, 1.0D - distance / 192.0D));
                 screenHoles.add(new float[]{center[0], center[1], projectedRadius, strength});
             }
 
