@@ -18,7 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
-/** Gran brecha espacial con anillo incandescente, fracturas y una columna alienígena. */
+/** Portal celeste con interior galáctico y grietas de plasma; sin haz central artificial. */
 public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
     public static final EffectId ID = EffectId.of(VfxShadersMod.MOD_ID, "sky_portal");
     private static final double SKY_DISTANCE = 150.0D;
@@ -128,13 +128,6 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
             }
         }
 
-        // Un pulso de luz vertical en el centro recuerda la columna que conecta la grieta con el horizonte.
-        if (progress < 0.72D) {
-            double beamLength = radius * 1.40D;
-            Vec3 beamStart = point(center, right, portalUp, -1.4D, -beamLength * 0.52D);
-            Vec3 beamEnd = point(center, right, portalUp, 1.0D, beamLength * 0.58D);
-            emitLine(cracks, pose, beamStart, beamEnd, 0xFFC58C, pulse * 0.45F);
-        }
         buffers.endBatch(lineType);
     }
 
