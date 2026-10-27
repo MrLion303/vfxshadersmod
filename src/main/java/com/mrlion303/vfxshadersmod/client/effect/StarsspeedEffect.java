@@ -61,7 +61,6 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         VertexConsumer sky = buffers.getBuffer(skyType);
 
         double time = age + partialTick;
-        double skyRotation = time * 0.0075D;
 
         for (int band = 0; band < BANDS; band++) {
             double f0 = (double) band / BANDS;
@@ -98,13 +97,13 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
             double tailAngle = angle - trailAngle;
 
             Vec3 radial = worldUp.scale(Math.cos(angle)).add(orbitRight.scale(Math.sin(angle)));
-            Vec3 tail = rotateAroundY(orbitPoint(polar, tailAngle, SKY_RADIUS * 0.992D,
-                    horizonForward, worldUp, orbitRight), skyRotation);
-            Vec3 head = rotateAroundY(orbitPoint(polar, angle, SKY_RADIUS * 0.992D,
-                    horizonForward, worldUp, orbitRight), skyRotation);
-            Vec3 across = rotateAroundY(horizonForward.scale(-Math.sin(polar))
+            Vec3 tail = orbitPoint(polar, tailAngle, SKY_RADIUS * 0.992D,
+                    horizonForward, worldUp, orbitRight);
+            Vec3 head = orbitPoint(polar, angle, SKY_RADIUS * 0.992D,
+                    horizonForward, worldUp, orbitRight);
+            Vec3 across = horizonForward.scale(-Math.sin(polar))
                     .add(radial.scale(Math.cos(polar))).normalize()
-                    .scale(0.46D + seed * 0.88D), skyRotation);
+                    .scale(0.46D + seed * 0.88D);
             Vec3 broadAcross = across.scale(2.7D);
 
             emitQuad(stars, pose,
@@ -118,11 +117,10 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
 
             // Destellos blancos en algunas puntas para que el campo se sienta luminoso.
             if (i % 5 == 0) {
-                Vec3 tangent = rotateAroundY(worldUp.scale(-Math.sin(angle))
+                Vec3 tangent = worldUp.scale(-Math.sin(angle))
                         .add(orbitRight.scale(Math.cos(angle))).normalize()
-                        .scale(0.48D + seed * 0.46D), skyRotation);
-                Vec3 sparkAcross = rotateAroundY(across.normalize()
-                        .scale(0.92D + seed * 0.36D), skyRotation);
+                        .scale(0.48D + seed * 0.46D);
+                Vec3 sparkAcross = across.normalize().scale(0.92D + seed * 0.36D);
                 emitQuad(stars, pose,
                         head.subtract(sparkAcross), head.add(tangent.scale(0.20D)),
                         head.add(sparkAcross), head.subtract(tangent.scale(0.20D)),
