@@ -110,6 +110,7 @@ public final class VfxServerCommands {
         context.getSource().sendSuccess(() -> Component.literal("/vfx enable starsspeed <color> — cielo teñido con estrellas rápidas"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfx enable ground_aurora <x> <y> <z> <color> — ondas sobre el terreno"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfxonce scan <x> <y> <z> <color> — escaneo de un solo uso"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfxonce trampolin <x> <y> <z> [potencia] [radio] [velocidad] — onda circular que deforma visualmente el suelo y lanza a los jugadores"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfxmove moonjump enable|disable <jugadores>"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfxmove waterwalk enable|disable <jugadores>"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfxmove empujon <jugadores> — impulsa a los jugadores seleccionados"), false);
