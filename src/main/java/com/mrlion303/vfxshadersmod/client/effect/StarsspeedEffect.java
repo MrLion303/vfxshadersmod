@@ -63,8 +63,6 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         double time = age + partialTick;
         double skyRotation = time * 0.0075D;
 
-        // Oscurece el tinte elegido para que las estelas blancas destaquen como en la referencia.
-        int deepSky = scaleColor(color, 0.22F);
         for (int band = 0; band < BANDS; band++) {
             double f0 = (double) band / BANDS;
             double f1 = (double) (band + 1) / BANDS;
@@ -74,31 +72,10 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
             for (int segment = 0; segment < SEGMENTS; segment++) {
                 double a = Math.PI * 2.0D * segment / SEGMENTS;
                 double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
-                emitQuad(sky, pose,
-                        point(a, latA, SKY_RADIUS, skyRotation), point(b, latA, SKY_RADIUS, skyRotation),
-                        point(b, latB, SKY_RADIUS, skyRotation), point(a, latB, SKY_RADIUS, skyRotation),
-                        deepSky, 0.99F);
-            }
-        }
-        buffers.endBatch(skyType);
-
-        // Resplandor amplio en el horizonte con el color seleccionado.
-        VertexConsumer glow = buffers.getBuffer(skyType);
-        int bright = brighten(color, 0.72F);
-        for (int band = 0; band < 54; band++) {
-            double latA = -0.13D + band * 0.014D;
-            double latB = latA + 0.019D;
-            double mid = (latA + latB) * 0.5D;
-            double profile = Math.exp(-Math.pow(mid / 0.37D, 2.0D));
-            float alpha = (float) (0.48D * profile);
-            int rgb = band < 29 ? bright : color;
-            for (int segment = 0; segment < SEGMENTS; segment++) {
-                double a = Math.PI * 2.0D * segment / SEGMENTS;
-                double b = Math.PI * 2.0D * (segment + 1) / SEGMENTS;
-                emitQuad(glow, pose,
-                        point(a, latA, SKY_RADIUS - 0.18D, skyRotation), point(b, latA, SKY_RADIUS - 0.18D, skyRotation),
-                        point(b, latB, SKY_RADIUS - 0.18D, skyRotation), point(a, latB, SKY_RADIUS - 0.18D, skyRotation),
-                        rgb, alpha);
+                emitGradientQuad(sky, pose,
+                        point(a, latA, SKY_RADIUS), point(b, latA, SKY_RADIUS),
+                        point(b, latB, SKY_RADIUS), point(a, latB, SKY_RADIUS),
+                        skyColorAtLatitude(latA), skyColorAtLatitude(latB));
             }
         }
         buffers.endBatch(skyType);
@@ -163,12 +140,57 @@ public final class StarsspeedEffect implements VfxEffect, ClientVfxRenderer {
         return forward.scale(Math.cos(polar) * radius).add(radial.scale(Math.sin(polar) * radius));
     }
 
-    private static Vec3 point(double azimuth, double latitude, double radius, double rotation) {
+    private static Vec3 point(double azimuth, double latitude, double radius) {
         double horizontal = Math.cos(latitude) * radius;
-        Vec3 point = new Vec3(Math.cos(azimuth) * horizontal,
+        return new Vec3(Math.cos(azimuth) * horizontal,
                 Math.sin(latitude) * radius,
                 Math.sin(azimuth) * horizontal);
-        return rotateAroundY(point, rotation);
+    }
+
+    private static int skyColorAtLatitude(double latitude) {
+        double height = Math.max(0.0D, Math.min(1.0D,
+                Math.abs(latitude) / (Math.PI * 0.5D)));
+        int horizon = mixColor(0x25164A, color, 0.30F);
+        int middle = mixColor(0x111329, color, 0.12F);
+        double smoothHeight = height * height * (3.0D - 2.0D * height);
+        if (smoothHeight < 0.52D) {
+            return mixColor(horizon, middle, (float) (smoothHeight / 0.52D));
+        }
+        return mixColor(middle, 0x02040B, (float) ((smoothHeight - 0.52D) / 0.48D));
+    }
+
+    private static int mixColor(int first, int second, float amount) {
+        float t = Math.max(0.0F, Math.min(1.0F, amount));
+        int r1 = (first >> 16) & 255;
+        int g1 = (first >> 8) & 255;
+        int b1 = first & 255;
+        int r2 = (second >> 16) & 255;
+        int g2 = (second >> 8) & 255;
+        int b2 = second & 255;
+        int r = Math.round(r1 + (r2 - r1) * t);
+        int g = Math.round(g1 + (g2 - g1) * t);
+        int b = Math.round(b1 + (b2 - b1) * t);
+        return (r << 16) | (g << 8) | b;
+    }
+
+    private static void emitGradientQuad(
+            VertexConsumer consumer, PoseStack.Pose pose,
+            Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, int lowerRgb, int upperRgb
+    ) {
+        emitColorVertex(consumer, pose, p0, lowerRgb, 0.99F);
+        emitColorVertex(consumer, pose, p1, lowerRgb, 0.99F);
+        emitColorVertex(consumer, pose, p2, upperRgb, 0.99F);
+        emitColorVertex(consumer, pose, p3, upperRgb, 0.99F);
+    }
+
+    private static void emitColorVertex(
+            VertexConsumer consumer, PoseStack.Pose pose, Vec3 point, int rgb, float alpha
+    ) {
+        float red = ((rgb >> 16) & 255) / 255.0F;
+        float green = ((rgb >> 8) & 255) / 255.0F;
+        float blue = (rgb & 255) / 255.0F;
+        consumer.vertex(pose.pose(), (float) point.x, (float) point.y, (float) point.z)
+                .color(red, green, blue, alpha).endVertex();
     }
 
     private static Vec3 rotateAroundY(Vec3 point, double angle) {
