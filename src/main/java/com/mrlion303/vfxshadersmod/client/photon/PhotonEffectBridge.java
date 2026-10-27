@@ -4,6 +4,8 @@ import com.lowdragmc.photon.client.fx.FX;
 import com.lowdragmc.photon.client.fx.FXEffect;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.NumberFunction;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.NumberFunction3;
+import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.Curve;
+import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.ECBCurves;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Circle;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Sphere;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleConfig;
@@ -37,6 +39,7 @@ public final class PhotonEffectBridge {
         FALLING_STARS,
         STARSSPEED,
         GROUND_WAVE,
+        TRAMPOLINE,
         TERRAIN_SCAN,
         VORTEX,
         PORTAL,
@@ -73,7 +76,7 @@ public final class PhotonEffectBridge {
             case "ground_aurora" -> play(level, anchor, Preset.GROUND_WAVE, GroundAuroraEffect.configuredColor(), 2.4F);
             case "falling_stars" -> play(level, anchor, Preset.FALLING_STARS, 0, 1.7F);
             case "scan" -> play(level, anchor, Preset.TERRAIN_SCAN, TerrainScanEffect.configuredColor(), 1.6F);
-            case "trampolin" -> play(level, anchor, Preset.GROUND_WAVE, 0xFF58DFFF, (float) (TrampolineWaveEffect.configuredRadius() / 14.0D));
+            case "trampolin" -> play(level, anchor, Preset.TRAMPOLINE, 0xFF58DFFF, (float) (TrampolineWaveEffect.configuredRadius() / 14.0D));
             case "sky_portal" -> play(level, anchor, Preset.PORTAL, 0, 4.0F);
             default -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
         };
@@ -152,13 +155,22 @@ public final class PhotonEffectBridge {
             }
             case STARSSPEED -> addStarsspeedEmitter(fx, safeScale, color);
             case GROUND_WAVE -> {
-                addRing(fx, "Photon Ground Wave Bright", 2.8F * safeScale, 0.10F, 4.0F, 55, 0.32F, 0.18F, color);
-                addRing(fx, "Photon Ground Wave Halo", 4.0F * safeScale, 0.18F, 3.0F, 65, 0.25F, 0.24F, tint(color, 0.55F));
-                addRing(fx, "Photon Ground Wave Sparks", 1.8F * safeScale, 0.28F, 2.0F, 42, 0.42F, 0.11F, 0xFFE9FFFF);
+                float radius = 20.0F * safeScale;
+                addExpandingRing(fx, "Photon Ground Wave Bright", 0.2F, radius, 120, 120, 34.0F, 0.055F, color, 0, true);
+                addExpandingRing(fx, "Photon Ground Wave Halo", 0.2F, radius, 120, 120, 24.0F, 0.085F, tint(color, 0.55F), 38, true);
+                addExpandingRing(fx, "Photon Ground Wave Sparks", 0.2F, radius, 120, 120, 22.0F, 0.035F, 0xFFE9FFFF, 76, true);
+            }
+            case TRAMPOLINE -> {
+                float radius = 14.0F * safeScale;
+                addExpandingRing(fx, "Photon Trampoline Wave Core", 0.2F, radius, 55, 55, 44.0F, 0.055F, color, 0, false);
+                addExpandingRing(fx, "Photon Trampoline Wave Halo", 0.2F, radius, 55, 55, 28.0F, 0.095F, tint(color, 0.55F), 2, false);
+                addExpandingRing(fx, "Photon Trampoline Wave Sparks", 0.2F, radius, 55, 55, 18.0F, 0.035F, 0xFFE9FFFF, 4, false);
             }
             case TERRAIN_SCAN -> {
-                addRing(fx, "Photon Scan Outer", 2.5F * safeScale, 0.02F, 7.0F, 36, 0.75F, 0.08F, color);
-                addRing(fx, "Photon Scan Core", 1.5F * safeScale, 0.04F, 4.5F, 28, 0.95F, 0.12F, 0xFFFFFFFF);
+                float radius = 62.5F * safeScale;
+                addExpandingRing(fx, "Photon Terrain Scan Outer", 0.2F, radius, 70, 70, 56.0F, 0.045F, color, 0, false);
+                addExpandingRing(fx, "Photon Terrain Scan Glow", 0.2F, radius, 70, 70, 38.0F, 0.075F, tint(color, 0.65F), 1, false);
+                addExpandingRing(fx, "Photon Terrain Scan Core", 0.2F, radius, 70, 70, 24.0F, 0.035F, 0xFFFFFFFF, 2, false);
             }
             case VORTEX -> {
                 addRing(fx, "Photon Vortex Outer", 7.0F * safeScale, -1.5F, 4.0F, 82, 0.10F, 0.20F, 0xFF9A1618);
@@ -220,6 +232,47 @@ public final class PhotonEffectBridge {
             case 2 -> new NumberFunction3(0.14F, 0.0F, 0.0F);
             default -> new NumberFunction3(0.0F, 0.14F, 0.0F);
         });
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /**
+     * Anillo de partículas impulsado por la curva temporal de escala de Photon.
+     * El radio crece en la propia ShapeSetting: no se anima una malla dibujada por el mod.
+     */
+    private static void addExpandingRing(
+            FX fx, String name, float startRadius, float endRadius,
+            int duration, int particleLifetime, float rate, float size, int color,
+            int emitterDelay, boolean looping
+    ) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName(name);
+        emitter.setDelay(emitterDelay);
+        ParticleConfig config = emitter.config;
+        config.setDuration(duration);
+        config.setLooping(looping);
+        config.setStartLifetime(NumberFunction.constant(particleLifetime));
+        config.setStartSpeed(NumberFunction.constant(0.0F));
+        config.setStartSize(new NumberFunction3(size, size, size));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(1800);
+        config.emission.setEmissionRate(NumberFunction.constant(rate));
+
+        Circle circle = new Circle();
+        circle.setRadius(1.0F);
+        circle.setRadiusThickness(0.84F);
+        config.shape.setShape(circle);
+        config.shape.setPosition(new NumberFunction3(0.0F, 0.14F, 0.0F));
+
+        Curve radiusCurve = new Curve(0.0F, duration, startRadius, endRadius,
+                startRadius, "duration", "radius");
+        radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 0.1F, 0.1F,
+                0.9F, 0.9F, 1.0F, 1.0F));
+        config.shape.setScale(new NumberFunction3(radiusCurve,
+                NumberFunction.constant(1.0F), radiusCurve));
+
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
