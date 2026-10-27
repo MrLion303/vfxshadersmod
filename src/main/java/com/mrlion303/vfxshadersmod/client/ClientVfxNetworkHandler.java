@@ -6,6 +6,7 @@ import com.mrlion303.vfxshadersmod.client.effect.BlackHolePlacement;
 import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
 import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
+import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
 import com.mrlion303.vfxshadersmod.util.VfxColors;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.network.VfxCommandPacket;
@@ -42,9 +43,27 @@ public final class ClientVfxNetworkHandler {
                 ClientVfxManager.disable(TerrainScanEffect.ID);
                 ClientVfxManager.enable(TerrainScanEffect.ID);
             }
+            case VfxCommandPacket.TRAMPOLIN_ONCE -> startTrampolineWave(packet);
             default -> {
                 // Ignora operaciones desconocidas para permitir añadir mensajes en futuras versiones.
             }
+        }
+    }
+
+    private static void startTrampolineWave(VfxCommandPacket packet) {
+        String[] settings = packet.option().split(";", -1);
+        if (settings.length != 2) {
+            return;
+        }
+
+        try {
+            double radius = Double.parseDouble(settings[0]);
+            double speed = Double.parseDouble(settings[1]);
+            TrampolineWaveEffect.configure(packet.position(), packet.diameter(), radius, speed);
+            ClientVfxManager.disable(TrampolineWaveEffect.ID);
+            ClientVfxManager.enable(TrampolineWaveEffect.ID);
+        } catch (NumberFormatException exception) {
+            // Ignora opciones mal formadas en vez de iniciar una simulación inválida.
         }
     }
 
