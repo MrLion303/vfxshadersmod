@@ -27,6 +27,11 @@ public final class BlackHoleVfxRenderer implements ClientWorldVfxRenderer {
     private static final int SPHERE_LONGITUDES = 64;
     private static final Vec3 DISK_NORMAL = new Vec3(0.22D, 0.91D, 0.35D).normalize();
 
+    /** Normal exacta del disco renderizado, reutilizada por el emisor Photon de acreción. */
+    public static Vec3 diskNormal() {
+        return DISK_NORMAL;
+    }
+
     @Override
     public Set<RenderLevelStageEvent.Stage> renderStages() {
         return Set.of(RenderLevelStageEvent.Stage.AFTER_PARTICLES);
