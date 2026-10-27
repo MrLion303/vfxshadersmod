@@ -97,7 +97,7 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         buffers.endBatch(portalType);
 
         // Fracturas ardientes que salen del anillo como grietas en el cielo.
-        RenderType lineType = VfxRenderTypes.skyLines();
+        RenderType lineType = VfxRenderTypes.skyAdditiveLines();
         VertexConsumer cracks = buffers.getBuffer(lineType);
         float pulse = (float) (0.76D + 0.20D * Math.sin(time * 0.075D));
         float crackReveal = (float) Math.min(1.0D, time / 12.0D);
