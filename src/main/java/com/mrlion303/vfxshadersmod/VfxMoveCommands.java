@@ -2,6 +2,7 @@ package com.mrlion303.vfxshadersmod;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mrlion303.vfxshadersmod.network.VfxCommandPacket;
 import com.mrlion303.vfxshadersmod.network.VfxNetwork;
 import net.minecraft.commands.CommandSourceStack;
@@ -10,6 +11,7 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.material.FluidState;
@@ -23,6 +25,8 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,6 +38,7 @@ public final class VfxMoveCommands {
     private static final double GRAVEDAD_LUNAR_COMPENSACION = 0.052D;
     private static final Set<UUID> MOONJUMP = new HashSet<>();
     private static final Set<UUID> WATER_WALK = new HashSet<>();
+    private static final Map<UUID, Long> VOLAR_HASTA = new HashMap<>();
 
     private VfxMoveCommands() {
     }
@@ -66,7 +71,11 @@ public final class VfxMoveCommands {
                                         .executes(context -> setEffect(context, false, true))))
                         .then(Commands.literal("disable")
                                 .then(Commands.argument("targets", EntityArgument.players())
-                                        .executes(context -> setEffect(context, false, false))))));
+                                        .executes(context -> setEffect(context, false, false)))))
+                .then(Commands.literal("volar")
+                        .then(Commands.argument("seconds", FloatArgumentType.floatArg(0.1F, 3600.0F))
+                                .then(Commands.argument("targets", EntityArgument.players())
+                                        .executes(VfxMoveCommands::volar)))));
     }
 
     private static int empujon(CommandContext<CommandSourceStack> context) {
@@ -152,6 +161,49 @@ public final class VfxMoveCommands {
         );
     }
 
+    private static int volar(CommandContext<CommandSourceStack> context) {
+        float seconds = FloatArgumentType.getFloat(context, "seconds");
+        Collection<ServerPlayer> targets;
+        try {
+            targets = EntityArgument.getPlayers(context, "targets");
+        } catch (Exception exception) {
+            context.getSource().sendFailure(Component.literal("No se encontraron jugadores válidos."));
+            return 0;
+        }
+
+        long now = context.getSource().getServer().overworld().getGameTime();
+        long durationTicks = Math.max(2L, (long) Math.ceil(seconds * 20.0D));
+        for (ServerPlayer player : targets) {
+            VOLAR_HASTA.put(player.getUUID(), now + durationTicks);
+            sendVolar(player, true, seconds);
+        }
+
+        int count = targets.size();
+        context.getSource().sendSuccess(
+                () -> Component.literal("Animación de vuelo activada durante " + seconds + " s para "
+                        + count + (count == 1 ? " jugador." : " jugadores.")),
+                true
+        );
+        return count;
+    }
+
+    private static void sendVolar(ServerPlayer player, boolean enabled, float seconds) {
+        sendVolarToLevel(player.serverLevel(), player, enabled, seconds);
+    }
+
+    private static void sendVolarToLevel(ServerLevel level, ServerPlayer player, boolean enabled, float seconds) {
+        VfxNetwork.sendToDimension(level, new VfxCommandPacket(
+                VfxCommandPacket.PLAYER_ANIMATION, "volar", level.dimension().location(), seconds,
+                new Vec3(player.getId(), 0.0D, 0.0D), enabled ? "enable" : "disable"));
+    }
+
+    private static void sendVolarToClient(ServerPlayer recipient, ServerPlayer target, float seconds) {
+        VfxNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> recipient),
+                new VfxCommandPacket(VfxCommandPacket.PLAYER_ANIMATION, "volar",
+                        target.serverLevel().dimension().location(), seconds,
+                        new Vec3(target.getId(), 0.0D, 0.0D), "enable"));
+    }
+
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
@@ -160,6 +212,13 @@ public final class VfxMoveCommands {
         }
 
         UUID id = player.getUUID();
+        Long flyingUntil = VOLAR_HASTA.get(id);
+        long serverTime = player.getServer().overworld().getGameTime();
+        if (flyingUntil != null && serverTime >= flyingUntil) {
+            VOLAR_HASTA.remove(id);
+            sendVolar(player, false, 0.0F);
+        }
+
         if (MOONJUMP.contains(id) && !player.getAbilities().flying && !player.isFallFlying()
                 && !player.onGround()) {
             Vec3 velocity = player.getDeltaMovement();
@@ -211,8 +270,42 @@ public final class VfxMoveCommands {
     }
 
     @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer joining) || joining.getServer() == null) return;
+        long now = joining.getServer().overworld().getGameTime();
+        for (ServerPlayer target : joining.getServer().getPlayerList().getPlayers()) {
+            if (target.serverLevel() != joining.serverLevel()) continue;
+            Long expires = VOLAR_HASTA.get(target.getUUID());
+            if (expires != null && expires > now) {
+                sendVolarToClient(joining, target, (expires - now) / 20.0F);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.getServer() == null) return;
+        Long expires = VOLAR_HASTA.get(player.getUUID());
+        long now = player.getServer().overworld().getGameTime();
+        if (expires != null && expires > now) sendVolar(player, true, (expires - now) / 20.0F);
+    }
+
+    @SubscribeEvent
+    public static void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.getServer() == null) return;
+        ServerLevel oldLevel = player.getServer().getLevel(event.getFrom());
+        if (oldLevel != null) sendVolarToLevel(oldLevel, player, false, 0.0F);
+        Long expires = VOLAR_HASTA.get(player.getUUID());
+        long now = player.getServer().overworld().getGameTime();
+        if (expires != null && expires > now) sendVolar(player, true, (expires - now) / 20.0F);
+    }
+
+    @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID id = event.getEntity().getUUID();
+        if (event.getEntity() instanceof ServerPlayer player && VOLAR_HASTA.remove(id) != null) {
+            sendVolar(player, false, 0.0F);
+        }
         MOONJUMP.remove(id);
         WATER_WALK.remove(id);
     }
