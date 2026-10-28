@@ -64,7 +64,7 @@ public final class VfxOnceCommands {
                                 .executes(context -> photonBurst(context, "confeti"))))
                 .then(Commands.literal("llamas")
                         .then(Commands.argument("posicion", Vec3Argument.vec3())
-                                .executes(context -> photonBurst(context, "llamas"))));
+                                .executes(context -> photonBurst(context, "llamas")))));
     }
 
     private static int photonBurst(CommandContext<CommandSourceStack> context, String effect) {
