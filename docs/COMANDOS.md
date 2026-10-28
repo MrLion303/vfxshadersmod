@@ -72,7 +72,32 @@ Los VFX se renderizan en cada cliente; el servidor sincroniza las órdenes, no b
 - `/vfxmove moonjump disable <jugadores>`: restaura el movimiento normal.
 - `/vfxmove waterwalk enable <jugadores>`: permite desplazarse sobre la superficie del agua sin hundirse.
 - `/vfxmove waterwalk disable <jugadores>`: desactiva el efecto. `caminar_agua` es un alias.
-- `<jugadores>` acepta nombres o selectores como `@a`, `@p` y `@s`.
+- `/vfxmove volar <segundos> <jugadores>`: activa temporalmente una postura visual de vuelo horizontal, con el torso como al nadar y los brazos extendidos hacia los lados. No concede vuelo real ni altera la física del jugador. Duración: de 0.1 a 3600 segundos.
+- `<jugadores>` acepta nombres y selectores de jugadores como `@a`, `@p`, `@s`, `@r` o `@e[type=player]`.
+
+Ejemplos:
+```text
+/vfxmove volar 8 @a
+/vfxmove volar 2.5 @p
+/vfxmove volar 15 @e[type=player,distance=..20]
+```
+
+## Efectos alrededor de jugadores
+
+- `/vfxplayer ondas enable <jugadores>`: muestra dos aros luminosos verticales, inclinados en ángulos distintos para cruzarse alrededor del jugador.
+- `/vfxplayer ondas disable <jugadores>`: elimina los aros.
+- `/vfxplayer aura enable <jugadores>`: genera pequeñas llamas que orbitan alrededor del jugador.
+- `/vfxplayer aura disable <jugadores>`: elimina las llamas.
+
+Ejemplos:
+```text
+/vfxplayer ondas enable @a
+/vfxplayer ondas disable @p
+/vfxplayer aura enable @e[type=player]
+/vfxplayer aura disable @a
+```
+
+Los efectos aparecen en los clientes de la misma dimensión que los jugadores seleccionados.
 
 ## Efectos nuevos
 

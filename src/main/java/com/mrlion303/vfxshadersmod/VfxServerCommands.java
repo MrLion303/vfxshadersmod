@@ -114,6 +114,8 @@ public final class VfxServerCommands {
         context.getSource().sendSuccess(() -> Component.literal("/vfxmove moonjump enable|disable <jugadores>"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfxmove waterwalk enable|disable <jugadores>"), false);
         context.getSource().sendSuccess(() -> Component.literal("/vfxmove empujon <jugadores> — impulsa a los jugadores seleccionados"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfxmove volar <segundos> <jugadores> — postura flotante temporal, sin vuelo real"), false);
+        context.getSource().sendSuccess(() -> Component.literal("/vfxplayer ondas|aura enable|disable <jugadores>"), false);
         return 1;
     }
 
