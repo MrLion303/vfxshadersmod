@@ -19,6 +19,8 @@ java {
 
 minecraft {
     mappings channel: 'official', version: minecraft_version
+    // Permite fijar la cámara en coordenadas absolutas sin reflexión, incluso en el JAR reobfuscado.
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
     copyIdeResources = true
 
     runs {

@@ -1,6 +1,5 @@
 package com.mrlion303.vfxshadersmod.client;
 
-import com.mojang.logging.LogUtils;
 import com.mrlion303.vfxshadersmod.VfxCameraDirection;
 import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
@@ -11,23 +10,18 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.ViewportEvent;
-import org.slf4j.Logger;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 /**
  * Cámaras cinematográficas locales. La entidad de cámara sigue siendo el jugador:
  * así Minecraft conserva el control, las colisiones y los paquetes de movimiento normales.
  */
 public final class ClientVfxCameraController {
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final double THIRD_PERSON_DISTANCE = 4.0D;
     private static final double SHOULDER_BACK = 3.15D;
     private static final double SHOULDER_SIDE = 0.62D;
     private static final double SHOULDER_UP = 0.10D;
     private static final double CAMERA_CLEARANCE = 0.18D;
-    private static final Method CAMERA_SET_POSITION = findCameraPositionSetter();
 
     private static Mode mode = Mode.NONE;
     private static Vec3 fixedPosition = Vec3.ZERO;
@@ -42,7 +36,6 @@ public final class ClientVfxCameraController {
     private static float lastCameraYaw;
     private static float lastCameraPitch;
     private static boolean hasCameraSample;
-    private static boolean positionSetterWarningShown;
 
     private ClientVfxCameraController() {}
 
@@ -176,7 +169,7 @@ public final class ClientVfxCameraController {
 
         event.setYaw(appliedYaw);
         event.setPitch(appliedPitch);
-        setCameraPosition(camera, appliedPosition);
+        camera.setPosition(appliedPosition);
         rememberCamera(appliedPosition, appliedYaw, appliedPitch);
         if (finishReturn) finishReturn(player);
     }
@@ -275,29 +268,6 @@ public final class ClientVfxCameraController {
         mc.setCameraEntity(player);
         mc.options.setCameraType(CameraType.FIRST_PERSON);
         rememberCamera(player.getEyePosition(), player.getYRot(), player.getXRot());
-    }
-
-    private static Method findCameraPositionSetter() {
-        try {
-            Method method = Camera.class.getDeclaredMethod("setPosition", Vec3.class);
-            method.setAccessible(true);
-            return method;
-        } catch (ReflectiveOperationException | RuntimeException exception) {
-            LOGGER.error("No se pudo preparar el ajuste local de posición de cámara de VFXShadersMod.", exception);
-            return null;
-        }
-    }
-
-    private static void setCameraPosition(Camera camera, Vec3 position) {
-        if (CAMERA_SET_POSITION == null) return;
-        try {
-            CAMERA_SET_POSITION.invoke(camera, position);
-        } catch (IllegalAccessException | InvocationTargetException exception) {
-            if (!positionSetterWarningShown) {
-                positionSetterWarningShown = true;
-                LOGGER.error("No se pudo actualizar la posición de cámara de VFXShadersMod.", exception);
-            }
-        }
     }
 
     private enum Mode { NONE, SHOULDER, FIXED, RETURNING }
