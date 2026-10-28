@@ -89,7 +89,7 @@ public final class VfxCameraCommands {
             if (!(entity instanceof ServerPlayer player)) continue;
             if (MODES.get(player.getUUID()) == CameraMode.SHOULDER) {
                 MODES.remove(player.getUUID());
-                send(player, "return", -1.0F, player.position(), "");
+                send(player, "return", 0.42F, player.position(), "");
             } else {
                 MODES.put(player.getUUID(), CameraMode.SHOULDER);
                 send(player, "shoulder", 0.42F, player.position(), "");
