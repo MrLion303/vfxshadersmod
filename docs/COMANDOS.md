@@ -122,4 +122,4 @@ Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amari
 - `/vfxonce confeti <x> <y> <z>` usa un cono de emisión Photon que dispara el confeti hacia arriba; la gravedad hace que pierda altura y caiga de forma natural. La ráfaga y la caída permanecen visibles varios segundos.
 - `/vfxonce llamas <x> <y> <z>` dispara una columna de chispas cálidas en un cono estrecho, con estelas y bloom, como un cañón pirotécnico de concierto. Es un efecto de partículas, no fuego colocado en el mundo.
 
-Los comandos requieren permiso de operador de nivel 2. La cámara cambia solo para cada jugador objetivo y no mueve su entidad. Las ráfagas se ejecutan en las coordenadas indicadas y los emisores Photon se destruyen al terminar.
+Los comandos requieren permiso de operador de nivel 2. La cámara usa al propio jugador como entidad de cámara; solo altera la vista del cliente, no bloquea el movimiento ni modifica las coordenadas del jugador. La vista de hombro conserva el giro del ratón y añade comprobación de colisiones para evitar meter la cámara en bloques. Las ráfagas se ejecutan en las coordenadas indicadas y los emisores Photon se destruyen al terminar.

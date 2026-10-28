@@ -5,9 +5,11 @@ import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterClientCommandsEvent;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RegisterClientCommandsEvent;
+import net.minecraftforge.client.event.RenderHandEvent;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -43,10 +45,24 @@ public final class ClientVfxEvents {
 
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
+            ClientVfxCameraController.reset();
             ClientVfxManager.clear();
         } else {
+            ClientVfxCameraController.tick(minecraft.player);
             ClientVfxManager.tick(minecraft.level);
             PhotonEffectBridge.tickOneShots();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
+        ClientVfxCameraController.applyCameraAngles(event);
+    }
+
+    @SubscribeEvent
+    public static void onRenderHand(RenderHandEvent event) {
+        if (ClientVfxCameraController.shouldHideHand()) {
+            event.setCanceled(true);
         }
     }
 
