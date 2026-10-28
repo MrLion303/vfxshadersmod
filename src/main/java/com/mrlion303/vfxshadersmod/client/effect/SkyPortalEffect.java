@@ -66,6 +66,10 @@ public final class SkyPortalEffect implements VfxEffect, ClientVfxRenderer {
         if (shader == null) {
             return;
         }
+        var portalTime = shader.getUniform("PortalTime");
+        if (portalTime != null) {
+            portalTime.set((float) (age + partialTick));
+        }
 
         // Carga el panorama del proyecto como textura real del portal, también tras recargar recursos.
         ResourceLocation portalTextureId = new ResourceLocation(

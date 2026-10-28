@@ -54,12 +54,12 @@ void main() {
 
     float distanceFromCrest = radialDistance - frontRadius;
     float envelope = exp(-abs(distanceFromCrest) * 0.26);
-    float waveHeight = sin(distanceFromCrest * 1.36) * envelope * amplitude * energy;
+    float waveHeight = sin(distanceFromCrest * 1.36) * envelope * amplitude * energy * 1.18;
     vec2 radialDirection = fromOrigin / max(radialDistance, 0.001);
     vec3 worldDisplacement = vec3(
-            radialDirection.x * waveHeight * 0.22,
+            radialDirection.x * waveHeight * 0.32,
             waveHeight,
-            radialDirection.y * waveHeight * 0.22
+            radialDirection.y * waveHeight * 0.32
     );
 
     vec3 displacementInView = vec3(
@@ -76,10 +76,10 @@ void main() {
     vec2 displacedUV = displacedClip.xy / displacedClip.w * 0.5 + 0.5;
     vec2 uvDelta = displacedUV - texCoord;
     float radialMask = 1.0 - smoothstep(maximumRadius - 2.0, maximumRadius + 1.0, radialDistance);
-    vec2 sourceUV = texCoord - uvDelta * radialMask;
+    vec2 sourceUV = texCoord - uvDelta * radialMask * 1.18;
 
     // Vibración breve que acentúa las juntas y las siluetas de los bloques en la cresta.
-    float ripple = sin(distanceFromCrest * 2.8) * envelope * 5.0 * energy;
+    float ripple = sin(distanceFromCrest * 2.8) * envelope * 8.0 * energy;
     sourceUV += normalize(uvDelta + vec2(0.000001)) * ripple / max(ScreenSize, vec2(1.0));
     vec4 distortedColor = sceneAt(sourceUV);
     fragColor = vec4(distortedColor.rgb, originalColor.a);

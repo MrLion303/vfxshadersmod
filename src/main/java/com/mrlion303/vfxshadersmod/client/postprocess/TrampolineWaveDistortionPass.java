@@ -1,5 +1,6 @@
 package com.mrlion303.vfxshadersmod.client.postprocess;
 
+import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -19,9 +20,12 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import org.slf4j.Logger;
 
 /** Distorsiona texturas y siluetas del terreno usando profundidad y una cresta radial móvil. */
 public final class TrampolineWaveDistortionPass {
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static boolean loggedFailure;
     private static TextureTarget scratch;
     private static int scratchWidth = -1;
     private static int scratchHeight = -1;
@@ -68,10 +72,17 @@ public final class TrampolineWaveDistortionPass {
             setMatrix(shader, "ProjMat", projection);
             setMatrix(shader, "InverseProjectionMat", new Matrix4f(projection).invert());
 
-            main.bindRead();
+            // Conserva primero la imagen real en el target auxiliar. Si el shader
+            // no cubre algún píxel, nunca se sustituye el mundo por un buffer negro.
             scratch.bindWrite(true);
-            scratch.setClearColor(0, 0, 0, 1);
-            scratch.clear(false);
+            GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId);
+            GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, scratch.frameBufferId);
+            GL30.glBlitFramebuffer(
+                    0, 0, main.width, main.height,
+                    0, 0, scratch.width, scratch.height,
+                    GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST
+            );
+
             RenderSystem.disableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.disableBlend();
@@ -92,6 +103,14 @@ public final class TrampolineWaveDistortionPass {
             GL30.glBlitFramebuffer(0, 0, scratch.width, scratch.height, 0, 0, main.width, main.height,
                     GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
             main.bindWrite(false);
+            loggedFailure = false;
+        } catch (RuntimeException exception) {
+            // Un fallo del pase debe dejar intacta la imagen original y no bloquear
+            // la pantalla hasta que termine la onda.
+            if (!loggedFailure) {
+                LOGGER.error("No se pudo aplicar la distorsión del trampolín; se conserva el renderizado normal.", exception);
+                loggedFailure = true;
+            }
         } finally {
             scratch.unbindWrite();
             main.bindWrite(false);

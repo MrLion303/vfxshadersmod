@@ -15,7 +15,7 @@ out vec4 fragColor;
 
 const float VORTEX_DISTANCE = 224.0;
 const vec3 VORTEX_RADII = vec3(90.0, 74.0, 78.0);
-const int RAY_STEPS = 12;
+const int RAY_STEPS = 16;
 
 float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -101,29 +101,43 @@ void main() {
 
         // Dos grandes brazos se enrollan alrededor del centro; el ruido rompe los bordes
         // en bancos de nube de diferentes tamaños en lugar de crear anillos lisos.
+        // La animación desplaza capas y turbulencia a velocidades distintas: no gira
+        // la nube completa como una textura plana.
         vec2 flow = vec2(
-            angle * 2.35 + radius * 8.8 - time + local.z * 1.65,
-            radius * 11.5 + local.z * 3.2 + time * 0.32
+            angle * 2.35 + radius * 8.8 - time * 0.28 + local.z * 1.65,
+            radius * 11.5 + local.z * 3.2 + time * 0.22
         );
         float broad = fbm2(flow * 1.35);
-        float detail = fbm2(flow * 3.1 + vec2(4.7, -3.8));
+        float detail = fbm2(flow * 3.1 + vec2(4.7 + time * 0.13, -3.8 - time * 0.17));
         float warp = (fbm2(vec2(angle * 1.65 + radius * 4.0 - time * 0.45,
                                 local.z * 2.4 + radius * 3.0)) - 0.5) * 1.7;
-        float spiral = sin(angle * 2.2 + radius * 10.2 - time * 0.92
-                           + warp + (broad - 0.5) * 2.2);
-        float arms = smoothstep(-0.72, 0.58, spiral + (detail - 0.5) * 0.70);
+        float spiral = sin(angle * 2.2 + radius * 10.2 - time * 0.38
+                           + warp + (broad - 0.5) * 2.2 + local.z * 0.48);
+        float depthLobes = sin(local.z * 8.5 + radius * 3.0 + time * 0.18) * 0.13;
+        float arms = smoothstep(-0.72, 0.58, spiral + (detail - 0.5) * 0.70 + depthLobes);
 
-        float edgeRadius = 0.80 + (broad - 0.5) * 0.13 + (detail - 0.5) * 0.08;
+        float edgeRadius = 0.80 + (broad - 0.5) * 0.13
+                         + (detail - 0.5) * 0.08 + (warp * 0.012);
         float perimeter = 1.0 - smoothstep(edgeRadius - 0.09, edgeRadius + 0.12, radius);
-        float depthFade = 1.0 - smoothstep(0.70, 1.04, abs(local.z));
-        float billows = smoothstep(0.34, 0.68, broad * 0.72 + detail * 0.28 + arms * 0.20);
+        float depthFade = (1.0 - smoothstep(0.70, 1.04, abs(local.z)))
+                        * (0.78 + 0.22 * smoothstep(-0.85, 0.55, local.z));
+        float billows = smoothstep(0.34, 0.68, broad * 0.65 + detail * 0.25
+                                  + arms * 0.20 + depthLobes * 0.16);
         float core = exp(-radius * 8.0) * (1.0 - smoothstep(0.30, 0.90, abs(local.z)));
         float density = billows * perimeter * depthFade * (0.22 + arms * 0.78);
         density = max(density, core * 1.15);
         if (density < 0.012) continue;
 
-        float lighting = clamp(0.28 + broad * 0.75 + detail * 0.28
-                               + arms * 0.20 + (1.0 - radius) * 0.18, 0.08, 1.45);
+        // Iluminación volumétrica aproximada: la cara orientada a la luz es más
+        // brillante, mientras que los bordes y la parte posterior dispersan luz roja.
+        vec3 volumeNormal = normalize(vec3(local.x, local.y, local.z * 0.68));
+        vec3 lightDirection = normalize(vec3(-0.42, 0.72, -0.55));
+        float diffuse = 0.32 + max(dot(volumeNormal, lightDirection), 0.0) * 0.68;
+        float backScatter = pow(max(dot(-volumeNormal, lightDirection), 0.0), 2.0) * 0.20;
+        float viewRim = pow(1.0 - abs(dot(volumeNormal, normalize(rayDirectionLocal))), 2.0) * 0.24;
+        float lighting = clamp((0.28 + broad * 0.75 + detail * 0.28
+                               + arms * 0.20 + (1.0 - radius) * 0.18) * diffuse
+                               + backScatter + viewRim, 0.08, 1.5);
         vec3 cloudColor = mix(vec3(0.055, 0.0015, 0.004),
                               vec3(0.46, 0.012, 0.006), smoothstep(0.28, 0.62, broad));
         cloudColor = mix(cloudColor, vec3(0.96, 0.075, 0.008),
