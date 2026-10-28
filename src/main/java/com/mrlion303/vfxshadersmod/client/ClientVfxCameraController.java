@@ -246,7 +246,9 @@ public final class ClientVfxCameraController {
 
     private static float transitionProgress(double partialTick) {
         if (transitionTicks <= 0) return 1.0F;
-        return Mth.clamp((transitionElapsed + (float) partialTick) / (float) transitionTicks, 0.0F, 1.0F);
+        float linear = Mth.clamp((transitionElapsed + (float) partialTick) / (float) transitionTicks, 0.0F, 1.0F);
+        // Suaviza el arranque y el frenado para un movimiento cinematográfico.
+        return linear * linear * (3.0F - 2.0F * linear);
     }
 
     private static void clearTransition() {
