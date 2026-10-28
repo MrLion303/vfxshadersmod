@@ -11,6 +11,7 @@ import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
 import com.mrlion303.vfxshadersmod.client.effect.SkyPortalEffect;
 import com.mrlion303.vfxshadersmod.client.effect.DemoOrbitEffect;
 import com.mrlion303.vfxshadersmod.client.effect.MusicHorizonBarsEffect;
+import com.mrlion303.vfxshadersmod.client.effect.MusicSyncBarsEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraPhotonEffect;
 import com.mrlion303.vfxshadersmod.client.effect.RainbowSkyEffect;
@@ -44,6 +45,13 @@ public final class ClientVfxCatalog {
                 "Un ecualizador de neón rodea el horizonte con barras de altura y colores animados.",
                 VfxEffectCategory.ENVIRONMENT,
                 MusicHorizonBarsEffect::new
+        );
+        EffectRegistry.register(
+                MusicSyncBarsEffect.ID,
+                "Barras Sync",
+                "Copia de las barras musicales que reacciona a los sonidos reproducidos localmente en este cliente.",
+                VfxEffectCategory.ENVIRONMENT,
+                MusicSyncBarsEffect::new
         );
         EffectRegistry.register(
                 RainbowAuroraEffect.ID,
