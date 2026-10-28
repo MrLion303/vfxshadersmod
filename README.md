@@ -52,6 +52,7 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 
 - **demo_orbit:** anillos orbitales nativos de Photon, con movimiento de partículas, bloom y estelas.
 - **music_horizon_bars:** barras geométricas originales alrededor del horizonte, con alturas y colores animados. Se conserva el renderizador previo a la migración a Photon; no analiza audio real.
+- **music_sync_bars (Barras Sync):** copia visual independiente que reacciona a los sonidos que empiezan a reproducirse en el cliente local. Se activa con `/vfx enable music_sync_bars` y se desactiva con `/vfx disable music_sync_bars`; no sincroniza los impulsos entre jugadores.
 - **rainbow_aurora:** aurora arcoíris clásica con cortinas geométricas ondulantes y gradientes de color, restaurada a su renderizador original.
 - **rainbow_sky:** pinta uniformemente el cielo y va cambiando de azul a rojo y a los demás colores del arcoíris. Cubre el cenit y tiñe las nubes sin recolorear los bloques cercanos.
 - **blackhole:** agujero negro en coordenadas del mundo con horizonte negro compacto, disco de acreción blanco-dorado/naranja y lente gravitacional de pantalla. Si la cámara queda dentro del horizonte, se oculta temporalmente el objeto para evitar envolver la vista en negro.
