@@ -33,6 +33,8 @@ public record VfxCommandPacket(
     public static final String TRAMPOLIN_ONCE = "trampolin_once";
     public static final String PHOTON_ONCE = "photon_once";
     public static final String CAMERA_CONTROL = "camera_control";
+    public static final String PLAYER_ANIMATION = "player_animation";
+    public static final String PLAYER_VFX = "player_vfx";
 
     public VfxCommandPacket(
             String operation,
