@@ -102,8 +102,9 @@ public final class VfxCameraCommands {
             return 0;
         }
         String state = enabled == count ? "activada" : enabled == 0 ? "desactivada" : "alternada";
-        ctx.getSource().sendSuccess(() -> Component.literal(
-                "Vista de hombro " + state + " para " + count + (count == 1 ? " jugador." : " jugadores.")), true);
+        String message = "Vista de hombro " + state + " para " + count
+                + (count == 1 ? " jugador." : " jugadores.");
+        ctx.getSource().sendSuccess(() -> Component.literal(message), true);
         return count;
     }
 
@@ -132,9 +133,9 @@ public final class VfxCameraCommands {
             return 0;
         }
         String timing = seconds < 0.0F || seconds == 0.0F ? "instantáneamente" : "en " + seconds + " segundos";
-        ctx.getSource().sendSuccess(() -> Component.literal(
-                "Cámara fijada en (" + fmt(position.x) + ", " + fmt(position.y) + ", " + fmt(position.z)
-                        + "), mirando hacia " + direction + ", " + timing + ". Objetivos: " + count + "."), true);
+        String message = "Cámara fijada en (" + fmt(position.x) + ", " + fmt(position.y) + ", " + fmt(position.z)
+                + "), mirando hacia " + direction + ", " + timing + ". Objetivos: " + count + ".";
+        ctx.getSource().sendSuccess(() -> Component.literal(message), true);
         return count;
     }
 
@@ -155,8 +156,9 @@ public final class VfxCameraCommands {
             ctx.getSource().sendFailure(Component.literal("Indica uno o más jugadores con el selector."));
             return 0;
         }
-        ctx.getSource().sendSuccess(() -> Component.literal("Cámara devuelta al jugador para "
-                + count + (count == 1 ? " jugador." : " jugadores.")), true);
+        String message = "Cámara devuelta al jugador para "
+                + count + (count == 1 ? " jugador." : " jugadores.");
+        ctx.getSource().sendSuccess(() -> Component.literal(message), true);
         return count;
     }
 
