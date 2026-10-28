@@ -100,3 +100,26 @@ La superficie ondulada es una deformación visual temporal sobre el terreno carg
 
 Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amarillo`, `verde`, `morado`, `rosa` y `blanco`. También se acepta hexadecimal con el formato `#RRGGBB`.
 
+
+
+## Cámara y efectos Photon de un solo uso
+
+```text
+/vfxcamara hombro @s
+/vfxcamara hombro @a
+/vfxcamara fija 100 75 -20 1.5 "abajo, sur" @a
+/vfxcamara fija 100 75 -20 false norte @p
+/vfxcamara fijadesactivar 1.2 @a
+/vfxcamara fijadesactivar false @s
+/vfxonce confeti ~ ~1 ~
+/vfxonce llamas 100 64 -20
+```
+
+- `/vfxcamara hombro <objetivos>` alterna entre primera persona y una vista de tercera persona situada detrás y a un lado del jugador, con transición suave. Una segunda ejecución devuelve la vista a primera persona. Acepta selectores como `@s`, `@p`, `@a` y `@e[type=player]`.
+- `/vfxcamara fija <x> <y> <z> <tiempo|false> <dirección> [objetivos]` desplaza la cámara a una coordenada y la orienta hacia una dirección. El tiempo se expresa en segundos, entre 0 y 30; `false` o `0` hacen el cambio instantáneo. Si se omiten los objetivos, el jugador que ejecuta el comando es el objetivo.
+- `/vfxcamara fijadesactivar <tiempo|false> [objetivos]` devuelve la cámara al jugador, con transición o de inmediato. Los objetivos se pueden omitir desde el chat.
+- Direcciones válidas: `arriba`, `abajo`, los ocho rumbos de brújula y combinaciones con arriba/abajo. Por ejemplo, `"abajo, sur"` mira en diagonal hacia abajo y al sur. Las direcciones con espacios deben escribirse entre comillas.
+- `/vfxonce confeti <x> <y> <z>` dispara confeti multicolor hacia arriba con emisores Photon.
+- `/vfxonce llamas <x> <y> <z>` dispara chispas cálidas hacia arriba, como un cañón de escenario. Es un efecto de partículas, no fuego colocado en el mundo.
+
+Los comandos requieren permiso de operador de nivel 2. La cámara cambia solo para cada jugador objetivo y no mueve su entidad. Las ráfagas se ejecutan en las coordenadas indicadas y los emisores Photon se destruyen al terminar.

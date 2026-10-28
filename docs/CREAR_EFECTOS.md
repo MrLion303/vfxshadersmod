@@ -70,3 +70,10 @@ Un efecto que permanezca en una dirección celeste puede implementar VfxEffect y
 Los recursos van en src/main/resources/assets/vfxshadersmod/shaders/core/. Crea el JSON de configuración, los archivos vertex/fragment compatibles con el formato de vértices y registra el ShaderInstance en VfxShaderLibrary.
 
 La compilación no garantiza que un shader se vea correctamente en todos los drivers: hay que probarlo dentro de Minecraft, incluidos los cambios de resolución, recarga de recursos y varios efectos simultáneos.
+
+
+## Cámara cinemática y ráfagas Photon
+
+`VfxCameraCommands` valida los objetivos en el servidor y envía órdenes privadas a cada jugador. `ClientVfxCameraController` realiza el movimiento en el cliente con una entidad auxiliar que nunca se añade al mundo. La vista de hombro usa tercera persona con desplazamiento lateral; la cámara fija usa primera persona para colocar el punto de vista exactamente en las coordenadas solicitadas.
+
+Los tiempos se expresan en segundos o `false` para una transición instantánea. Las direcciones se convierten en yaw/pitch, incluidas diagonales entre un rumbo cardinal y arriba/abajo. `PhotonEffectBridge.playOneShot` retiene las ráfagas temporales de confeti/llamas y destruye sus runtimes tras terminar.
