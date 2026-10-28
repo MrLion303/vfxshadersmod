@@ -46,7 +46,7 @@ public final class VfxPlayerCommands {
                                 .executes(context -> setEffect(context, effect, true))))
                 .then(Commands.literal("disable")
                         .then(Commands.argument("targets", EntityArgument.players())
-                                .executes(context -> setEffect(context, effect, false)));
+                                .executes(context -> setEffect(context, effect, false))));
     }
 
     private static int setEffect(CommandContext<CommandSourceStack> context, String effect, boolean enabled) {
