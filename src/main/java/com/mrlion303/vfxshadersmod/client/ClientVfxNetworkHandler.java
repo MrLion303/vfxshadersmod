@@ -30,6 +30,11 @@ public final class ClientVfxNetworkHandler {
         switch (packet.operation()) {
             case VfxCommandPacket.PLAYER_EFFECT -> ClientPlayerMovementEffects.setEnabled(
                     packet.effect(), "enable".equalsIgnoreCase(packet.option()));
+            case VfxCommandPacket.PLAYER_ANIMATION -> ClientPlayerVfxRenderer.setFlyingPose(
+                    (int) Math.round(packet.x()), "enable".equalsIgnoreCase(packet.option()));
+            case VfxCommandPacket.PLAYER_VFX -> ClientPlayerVfxRenderer.setPlayerEffect(
+                    (int) Math.round(packet.x()), packet.effect(),
+                    "enable".equalsIgnoreCase(packet.option()));
             case VfxCommandPacket.ENABLE -> ClientVfxManager.enable(effectId(packet.effect()));
             case VfxCommandPacket.DISABLE -> ClientVfxManager.disable(effectId(packet.effect()));
             case VfxCommandPacket.TOGGLE -> ClientVfxManager.toggle(effectId(packet.effect()));

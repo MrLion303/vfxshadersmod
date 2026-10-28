@@ -4,6 +4,7 @@ import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
@@ -50,6 +51,7 @@ public final class ClientVfxEvents {
         } else {
             ClientVfxCameraController.tick(minecraft.player);
             ClientVfxManager.tick(minecraft.level);
+            ClientPlayerVfxRenderer.tick(minecraft.level);
             PhotonEffectBridge.tickOneShots();
         }
     }
@@ -69,12 +71,26 @@ public final class ClientVfxEvents {
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         ClientVfxManager.render(event);
+        ClientPlayerVfxRenderer.render(event);
         // La lente antigua copiaba la pantalla completa y podía dejar el framebuffer negro.
         // El agujero negro ahora usa una superficie local y no procesa toda la imagen.
     }
 
     @SubscribeEvent
+    public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
+        ClientPlayerVfxRenderer.applyFlyingPose(event.getEntity().getId(),
+                event.getRenderer().getModel(), event.getPartialTick());
+    }
+
+    @SubscribeEvent
+    public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
+        ClientPlayerVfxRenderer.restoreFlyingPose(event.getEntity().getId(),
+                event.getRenderer().getModel());
+    }
+
+    @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        ClientPlayerVfxRenderer.clear();
         ClientVfxCameraController.reset();
         PhotonEffectBridge.clearOneShots();
         ClientVfxManager.clear();
