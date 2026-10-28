@@ -104,11 +104,8 @@ public final class TrampolineWaveDistortionPass {
             drawStarted = true;
             BufferUploader.drawWithShader(builder.end());
 
-            scratch.unbindWrite();
-            GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, scratch.frameBufferId);
-            GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, main.frameBufferId);
-            GL30.glBlitFramebuffer(0, 0, scratch.width, scratch.height, 0, 0, main.width, main.height,
-                    GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
+            // El shader ya escribió la imagen distorsionada directamente en main.
+            // No vuelvas a copiar scratch sobre main aquí: scratch conserva la imagen original.
             main.bindWrite(false);
             loggedFailure = false;
         } catch (RuntimeException exception) {
