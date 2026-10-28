@@ -116,7 +116,7 @@ Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amari
 ```
 
 - `/vfxcamara hombro <objetivos>` alterna entre primera persona y una vista de tercera persona situada detrás y a un lado del jugador, con transición suave. Una segunda ejecución devuelve la vista a primera persona. Acepta selectores como `@s`, `@p`, `@a` y `@e[type=player]`.
-- `/vfxcamara fija <x> <y> <z> <tiempo|false> <dirección> [objetivos]` desplaza la cámara a una coordenada y la orienta hacia una dirección. El tiempo se expresa en segundos, entre 0 y 30; `false` o `0` hacen el cambio instantáneo. Si se omiten los objetivos, el jugador que ejecuta el comando es el objetivo.
+- `/vfxcamara fija <x> <y> <z> <tiempo|false> <dirección> [objetivos]` coloca la cámara en esas coordenadas absolutas del mundo (o relativas si usas `~`) y la orienta hacia la dirección indicada. La cámara permanece en ese punto mientras el jugador se mueve y el modelo del jugador sigue visible desde la cámara. El tiempo se expresa en segundos, entre 0 y 30; `false` o `0` hacen el cambio instantáneo. Si se omiten los objetivos, el jugador que ejecuta el comando es el objetivo.
 - `/vfxcamara fijadesactivar <tiempo|false> [objetivos]` devuelve la cámara al jugador, con transición o de inmediato. Los objetivos se pueden omitir desde el chat.
 - Direcciones válidas: `arriba`, `abajo`, los ocho rumbos de brújula y combinaciones con arriba/abajo. Por ejemplo, `"abajo, sur"` mira en diagonal hacia abajo y al sur. Las direcciones con espacios deben escribirse entre comillas.
 - `/vfxonce confeti <x> <y> <z>` usa un cono de emisión Photon que dispara el confeti hacia arriba; la gravedad hace que pierda altura y caiga de forma natural. La ráfaga y la caída permanecen visibles varios segundos.

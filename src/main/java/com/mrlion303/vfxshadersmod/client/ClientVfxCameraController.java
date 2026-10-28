@@ -77,7 +77,9 @@ public final class ClientVfxCameraController {
         fixedYaw = angles.get().yaw();
         fixedPitch = angles.get().pitch();
         mode = Mode.FIXED;
-        mc.options.setCameraType(CameraType.FIRST_PERSON);
+        // La vista desacoplada necesita tercera persona para renderizar el avatar
+        // del jugador desde la posición remota de la cámara.
+        mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         beginTransition(current, yaw, pitch, seconds);
     }
 
@@ -106,7 +108,9 @@ public final class ClientVfxCameraController {
         }
         if (mode == Mode.NONE) return;
 
-        mc.options.setCameraType(mode == Mode.SHOULDER
+        // La cámara fija también usa tercera persona: el siguiente ajuste coloca
+        // Camera exactamente en fixedPosition y mantiene visible al jugador.
+        mc.options.setCameraType(mode == Mode.SHOULDER || mode == Mode.FIXED
                 ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON);
         if (transitionTicks > 0) {
             transitionElapsed = Math.min(transitionTicks, transitionElapsed + 1);
