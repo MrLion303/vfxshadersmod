@@ -148,33 +148,4 @@ public final class ClientPlayerVfxRenderer {
         ORIGINAL_POSES.clear();
     }
 
-    private record Rotation(float x, float y, float z) {
-        static Rotation capture(ModelPart part) {
-            return new Rotation(part.xRot, part.yRot, part.zRot);
-        }
-
-        void restore(ModelPart part) {
-            part.xRot = x;
-            part.yRot = y;
-            part.zRot = z;
-        }
-    }
-
-    private record ModelPose(Rotation head, Rotation body, Rotation leftArm, Rotation rightArm,
-                             Rotation leftLeg, Rotation rightLeg) {
-        static ModelPose capture(PlayerModel<?> model) {
-            return new ModelPose(Rotation.capture(model.head), Rotation.capture(model.body),
-                    Rotation.capture(model.leftArm), Rotation.capture(model.rightArm),
-                    Rotation.capture(model.leftLeg), Rotation.capture(model.rightLeg));
-        }
-
-        void restore(PlayerModel<?> model) {
-            head.restore(model.head);
-            body.restore(model.body);
-            leftArm.restore(model.leftArm);
-            rightArm.restore(model.rightArm);
-            leftLeg.restore(model.leftLeg);
-            rightLeg.restore(model.rightLeg);
-        }
-    }
 }
