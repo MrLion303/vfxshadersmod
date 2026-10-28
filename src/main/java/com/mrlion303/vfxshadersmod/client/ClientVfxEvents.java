@@ -2,6 +2,7 @@ package com.mrlion303.vfxshadersmod.client;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
 import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
+import com.mrlion303.vfxshadersmod.client.effect.MusicSyncBarsEffect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -10,6 +11,7 @@ import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.ViewportEvent;
+import net.minecraftforge.client.event.sound.PlaySoundSourceEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -28,6 +30,13 @@ public final class ClientVfxEvents {
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         ClientVfxCatalog.registerDefaults();
         ClientVfxCommands.register(event.getDispatcher());
+    }
+
+    @SubscribeEvent
+    public static void onLocalSoundStarted(PlaySoundSourceEvent event) {
+        // Este evento se dispara en el cliente que realmente reproduce el sonido;
+        // no se transmite como un pulso global a los demás jugadores.
+        MusicSyncBarsEffect.onLocalSound(event.getSound());
     }
 
     @SubscribeEvent
