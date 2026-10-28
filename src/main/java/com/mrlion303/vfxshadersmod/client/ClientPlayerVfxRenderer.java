@@ -4,10 +4,9 @@ import com.mrlion303.vfxshadersmod.client.render.VfxRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -22,7 +21,7 @@ import java.util.Set;
 public final class ClientPlayerVfxRenderer {
     private static final Map<Integer, Set<String>> EFFECTS = new HashMap<>();
     private static final Set<Integer> FLYING_POSES = new HashSet<>();
-    private static final Map<Integer, ModelPose> POSE_SNAPSHOTS = new HashMap<>();
+    private static final Map<Integer, Pose> ORIGINAL_POSES = new HashMap<>();
 
     private ClientPlayerVfxRenderer() {}
 
@@ -34,12 +33,33 @@ public final class ClientPlayerVfxRenderer {
     }
 
     public static void setFlyingPose(int entityId, boolean enabled) {
-        if (enabled) FLYING_POSES.add(entityId);
-        else FLYING_POSES.remove(entityId);
+        if (enabled) {
+            FLYING_POSES.add(entityId);
+            return;
+        }
+        FLYING_POSES.remove(entityId);
+        Level level = Minecraft.getInstance().level;
+        Entity entity = level == null ? null : level.getEntity(entityId);
+        Pose original = ORIGINAL_POSES.remove(entityId);
+        if (entity instanceof Player player && original != null) {
+            player.setPose(original);
+        }
     }
 
     public static void tick(Level level) {
-        if (level == null || level != Minecraft.getInstance().level || (level.getGameTime() & 1L) != 0L) return;
+        if (level == null || level != Minecraft.getInstance().level) return;
+
+        // La pose SWIMMING es solo visual en el cliente: no activa capacidades de vuelo.
+        // Se reafirma después del tick normal para que la sincronización de pose no la borre.
+        for (int entityId : FLYING_POSES) {
+            Entity entity = level.getEntity(entityId);
+            if (entity instanceof Player player && player.isAlive()) {
+                ORIGINAL_POSES.putIfAbsent(entityId, player.getPose());
+                if (player.getPose() != Pose.SWIMMING) player.setPose(Pose.SWIMMING);
+            }
+        }
+
+        if ((level.getGameTime() & 1L) != 0L) return;
         for (Map.Entry<Integer, Set<String>> entry : EFFECTS.entrySet()) {
             if (!entry.getValue().contains("aura")) continue;
             Entity entity = level.getEntity(entry.getKey());
@@ -117,44 +137,15 @@ public final class ClientPlayerVfxRenderer {
                 .color(red, green, blue, 1.0F).endVertex();
     }
 
-    /** Modelado de flotación horizontal, con brazos abiertos; la entidad sigue usando física normal. */
-    public static void applyFlyingPose(int entityId, PlayerModel<?> model, float partialTick) {
-        if (!FLYING_POSES.contains(entityId)) return;
-        ModelPose previous = POSE_SNAPSHOTS.put(entityId, ModelPose.capture(model));
-        if (previous != null) previous.restore(model);
-
-        Level level = Minecraft.getInstance().level;
-        float phase = level == null ? 0.0F : (level.getGameTime() + partialTick) * 0.12F;
-        float sway = (float) Math.sin(phase);
-        model.body.xRot = (float) (Math.PI * 0.5D);
-        model.body.yRot = 0.0F;
-        model.body.zRot = 0.0F;
-        model.head.xRot = -0.12F + 0.035F * sway;
-        model.head.yRot = 0.0F;
-        model.head.zRot = 0.0F;
-        model.leftArm.xRot = -0.10F + 0.045F * sway;
-        model.rightArm.xRot = -0.10F - 0.045F * sway;
-        model.leftArm.yRot = 0.0F;
-        model.rightArm.yRot = 0.0F;
-        model.leftArm.zRot = 1.08F;
-        model.rightArm.zRot = -1.08F;
-        model.leftLeg.xRot = 0.10F + 0.04F * sway;
-        model.rightLeg.xRot = -0.10F - 0.04F * sway;
-        model.leftLeg.yRot = 0.0F;
-        model.rightLeg.yRot = 0.0F;
-        model.leftLeg.zRot = 0.06F;
-        model.rightLeg.zRot = -0.06F;
-    }
-
-    public static void restoreFlyingPose(int entityId, PlayerModel<?> model) {
-        ModelPose pose = POSE_SNAPSHOTS.remove(entityId);
-        if (pose != null) pose.restore(model);
-    }
-
     public static void clear() {
+        Level level = Minecraft.getInstance().level;
+        for (Map.Entry<Integer, Pose> entry : ORIGINAL_POSES.entrySet()) {
+            Entity entity = level == null ? null : level.getEntity(entry.getKey());
+            if (entity instanceof Player player) player.setPose(entry.getValue());
+        }
         EFFECTS.clear();
         FLYING_POSES.clear();
-        POSE_SNAPSHOTS.clear();
+        ORIGINAL_POSES.clear();
     }
 
     private record Rotation(float x, float y, float z) {
