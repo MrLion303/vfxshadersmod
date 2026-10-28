@@ -8,6 +8,7 @@ import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.Curve;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.ECBCurves;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Box;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Circle;
+import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Cone;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Sphere;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleConfig;
 import com.lowdragmc.photon.client.gameobject.emitter.particle.ParticleEmitter;
@@ -105,8 +106,10 @@ public final class PhotonEffectBridge {
         Preset preset;
         int lifetime;
         switch (effectPath) {
-            case "confeti" -> { preset = Preset.CONFETTI; lifetime = 68; }
-            case "llamas" -> { preset = Preset.FLAMES; lifetime = 32; }
+            // El runtime permanece activo hasta que las últimas partículas tienen tiempo
+            // de terminar su arco y caer, no solo hasta que deja de emitir.
+            case "confeti" -> { preset = Preset.CONFETTI; lifetime = 125; }
+            case "llamas" -> { preset = Preset.FLAMES; lifetime = 100; }
             default -> { return; }
         }
         Handle handle = play(level, position, preset, 0, 1.0F);
@@ -259,86 +262,116 @@ public final class PhotonEffectBridge {
         return new Handle(instance);
     }
 
-    /** Explosión de confeti multicolor dirigida hacia arriba. */
+    /**
+     * Cañón de confeti: la forma Cone orienta la velocidad inicial hacia arriba.
+     * Photon aplica gravedad por partícula, de modo que los papeles suben, pierden
+     * impulso y vuelven a caer en vez de quedarse flotando en un abanico horizontal.
+     */
     private static void addConfettiBurst(FX fx) {
-        int[] colors = {0xFFFF3D72, 0xFFFFB52E, 0xFFFFFF43, 0xFF45E878,
-                0xFF36D9FF, 0xFF6E68FF, 0xFFE86BFF, 0xFFFFFFFF};
+        int[] colors = {
+                0xFFFF3D72, 0xFFFFB52E, 0xFFFFFF43, 0xFF45E878,
+                0xFF36D9FF, 0xFF6E68FF, 0xFFE86BFF, 0xFFFFFFFF
+        };
+
         for (int i = 0; i < colors.length; i++) {
             ParticleEmitter emitter = new ParticleEmitter();
-            emitter.setName("Photon Confetti Burst " + (i + 1));
+            emitter.setName("Photon Confetti Cannon " + (i + 1));
             emitter.setDelay(i % 4);
             ParticleConfig config = emitter.config;
-            config.setDuration(9);
+            config.setDuration(22);
             config.setLooping(false);
-            config.setStartLifetime(NumberFunction.constant(48));
-            config.setStartSpeed(NumberFunction.constant(0.42F + (i % 3) * 0.08F));
-            config.setStartSize(new NumberFunction3(0.13F, 0.13F, 0.13F));
+            config.setStartLifetime(NumberFunction.constant(90));
+            config.setStartSpeed(NumberFunction.constant(15.0F + (i % 4) * 2.0F));
+            config.setStartSize(new NumberFunction3(0.16F, 0.11F, 0.045F));
             config.setStartColor(NumberFunction.color(colors[i]));
-            config.setMaxParticles(180);
-            config.emission.setEmissionRate(NumberFunction.constant(12.0F));
-            Circle circle = new Circle();
-            circle.setRadius(1.0F);
-            circle.setRadiusThickness(0.9F);
-            config.shape.setShape(circle);
-            config.shape.setPosition(new NumberFunction3(0.0F, 0.12F, 0.0F));
-            config.shape.setScale(new NumberFunction3(0.48F, 0.15F, 0.48F));
-            config.velocityOverLifetime.setEnable(true);
-            config.velocityOverLifetime.setLinear(new NumberFunction3(0.0F, 0.085F, 0.0F));
+            config.setMaxParticles(320);
+            config.emission.setEmissionRate(NumberFunction.constant(1.45F));
+
+            Cone cone = new Cone();
+            cone.setAngle(24.0F);
+            cone.setRadius(0.42F);
+            cone.setRadiusThickness(1.0F);
+            config.shape.setShape(cone);
+            config.shape.setPosition(new NumberFunction3(0.0F, 0.08F, 0.0F));
+            config.shape.setScale(new NumberFunction3(0.28F, 0.045F, 0.28F));
+
+            // La física real de Photon transforma el impulso hacia arriba en un arco
+            // balístico; el leve rebote de los primeros contactos evita una caída rígida.
+            config.physics.setEnable(true);
+            config.physics.setHasCollision(true);
+            config.physics.setRemovedWhenCollided(false);
+            config.physics.setGravity(NumberFunction.constant(0.82F));
+            config.physics.setFriction(NumberFunction.constant(0.992F));
+            config.physics.setBounceChance(NumberFunction.constant(0.18F));
+            config.physics.setBounceRate(NumberFunction.constant(0.14F));
+            config.physics.setBounceSpreadRate(NumberFunction.constant(0.06F));
+
             config.noise.setEnable(true);
-            config.noise.setFrequency(0.32F);
-            config.noise.setPosition(new NumberFunction3(0.16F, 0.10F, 0.16F));
-            config.noise.setRotation(NumberFunction.constant(3.5F));
-            config.noise.setSize(NumberFunction.constant(0.035F));
+            config.noise.setFrequency(0.30F);
+            config.noise.setPosition(new NumberFunction3(0.075F, 0.035F, 0.075F));
+            config.noise.setRotation(NumberFunction.constant(3.2F));
+            config.noise.setSize(NumberFunction.constant(0.018F));
             config.renderer.setBloomEffect(true);
             config.renderer.setBloomColor(colors[i]);
-            config.physics.setEnable(false);
             fx.getMainFX().objects().add(emitter);
         }
     }
 
-    /** Cañonazo de chispas cálidas para imitar una llamarada de escenario. */
+    /**
+     * Cañón pirotécnico de escenario. El cono estrecho lanza las chispas en una
+     * columna vertical; las estelas y el brillo cálido mantienen el efecto visible
+     * durante varios segundos sin colocar fuego real en el mundo.
+     */
     private static void addFlameBurst(FX fx) {
-        int[] colors = {0xFFFF3A0A, 0xFFFF7A12, 0xFFFFC02E, 0xFFFFF1B0};
-        float[] sizes = {0.13F, 0.115F, 0.09F, 0.065F};
-        float[] speeds = {0.72F, 0.84F, 0.96F, 1.06F};
+        int[] colors = {0xFFFF3508, 0xFFFF6810, 0xFFFFA91F, 0xFFFFE17A, 0xFFFFF4C5};
+        float[] sizes = {0.14F, 0.125F, 0.105F, 0.085F, 0.065F};
+        float[] speeds = {14.0F, 15.0F, 16.5F, 17.5F, 18.0F};
+
         for (int i = 0; i < colors.length; i++) {
             ParticleEmitter emitter = new ParticleEmitter();
-            emitter.setName("Photon Stage Flame Sparks " + (i + 1));
+            emitter.setName("Photon Stage Flame Cannon " + (i + 1));
             emitter.setDelay(i);
             ParticleConfig config = emitter.config;
-            config.setDuration(5);
+            config.setDuration(26);
             config.setLooping(false);
-            config.setStartLifetime(NumberFunction.constant(18 + i * 2));
+            config.setStartLifetime(NumberFunction.constant(52 + i * 2));
             config.setStartSpeed(NumberFunction.constant(speeds[i]));
-            config.setStartSize(new NumberFunction3(sizes[i], sizes[i], sizes[i]));
+            config.setStartSize(new NumberFunction3(sizes[i], sizes[i] * 1.5F, sizes[i]));
             config.setStartColor(NumberFunction.color(colors[i]));
-            config.setMaxParticles(400);
-            config.emission.setEmissionRate(NumberFunction.constant(30.0F));
-            Circle circle = new Circle();
-            circle.setRadius(1.0F);
-            circle.setRadiusThickness(0.96F);
-            config.shape.setShape(circle);
-            config.shape.setPosition(new NumberFunction3(0.0F, 0.18F, 0.0F));
-            config.shape.setScale(new NumberFunction3(0.34F, 0.14F, 0.34F));
-            config.velocityOverLifetime.setEnable(true);
-            config.velocityOverLifetime.setLinear(new NumberFunction3(0.0F, 0.19F, 0.0F));
+            config.setMaxParticles(420);
+            config.emission.setEmissionRate(NumberFunction.constant(7.5F));
+
+            Cone cone = new Cone();
+            cone.setAngle(13.0F + i * 1.7F);
+            cone.setRadius(0.34F);
+            cone.setRadiusThickness(1.0F);
+            config.shape.setShape(cone);
+            config.shape.setPosition(new NumberFunction3(0.0F, 0.12F, 0.0F));
+            config.shape.setScale(new NumberFunction3(0.20F, 0.035F, 0.20F));
+
+            config.physics.setEnable(true);
+            config.physics.setHasCollision(false);
+            config.physics.setGravity(NumberFunction.constant(0.62F));
+            config.physics.setFriction(NumberFunction.constant(0.985F));
+
             config.noise.setEnable(true);
-            config.noise.setFrequency(0.42F);
-            config.noise.setPosition(new NumberFunction3(0.14F, 0.20F, 0.14F));
-            config.noise.setRotation(NumberFunction.constant(2.4F));
-            config.noise.setSize(NumberFunction.constant(0.045F));
+            config.noise.setFrequency(0.43F);
+            config.noise.setPosition(new NumberFunction3(0.065F, 0.075F, 0.065F));
+            config.noise.setRotation(NumberFunction.constant(2.8F));
+            config.noise.setSize(NumberFunction.constant(0.024F));
+
             config.trails.setEnable(true);
-            config.trails.setRatio(0.88F);
-            config.trails.setLifetime(NumberFunction.constant(0.24F));
+            config.trails.setRatio(0.92F);
+            config.trails.setLifetime(NumberFunction.constant(0.36F));
             config.trails.setInheritParticleColor(true);
             config.trails.setSizeAffectsWidth(false);
-            config.trails.config.setTime(10);
-            config.trails.config.setMinVertexDistance(0.035F);
-            config.trails.config.setWidthOverTrail(NumberFunction.constant(0.045F + i * 0.006F));
+            config.trails.config.setTime(13);
+            config.trails.config.setMinVertexDistance(0.028F);
+            config.trails.config.setWidthOverTrail(NumberFunction.constant(0.05F + i * 0.006F));
             config.trails.config.setColorOverTrail(NumberFunction.color(colors[i]));
+
             config.renderer.setBloomEffect(true);
             config.renderer.setBloomColor(colors[i]);
-            config.physics.setEnable(false);
             fx.getMainFX().objects().add(emitter);
         }
     }

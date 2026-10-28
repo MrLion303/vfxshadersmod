@@ -119,7 +119,7 @@ Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amari
 - `/vfxcamara fija <x> <y> <z> <tiempo|false> <dirección> [objetivos]` desplaza la cámara a una coordenada y la orienta hacia una dirección. El tiempo se expresa en segundos, entre 0 y 30; `false` o `0` hacen el cambio instantáneo. Si se omiten los objetivos, el jugador que ejecuta el comando es el objetivo.
 - `/vfxcamara fijadesactivar <tiempo|false> [objetivos]` devuelve la cámara al jugador, con transición o de inmediato. Los objetivos se pueden omitir desde el chat.
 - Direcciones válidas: `arriba`, `abajo`, los ocho rumbos de brújula y combinaciones con arriba/abajo. Por ejemplo, `"abajo, sur"` mira en diagonal hacia abajo y al sur. Las direcciones con espacios deben escribirse entre comillas.
-- `/vfxonce confeti <x> <y> <z>` dispara confeti multicolor hacia arriba con emisores Photon.
-- `/vfxonce llamas <x> <y> <z>` dispara chispas cálidas hacia arriba, como un cañón de escenario. Es un efecto de partículas, no fuego colocado en el mundo.
+- `/vfxonce confeti <x> <y> <z>` usa un cono de emisión Photon que dispara el confeti hacia arriba; la gravedad hace que pierda altura y caiga de forma natural. La ráfaga y la caída permanecen visibles varios segundos.
+- `/vfxonce llamas <x> <y> <z>` dispara una columna de chispas cálidas en un cono estrecho, con estelas y bloom, como un cañón pirotécnico de concierto. Es un efecto de partículas, no fuego colocado en el mundo.
 
 Los comandos requieren permiso de operador de nivel 2. La cámara cambia solo para cada jugador objetivo y no mueve su entidad. Las ráfagas se ejecutan en las coordenadas indicadas y los emisores Photon se destruyen al terminar.
