@@ -58,7 +58,7 @@ public final class VfxCameraCommands {
                                 .executes(ctx -> deactivate(ctx, self(ctx)))
                                 .then(Commands.argument("objetivos", EntityArgument.entities())
                                         .executes(ctx -> deactivate(ctx,
-                                                EntityArgument.getEntities(ctx, "objetivos"))))));
+                                                EntityArgument.getEntities(ctx, "objetivos")))))));
     }
 
     private static Collection<? extends Entity> self(CommandContext<CommandSourceStack> ctx) {
