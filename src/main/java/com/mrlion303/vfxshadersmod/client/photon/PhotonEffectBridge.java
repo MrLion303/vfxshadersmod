@@ -25,6 +25,10 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 /**
  * Puente del mod hacia el runtime real de Photon.
  *
@@ -33,6 +37,8 @@ import org.joml.Vector3f;
  * del mod pueden seguir complementándolos cuando el efecto lo requiere.
  */
 public final class PhotonEffectBridge {
+    private static final List<ActiveOneShot> ONE_SHOTS = new ArrayList<>();
+
     private PhotonEffectBridge() {
     }
 
@@ -48,7 +54,9 @@ public final class PhotonEffectBridge {
         VORTEX,
         PORTAL,
         BLACK_HOLE,
-        BLACK_HOLE_SKY
+        BLACK_HOLE_SKY,
+        CONFETTI,
+        FLAMES
     }
 
     /**
@@ -89,6 +97,46 @@ public final class PhotonEffectBridge {
             case "sky_portal" -> Handle.empty();
             default -> play(level, anchor, Preset.ORBIT, 0, 1.0F);
         };
+    }
+
+    /** Lanza un preset Photon de una sola ejecución desde coordenadas mundiales. */
+    public static void playOneShot(String effectPath, Level level, Vec3 position) {
+        if (level == null || !level.isClientSide()) return;
+        Preset preset;
+        int lifetime;
+        switch (effectPath) {
+            case "confeti" -> { preset = Preset.CONFETTI; lifetime = 68; }
+            case "llamas" -> { preset = Preset.FLAMES; lifetime = 32; }
+            default -> { return; }
+        }
+        Handle handle = play(level, position, preset, 0, 1.0F);
+        if (handle.isRunning()) ONE_SHOTS.add(new ActiveOneShot(handle, lifetime));
+    }
+
+    public static void tickOneShots() {
+        Iterator<ActiveOneShot> iterator = ONE_SHOTS.iterator();
+        while (iterator.hasNext()) {
+            ActiveOneShot shot = iterator.next();
+            if (++shot.age >= shot.maxAge) {
+                shot.handle.close();
+                iterator.remove();
+            }
+        }
+    }
+
+    public static void clearOneShots() {
+        for (ActiveOneShot shot : ONE_SHOTS) shot.handle.close();
+        ONE_SHOTS.clear();
+    }
+
+    private static final class ActiveOneShot {
+        private final Handle handle;
+        private final int maxAge;
+        private int age;
+        private ActiveOneShot(Handle handle, int maxAge) {
+            this.handle = handle;
+            this.maxAge = maxAge;
+        }
     }
 
     /** Actualiza el ancla de los sistemas ambientales que deben acompañar al jugador. */
@@ -196,6 +244,8 @@ public final class PhotonEffectBridge {
                 addRing(fx, "Photon Accretion Outer", 2.95F * safeScale, 0.0F, 4.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
                 addRing(fx, "Photon Accretion Inner", 2.0F * safeScale, 0.0F, 3.0F, 85, 0.04F, 0.11F, 0xFFFFF1CE, 0);
             }
+            case CONFETTI -> addConfettiBurst(fx);
+            case FLAMES -> addFlameBurst(fx);
             case BLACK_HOLE_SKY -> {
                 // En el cielo, el disco se orienta hacia el observador y coincide con la escala del shader.
                 addRing(fx, "Photon Sky Accretion Outer", 4.05F * safeScale, 0.0F, 6.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
@@ -207,6 +257,90 @@ public final class PhotonEffectBridge {
         PhotonInstance instance = new PhotonInstance(fx, level, position, orientationFor(preset));
         instance.start();
         return new Handle(instance);
+    }
+
+    /** Explosión de confeti multicolor dirigida hacia arriba. */
+    private static void addConfettiBurst(FX fx) {
+        int[] colors = {0xFFFF3D72, 0xFFFFB52E, 0xFFFFFF43, 0xFF45E878,
+                0xFF36D9FF, 0xFF6E68FF, 0xFFE86BFF, 0xFFFFFFFF};
+        for (int i = 0; i < colors.length; i++) {
+            ParticleEmitter emitter = new ParticleEmitter();
+            emitter.setName("Photon Confetti Burst " + (i + 1));
+            emitter.setDelay(i % 4);
+            ParticleConfig config = emitter.config;
+            config.setDuration(9);
+            config.setLooping(false);
+            config.setStartLifetime(NumberFunction.constant(48));
+            config.setStartSpeed(NumberFunction.constant(0.42F + (i % 3) * 0.08F));
+            config.setStartSize(new NumberFunction3(0.13F, 0.13F, 0.13F));
+            config.setStartColor(NumberFunction.color(colors[i]));
+            config.setMaxParticles(180);
+            config.emission.setEmissionRate(NumberFunction.constant(12.0F));
+            Circle circle = new Circle();
+            circle.setRadius(1.0F);
+            circle.setRadiusThickness(0.9F);
+            config.shape.setShape(circle);
+            config.shape.setPosition(new NumberFunction3(0.0F, 0.12F, 0.0F));
+            config.shape.setScale(new NumberFunction3(0.48F, 0.15F, 0.48F));
+            config.velocityOverLifetime.setEnable(true);
+            config.velocityOverLifetime.setLinear(new NumberFunction3(0.0F, 0.085F, 0.0F));
+            config.noise.setEnable(true);
+            config.noise.setFrequency(0.32F);
+            config.noise.setPosition(new NumberFunction3(0.16F, 0.10F, 0.16F));
+            config.noise.setRotation(NumberFunction.constant(3.5F));
+            config.noise.setSize(NumberFunction.constant(0.035F));
+            config.renderer.setBloomEffect(true);
+            config.renderer.setBloomColor(colors[i]);
+            config.physics.setEnable(false);
+            fx.getMainFX().objects().add(emitter);
+        }
+    }
+
+    /** Cañonazo de chispas cálidas para imitar una llamarada de escenario. */
+    private static void addFlameBurst(FX fx) {
+        int[] colors = {0xFFFF3A0A, 0xFFFF7A12, 0xFFFFC02E, 0xFFFFF1B0};
+        float[] sizes = {0.13F, 0.115F, 0.09F, 0.065F};
+        float[] speeds = {0.72F, 0.84F, 0.96F, 1.06F};
+        for (int i = 0; i < colors.length; i++) {
+            ParticleEmitter emitter = new ParticleEmitter();
+            emitter.setName("Photon Stage Flame Sparks " + (i + 1));
+            emitter.setDelay(i);
+            ParticleConfig config = emitter.config;
+            config.setDuration(5);
+            config.setLooping(false);
+            config.setStartLifetime(NumberFunction.constant(18 + i * 2));
+            config.setStartSpeed(NumberFunction.constant(speeds[i]));
+            config.setStartSize(new NumberFunction3(sizes[i], sizes[i], sizes[i]));
+            config.setStartColor(NumberFunction.color(colors[i]));
+            config.setMaxParticles(400);
+            config.emission.setEmissionRate(NumberFunction.constant(30.0F));
+            Circle circle = new Circle();
+            circle.setRadius(1.0F);
+            circle.setRadiusThickness(0.96F);
+            config.shape.setShape(circle);
+            config.shape.setPosition(new NumberFunction3(0.0F, 0.18F, 0.0F));
+            config.shape.setScale(new NumberFunction3(0.34F, 0.14F, 0.34F));
+            config.velocityOverLifetime.setEnable(true);
+            config.velocityOverLifetime.setLinear(new NumberFunction3(0.0F, 0.19F, 0.0F));
+            config.noise.setEnable(true);
+            config.noise.setFrequency(0.42F);
+            config.noise.setPosition(new NumberFunction3(0.14F, 0.20F, 0.14F));
+            config.noise.setRotation(NumberFunction.constant(2.4F));
+            config.noise.setSize(NumberFunction.constant(0.045F));
+            config.trails.setEnable(true);
+            config.trails.setRatio(0.88F);
+            config.trails.setLifetime(NumberFunction.constant(0.24F));
+            config.trails.setInheritParticleColor(true);
+            config.trails.setSizeAffectsWidth(false);
+            config.trails.config.setTime(10);
+            config.trails.config.setMinVertexDistance(0.035F);
+            config.trails.config.setWidthOverTrail(NumberFunction.constant(0.045F + i * 0.006F));
+            config.trails.config.setColorOverTrail(NumberFunction.color(colors[i]));
+            config.renderer.setBloomEffect(true);
+            config.renderer.setBloomColor(colors[i]);
+            config.physics.setEnable(false);
+            fx.getMainFX().objects().add(emitter);
+        }
     }
 
     /**

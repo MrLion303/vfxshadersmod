@@ -58,7 +58,25 @@ public final class VfxOnceCommands {
                                         .then(Commands.argument("radio", FloatArgumentType.floatArg(4.0F, 64.0F))
                                                 .executes(VfxOnceCommands::trampolinePowerAndRadius)
                                                 .then(Commands.argument("velocidad", FloatArgumentType.floatArg(0.15F, 2.0F))
-                                                        .executes(VfxOnceCommands::trampolineCustom)))))));
+                                                        .executes(VfxOnceCommands::trampolineCustom))))))
+                .then(Commands.literal("confeti")
+                        .then(Commands.argument("posicion", Vec3Argument.vec3())
+                                .executes(context -> photonBurst(context, "confeti"))))
+                .then(Commands.literal("llamas")
+                        .then(Commands.argument("posicion", Vec3Argument.vec3())
+                                .executes(context -> photonBurst(context, "llamas"))));
+    }
+
+    private static int photonBurst(CommandContext<CommandSourceStack> context, String effect) {
+        Vec3 position = Vec3Argument.getVec3(context, "posicion");
+        ServerLevel level = context.getSource().getLevel();
+        VfxNetwork.sendToDimension(level, new VfxCommandPacket(
+                VfxCommandPacket.PHOTON_ONCE, effect, level.dimension().location(), 0.0F, position));
+        String label = "confeti".equals(effect) ? "Confeti" : "Llamarada de chispas";
+        context.getSource().sendSuccess(() -> Component.literal(
+                label + " Photon lanzado desde (" + fmt(position.x) + ", "
+                        + fmt(position.y) + ", " + fmt(position.z) + ")."), true);
+        return 1;
     }
 
     private static int scan(CommandContext<CommandSourceStack> context) {

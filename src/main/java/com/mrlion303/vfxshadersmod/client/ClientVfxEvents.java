@@ -1,6 +1,7 @@
 package com.mrlion303.vfxshadersmod.client;
 
 import com.mrlion303.vfxshadersmod.VfxShadersMod;
+import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -45,6 +46,7 @@ public final class ClientVfxEvents {
             ClientVfxManager.clear();
         } else {
             ClientVfxManager.tick(minecraft.level);
+            PhotonEffectBridge.tickOneShots();
         }
     }
 
@@ -57,6 +59,8 @@ public final class ClientVfxEvents {
 
     @SubscribeEvent
     public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        ClientVfxCameraController.reset();
+        PhotonEffectBridge.clearOneShots();
         ClientVfxManager.clear();
     }
 }

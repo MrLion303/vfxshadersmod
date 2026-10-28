@@ -7,6 +7,7 @@ import com.mrlion303.vfxshadersmod.client.effect.StarsspeedEffect;
 import com.mrlion303.vfxshadersmod.client.effect.GroundAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TerrainScanEffect;
 import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
+import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import com.mrlion303.vfxshadersmod.util.VfxColors;
 import com.mrlion303.vfxshadersmod.core.effect.EffectId;
 import com.mrlion303.vfxshadersmod.network.VfxCommandPacket;
@@ -44,8 +45,23 @@ public final class ClientVfxNetworkHandler {
                 ClientVfxManager.enable(TerrainScanEffect.ID);
             }
             case VfxCommandPacket.TRAMPOLIN_ONCE -> startTrampolineWave(packet);
+            case VfxCommandPacket.PHOTON_ONCE ->
+                    PhotonEffectBridge.playOneShot(packet.effect(), minecraft.level, packet.position());
+            case VfxCommandPacket.CAMERA_CONTROL -> applyCameraCommand(packet);
             default -> {
                 // Ignora operaciones desconocidas para permitir añadir mensajes en futuras versiones.
+            }
+        }
+    }
+
+    private static void applyCameraCommand(VfxCommandPacket packet) {
+        switch (packet.effect()) {
+            case "shoulder" -> ClientVfxCameraController.shoulder(packet.diameter());
+            case "fixed" -> ClientVfxCameraController.fixed(
+                    packet.position(), packet.diameter(), packet.option());
+            case "return" -> ClientVfxCameraController.returnToPlayer(packet.diameter());
+            default -> {
+                // Ignora modos de cámara desconocidos por compatibilidad.
             }
         }
     }
