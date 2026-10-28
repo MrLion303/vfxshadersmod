@@ -44,6 +44,8 @@ public final class TrampolineWaveDistortionPass {
         RenderTarget main = minecraft.getMainRenderTarget();
         if (main.width <= 0 || main.height <= 0 || main.getDepthTextureId() <= 0) return;
         ensureTarget(main.width, main.height);
+        boolean backupReady = false;
+        boolean drawStarted = false;
 
         try {
             var camera = event.getCamera();
@@ -55,7 +57,8 @@ public final class TrampolineWaveDistortionPass {
             Vec3 upVector = new Vec3(up.x, up.y, up.z);
             Vec3 forwardVector = new Vec3(forward.x, forward.y, forward.z);
 
-            shader.setSampler("DiffuseSampler", (java.util.function.IntSupplier) main::getColorTextureId);
+            // Leer la copia previa evita feedback entre la textura que se muestrea y el framebuffer escrito.
+            shader.setSampler("DiffuseSampler", (java.util.function.IntSupplier) scratch::getColorTextureId);
             shader.setSampler("DepthSampler", (java.util.function.IntSupplier) main::getDepthTextureId);
             set(shader, "ScreenSize", new float[]{main.width, main.height});
             set(shader, "CameraPosition", new float[]{(float)cameraPosition.x,(float)cameraPosition.y,(float)cameraPosition.z});
@@ -82,12 +85,15 @@ public final class TrampolineWaveDistortionPass {
                     0, 0, scratch.width, scratch.height,
                     GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST
             );
+            backupReady = true;
+            scratch.unbindWrite();
+            main.bindWrite(false);
 
             RenderSystem.disableDepthTest();
             RenderSystem.depthMask(false);
             RenderSystem.disableBlend();
             RenderSystem.setShader(() -> shader);
-            RenderSystem.setShaderTexture(0, main.getColorTextureId());
+            RenderSystem.setShaderTexture(0, scratch.getColorTextureId());
 
             BufferBuilder builder = Tesselator.getInstance().getBuilder();
             builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
@@ -95,6 +101,7 @@ public final class TrampolineWaveDistortionPass {
             builder.vertex( 1, -1, 0).uv(1, 0).endVertex();
             builder.vertex( 1,  1, 0).uv(1, 1).endVertex();
             builder.vertex(-1,  1, 0).uv(0, 1).endVertex();
+            drawStarted = true;
             BufferUploader.drawWithShader(builder.end());
 
             scratch.unbindWrite();
@@ -105,8 +112,21 @@ public final class TrampolineWaveDistortionPass {
             main.bindWrite(false);
             loggedFailure = false;
         } catch (RuntimeException exception) {
-            // Un fallo del pase debe dejar intacta la imagen original y no bloquear
-            // la pantalla hasta que termine la onda.
+            // Si el shader alcanzó a modificar la pantalla, restaura la copia intacta.
+            if (backupReady && drawStarted) {
+                try {
+                    scratch.unbindWrite();
+                    main.bindWrite(false);
+                    GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, scratch.frameBufferId);
+                    GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, main.frameBufferId);
+                    GL30.glBlitFramebuffer(0, 0, scratch.width, scratch.height,
+                            0, 0, main.width, main.height, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST);
+                    main.bindWrite(false);
+                } catch (RuntimeException restoreException) {
+                    LOGGER.error("Tampoco se pudo restaurar el framebuffer después de un error de trampolín.", restoreException);
+                }
+            }
+            // Un fallo del pase no debe dejar la pantalla negra.
             if (!loggedFailure) {
                 LOGGER.error("No se pudo aplicar la distorsión del trampolín; se conserva el renderizado normal.", exception);
                 loggedFailure = true;

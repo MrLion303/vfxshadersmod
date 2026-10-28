@@ -46,8 +46,8 @@ void main() {
 
     // Acota el efecto al terreno alrededor de la altura donde se disparó la onda.
     if (radialDistance > maximumRadius + 1.0
-            || worldPosition.y < WaveOrigin.y - 7.0
-            || worldPosition.y > WaveOrigin.y + 7.0) {
+            || worldPosition.y < WaveOrigin.y - 3.5
+            || worldPosition.y > WaveOrigin.y + 5.0) {
         fragColor = originalColor;
         return;
     }
