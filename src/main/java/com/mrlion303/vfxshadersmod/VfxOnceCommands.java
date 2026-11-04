@@ -62,6 +62,9 @@ public final class VfxOnceCommands {
                 .then(Commands.literal("confeti")
                         .then(Commands.argument("posicion", Vec3Argument.vec3())
                                 .executes(context -> photonBurst(context, "confeti"))))
+                .then(Commands.literal("confeti_celeste")
+                        .then(Commands.argument("posicion", Vec3Argument.vec3())
+                                .executes(context -> photonBurst(context, "confeti_celeste"))))
                 .then(Commands.literal("llamas")
                         .then(Commands.argument("posicion", Vec3Argument.vec3())
                                 .executes(context -> photonBurst(context, "llamas"))))
@@ -77,6 +80,7 @@ public final class VfxOnceCommands {
                 VfxCommandPacket.PHOTON_ONCE, effect, level.dimension().location(), 0.0F, position));
         String label = switch (effect) {
             case "confeti" -> "Confeti";
+            case "confeti_celeste" -> "Confeti celeste";
             case "llamas" -> "Llamarada de chispas";
             case "punto_cero" -> "Punto Cero";
             default -> "Efecto Photon";
