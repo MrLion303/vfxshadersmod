@@ -111,7 +111,9 @@ Los efectos aparecen en los clientes de la misma dimensión que los jugadores se
 
 `/vfxonce scan <x> <y> <z> <color>` inicia un aro de escaneo desde las coordenadas indicadas. El aro se adapta al relieve del terreno cargado y termina solo; no hace falta ejecutar otro comando para detenerlo.
 
-`/vfxonce punto_cero <x> <y> <z>` genera una descarga cósmica gigantesca en las coordenadas indicadas. Un núcleo blanco-cian libera una envolvente esférica, tres frentes de onda en planos distintos y filamentos radiales azulados con estelas largas y bloom. Se ejecuta con Photon y termina automáticamente; no rompe bloques, no hace daño ni impulsa jugadores.
+`/vfxonce punto_cero <x> <y> <z>` genera una descarga cósmica gigantesca en las coordenadas indicadas. Incluye una envolvente esférica, tres frentes de onda en planos distintos, un halo circular celeste de baja opacidad y filamentos radiales azulados con estelas largas y bloom. Todas las partículas se desvanecen progresivamente antes de que Photon limpie el efecto; no rompe bloques, no hace daño ni impulsa jugadores.
+
+`/vfxonce confeti_celeste <x> <y> <z>` dispara el mismo cañón de confeti de `/vfxonce confeti`, con idénticos parámetros de emisión, tamaño, velocidad, gravedad y rebote, pero en una paleta de tonos celestes.
 
 `/vfxonce trampolin <x> <y> <z> [potencia] [radio] [velocidad]` crea un pulso circular de un solo uso. El frente se expande por el suelo, la malla visual se eleva en crestas concéntricas y los jugadores que estén en el suelo reciben un impulso vertical cuando la onda los alcanza. La potencia representa la altura aproximada del salto en bloques; el radio se mide en bloques y la velocidad en bloques por tick. Los valores por defecto son potencia `12`, radio `32` y velocidad `0.65`. Límites: potencia `1–64`, radio `4–64` y velocidad `0.15–2`.
 
@@ -141,6 +143,7 @@ Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amari
 /vfxcamara fijadesactivar 1.2 @a
 /vfxcamara fijadesactivar false @s
 /vfxonce confeti ~ ~1 ~
+/vfxonce confeti_celeste ~ ~1 ~
 /vfxonce llamas 100 64 -20
 ```
 
