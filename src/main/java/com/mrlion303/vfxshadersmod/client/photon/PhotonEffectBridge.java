@@ -418,7 +418,7 @@ public final class PhotonEffectBridge {
                 0.8F, "duration", "radial wave radius");
         radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 1.0F, 1.0F,
                 0.10F, 0.10F, 0.90F, 0.90F));
-        config.shape.setScale(new NumberFunction3(radiusCurve, 1.0F, radiusCurve));
+        config.shape.setScale(new NumberFunction3(radiusCurve, NumberFunction.constant(1.0F), radiusCurve));
 
         config.velocityOverLifetime.setEnable(true);
         config.velocityOverLifetime.setOrbitalMode(
