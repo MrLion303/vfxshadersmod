@@ -4,6 +4,8 @@ import com.lowdragmc.photon.client.fx.FX;
 import com.lowdragmc.photon.client.fx.FXEffect;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.NumberFunction;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.NumberFunction3;
+import com.lowdragmc.photon.client.gameobject.emitter.data.number.color.Gradient;
+import com.lowdragmc.lowdraglib.utils.GradientColor;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.Curve;
 import com.lowdragmc.photon.client.gameobject.emitter.data.number.curve.ECBCurves;
 import com.lowdragmc.photon.client.gameobject.emitter.data.shape.Box;
@@ -57,6 +59,7 @@ public final class PhotonEffectBridge {
         BLACK_HOLE,
         BLACK_HOLE_SKY,
         CONFETTI,
+        CONFETTI_CYAN,
         FLAMES,
         POINT_ZERO
     }
@@ -110,8 +113,10 @@ public final class PhotonEffectBridge {
             // El runtime permanece activo hasta que las últimas partículas tienen tiempo
             // de terminar su arco y caer, no solo hasta que deja de emitir.
             case "confeti" -> { preset = Preset.CONFETTI; lifetime = 125; }
+            case "confeti_celeste" -> { preset = Preset.CONFETTI_CYAN; lifetime = 125; }
             case "llamas" -> { preset = Preset.FLAMES; lifetime = 100; }
-            case "punto_cero" -> { preset = Preset.POINT_ZERO; lifetime = 108; }
+            // Deja terminar las partículas y las estelas antes de destruir el runtime.
+            case "punto_cero" -> { preset = Preset.POINT_ZERO; lifetime = 190; }
             default -> { return; }
         }
         Handle handle = play(level, position, preset, 0, 1.0F);
@@ -249,7 +254,14 @@ public final class PhotonEffectBridge {
                 addRing(fx, "Photon Accretion Outer", 2.95F * safeScale, 0.0F, 4.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
                 addRing(fx, "Photon Accretion Inner", 2.0F * safeScale, 0.0F, 3.0F, 85, 0.04F, 0.11F, 0xFFFFF1CE, 0);
             }
-            case CONFETTI -> addConfettiBurst(fx);
+            case CONFETTI -> addConfettiBurst(fx,
+                    new int[]{0xFFFF3D72, 0xFFFFB52E, 0xFFFFFF43, 0xFF45E878,
+                            0xFF36D9FF, 0xFF6E68FF, 0xFFE86BFF, 0xFFFFFFFF},
+                    "Photon Confetti Cannon");
+            case CONFETTI_CYAN -> addConfettiBurst(fx,
+                    new int[]{0xFFBDF7FF, 0xFF80E8FF, 0xFF42CCFF, 0xFF20AFFF,
+                            0xFFDDFBFF, 0xFF62D5EA, 0xFF9EECFF, 0xFF36BCE8},
+                    "Photon Cyan Confetti Cannon");
             case FLAMES -> addFlameBurst(fx);
             case POINT_ZERO -> addPointZeroBurst(fx);
             case BLACK_HOLE_SKY -> {
@@ -286,6 +298,9 @@ public final class PhotonEffectBridge {
         addPointZeroRingWave(fx, "Photon Punto Cero Vertical Wave B",
                 182.0F, 37, 9, 22.0F, 8, 2, 0xFF9AAEFF);
 
+        // Onda circular celeste y translúcida que acompaña la expansión principal.
+        addPointZeroTranslucentWave(fx);
+
         // Los rayos ahora recorren prácticamente el mismo radio que las ondas exteriores.
         // Tres capas con velocidades, densidades y tonos distintos producen una descarga
         // mucho más grande, con filamentos cian, hielo y azul eléctrico.
@@ -295,6 +310,57 @@ public final class PhotonEffectBridge {
                 78.0F, 13.0F, 54, 2, 0xFFEAFBFF, 0.060F, 74);
         addPointZeroRayLayer(fx, "Photon Punto Cero Indigo Rays",
                 60.0F, 14.0F, 64, 5, 0xFF657BFF, 0.055F, 78);
+    }
+
+    /**
+     * Onda circular de baja opacidad que crece junto con la descarga principal.
+     * El alpha inicial es tenue y el gradiente de Photon la desvanece gradualmente.
+     */
+    private static void addPointZeroTranslucentWave(FX fx) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName("Photon Punto Cero Translucent Cyan Shockwave");
+        emitter.setDelay(1);
+        ParticleConfig config = emitter.config;
+        config.setDuration(40);
+        config.setLooping(false);
+        config.setStartLifetime(NumberFunction.constant(13));
+        config.setStartSpeed(NumberFunction.constant(0.0F));
+        config.setStartSize(new NumberFunction3(0.105F, 0.105F, 0.105F));
+        config.setStartColor(NumberFunction.color(0x447CEBFF));
+        config.setMaxParticles(520);
+        config.emission.setEmissionRate(NumberFunction.constant(30.0F));
+
+        Circle circle = new Circle();
+        circle.setRadius(1.0F);
+        circle.setRadiusThickness(0.016F);
+        config.shape.setShape(circle);
+        config.shape.setPosition(new NumberFunction3(0.0F, 0.0F, 0.0F));
+
+        Curve radiusCurve = new Curve(0.0F, 40.0F, 0.8F, 194.0F,
+                0.8F, "duration", "translucent shockwave radius");
+        radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 1.0F, 1.0F,
+                0.10F, 0.10F, 0.90F, 0.90F));
+        config.shape.setScale(new NumberFunction3(
+                radiusCurve, NumberFunction.constant(1.0F), radiusCurve));
+
+        enablePointZeroFadeOut(config);
+        config.renderer.setBloomEffect(false);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /**
+     * Aplica un desvanecimiento por partícula durante su último tercio de vida.
+     * Photon calcula la opacidad gradualmente; las estelas heredan este alfa y
+     * también se atenúan antes de que el runtime se limpie.
+     */
+    private static void enablePointZeroFadeOut(ParticleConfig config) {
+        Gradient fade = new Gradient();
+        fade.getGradientColor().deserializeNBT(new GradientColor(
+                0xFFFFFFFF, 0xFFFFFFFF, 0xD0FFFFFF, 0x00FFFFFF
+        ).serializeNBT());
+        config.colorOverLifetime.setEnable(true);
+        config.colorOverLifetime.setColor(fade);
     }
 
     /**
@@ -340,6 +406,7 @@ public final class PhotonEffectBridge {
         config.trails.config.setWidthOverTrail(NumberFunction.constant(0.085F));
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
+        enablePointZeroFadeOut(config);
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
@@ -409,6 +476,7 @@ public final class PhotonEffectBridge {
         config.noise.setRotation(NumberFunction.constant(1.4F));
         config.noise.setSize(NumberFunction.constant(0.012F));
 
+        enablePointZeroFadeOut(config);
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
@@ -459,6 +527,7 @@ public final class PhotonEffectBridge {
         config.trails.config.setWidthOverTrail(NumberFunction.constant(trailWidth));
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
+        enablePointZeroFadeOut(config);
         config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
@@ -470,15 +539,10 @@ public final class PhotonEffectBridge {
      * Photon aplica gravedad por partícula, de modo que los papeles suben, pierden
      * impulso y vuelven a caer en vez de quedarse flotando en un abanico horizontal.
      */
-    private static void addConfettiBurst(FX fx) {
-        int[] colors = {
-                0xFFFF3D72, 0xFFFFB52E, 0xFFFFFF43, 0xFF45E878,
-                0xFF36D9FF, 0xFF6E68FF, 0xFFE86BFF, 0xFFFFFFFF
-        };
-
+    private static void addConfettiBurst(FX fx, int[] colors, String emitterName) {
         for (int i = 0; i < colors.length; i++) {
             ParticleEmitter emitter = new ParticleEmitter();
-            emitter.setName("Photon Confetti Cannon " + (i + 1));
+            emitter.setName(emitterName + " " + (i + 1));
             emitter.setDelay(i % 4);
             ParticleConfig config = emitter.config;
             config.setDuration(22);
