@@ -268,11 +268,10 @@ public final class PhotonEffectBridge {
 
     /**
      * Descarga cósmica inspirada en la explosión del Punto Cero de Fortnite:
-     * un núcleo blanco-cian libera ondas radiales en varios planos, una envolvente
-     * esférica y filamentos que salen disparados en 3D. Todo se ejecuta en Photon.
+     * ondas radiales en varios planos, una envolvente esférica y filamentos eléctricos
+     * que recorren cientos de bloques en 3D. Todo se ejecuta en Photon.
      */
     private static void addPointZeroBurst(FX fx) {
-        addPointZeroCore(fx);
 
         // Onda espacial que se expande en todas las direcciones.
         addPointZeroSphericalWave(fx, "Photon Punto Cero Spherical Shockwave",
@@ -287,50 +286,15 @@ public final class PhotonEffectBridge {
         addPointZeroRingWave(fx, "Photon Punto Cero Vertical Wave B",
                 182.0F, 37, 9, 22.0F, 8, 2, 0xFF9AAEFF);
 
-        // Los filamentos viajan desde el centro y dejan estelas largas y ligeramente
-        // turbulentas: son los rayos celestes que dan escala a la explosión.
+        // Los rayos ahora recorren prácticamente el mismo radio que las ondas exteriores.
+        // Tres capas con velocidades, densidades y tonos distintos producen una descarga
+        // mucho más grande, con filamentos cian, hielo y azul eléctrico.
         addPointZeroRayLayer(fx, "Photon Punto Cero Azure Rays",
-                5.2F, 18.0F, 52, 0, 0xFF58CFFF, 0.075F, 30);
-        addPointZeroRayLayer(fx, "Photon Punto Cero White Rays",
-                6.0F, 15.0F, 46, 3, 0xFFE9FCFF, 0.045F, 27);
-    }
-
-    /** Núcleo luminoso compacto que marca el punto de origen de la descarga. */
-    private static void addPointZeroCore(FX fx) {
-        ParticleEmitter emitter = new ParticleEmitter();
-        emitter.setName("Photon Punto Cero White Core");
-        emitter.setDelay(0);
-        ParticleConfig config = emitter.config;
-        config.setDuration(5);
-        config.setLooping(false);
-        config.setStartLifetime(NumberFunction.constant(18));
-        config.setStartSpeed(NumberFunction.constant(0.25F));
-        config.setStartSize(new NumberFunction3(0.78F, 0.78F, 0.78F));
-        config.setStartColor(NumberFunction.color(0xFFF5FFFF));
-        config.setMaxParticles(120);
-        config.emission.setEmissionRate(NumberFunction.constant(18.0F));
-
-        Sphere sphere = new Sphere();
-        sphere.setRadius(1.0F);
-        sphere.setRadiusThickness(0.32F);
-        config.shape.setShape(sphere);
-        config.shape.setPosition(new NumberFunction3(0.0F, 0.0F, 0.0F));
-        config.shape.setScale(new NumberFunction3(1.15F, 1.15F, 1.15F));
-
-        config.trails.setEnable(true);
-        config.trails.setRatio(0.88F);
-        config.trails.setLifetime(NumberFunction.constant(0.42F));
-        config.trails.setInheritParticleColor(true);
-        config.trails.setSizeAffectsWidth(false);
-        config.trails.config.setTime(12);
-        config.trails.config.setMinVertexDistance(0.035F);
-        config.trails.config.setWidthOverTrail(NumberFunction.constant(0.24F));
-        config.trails.config.setColorOverTrail(NumberFunction.color(0xFFFFFFFF));
-
-        config.renderer.setBloomEffect(true);
-        config.renderer.setBloomColor(0xFFFFFFFF);
-        config.physics.setEnable(false);
-        fx.getMainFX().objects().add(emitter);
+                68.0F, 23.0F, 58, 0, 0xFF48CFFF, 0.090F, 72);
+        addPointZeroRayLayer(fx, "Photon Punto Cero Ice Rays",
+                78.0F, 13.0F, 54, 2, 0xFFEAFBFF, 0.060F, 74);
+        addPointZeroRayLayer(fx, "Photon Punto Cero Indigo Rays",
+                60.0F, 14.0F, 64, 5, 0xFF657BFF, 0.055F, 78);
     }
 
     /**
@@ -480,14 +444,14 @@ public final class PhotonEffectBridge {
         config.shape.setScale(new NumberFunction3(1.35F, 1.35F, 1.35F));
 
         config.noise.setEnable(true);
-        config.noise.setFrequency(0.34F);
-        config.noise.setPosition(new NumberFunction3(0.035F, 0.035F, 0.035F));
-        config.noise.setRotation(NumberFunction.constant(2.0F));
-        config.noise.setSize(NumberFunction.constant(0.016F));
+        config.noise.setFrequency(0.42F);
+        config.noise.setPosition(new NumberFunction3(0.055F, 0.055F, 0.055F));
+        config.noise.setRotation(NumberFunction.constant(3.0F));
+        config.noise.setSize(NumberFunction.constant(0.024F));
 
         config.trails.setEnable(true);
-        config.trails.setRatio(0.98F);
-        config.trails.setLifetime(NumberFunction.constant(0.88F));
+        config.trails.setRatio(0.99F);
+        config.trails.setLifetime(NumberFunction.constant(1.55F));
         config.trails.setInheritParticleColor(true);
         config.trails.setSizeAffectsWidth(false);
         config.trails.config.setTime(trailTime);
