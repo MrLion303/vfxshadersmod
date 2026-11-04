@@ -318,33 +318,43 @@ public final class PhotonEffectBridge {
      */
     private static void addPointZeroTranslucentWave(FX fx) {
         ParticleEmitter emitter = new ParticleEmitter();
-        emitter.setName("Photon Punto Cero Translucent Cyan Shockwave");
+        emitter.setName("Photon Punto Cero 3D Translucent Cyan Sphere");
         emitter.setDelay(1);
         ParticleConfig config = emitter.config;
-        config.setDuration(40);
-        config.setLooping(false);
-        config.setStartLifetime(NumberFunction.constant(13));
-        config.setStartSpeed(NumberFunction.constant(0.0F));
-        config.setStartSize(new NumberFunction3(0.105F, 0.105F, 0.105F));
-        config.setStartColor(NumberFunction.color(0x447CEBFF));
-        config.setMaxParticles(520);
-        config.emission.setEmissionRate(NumberFunction.constant(30.0F));
 
-        Circle circle = new Circle();
-        circle.setRadius(1.0F);
-        circle.setRadiusThickness(0.016F);
-        config.shape.setShape(circle);
+        // La envolvente es una esfera hueca: conserva únicamente una capa muy fina
+        // en la superficie y expande el radio por igual en X, Y y Z.
+        config.setDuration(44);
+        config.setLooping(false);
+        config.setStartLifetime(NumberFunction.constant(12));
+        config.setStartSpeed(NumberFunction.constant(0.0F));
+        config.setStartSize(new NumberFunction3(0.42F, 0.42F, 0.42F));
+        config.setStartColor(NumberFunction.color(0x557CEBFF));
+        config.setMaxParticles(1800);
+        config.emission.setEmissionRate(NumberFunction.constant(125.0F));
+
+        Sphere sphere = new Sphere();
+        sphere.setRadius(1.0F);
+        sphere.setRadiusThickness(0.045F);
+        config.shape.setShape(sphere);
         config.shape.setPosition(new NumberFunction3(0.0F, 0.0F, 0.0F));
 
-        Curve radiusCurve = new Curve(0.0F, 40.0F, 0.8F, 194.0F,
-                0.8F, "duration", "translucent shockwave radius");
+        Curve radiusCurve = new Curve(0.0F, 44.0F, 0.8F, 194.0F,
+                0.8F, "duration", "translucent 3D shockwave radius");
         radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 1.0F, 1.0F,
                 0.10F, 0.10F, 0.90F, 0.90F));
-        config.shape.setScale(new NumberFunction3(
-                radiusCurve, NumberFunction.constant(1.0F), radiusCurve));
+        config.shape.setScale(new NumberFunction3(radiusCurve, radiusCurve, radiusCurve));
+
+        // Una turbulencia mínima evita que la superficie parezca una esfera rígida.
+        config.noise.setEnable(true);
+        config.noise.setFrequency(0.18F);
+        config.noise.setPosition(new NumberFunction3(0.012F, 0.012F, 0.012F));
+        config.noise.setRotation(NumberFunction.constant(0.8F));
+        config.noise.setSize(NumberFunction.constant(0.018F));
 
         enablePointZeroFadeOut(config);
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(0xFF7CEBFF);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
     }
