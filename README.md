@@ -23,6 +23,7 @@ Motor de efectos en tiempo real para Minecraft Java Edition, orientado a Forge 1
 - `/vfx enable sky_portal`: abre un portal circular cinematográfico en el cielo.
 - `/vfxonce scan <x> <y> <z> <color>`: lanza una única onda de escaneo que se adapta al relieve.
 - `/vfxonce trampolin <x> <y> <z> [potencia] [radio] [velocidad]`: onda circular sobre el suelo; deforma visualmente la superficie y lanza a los jugadores cuando los alcanza.
+- `/vfxonce punto_cero <x> <y> <z>`: descarga cósmica gigantesca con un núcleo blanco-cian, ondas expansivas en tres planos y filamentos eléctricos radiales de Photon. Es puramente visual.
 
 Los comandos VFX están disponibles en el cliente y en el servidor. Desde bloques de comandos, el servidor envía las órdenes visuales a los clientes conectados en la misma dimensión. Instala el mod tanto en el servidor como en los clientes. Los comandos de servidor requieren permiso de operador de nivel 2. Los comandos de movimiento modifican únicamente a los jugadores seleccionados y se limpian al desconectarse.
 
@@ -65,6 +66,7 @@ El agujero negro celeste tiene posición fija respecto al mundo: apunta hacia el
 - **sky_portal:** anillos Photon que crecen durante la apertura y fragmentos orbitales con estelas alrededor de una ventana galáctica con shader propio. Usa `panorama_overlay.png` si está presente; si falta, el shader crea un interior procedural.
 - **scan:** onda Photon con radio animado por curva, complementada por un aro propio que sigue la superficie de los bloques cargados.
 - **trampolin:** reconstruye la superficie visible desde el búfer de profundidad y desplaza las texturas y los bordes de los bloques según una cresta radial, sin modificar permanentemente el mapa.
+- **punto_cero:** explosión cósmica de un solo uso construida con emisores Photon: núcleo blanco-cian, envolvente esférica, tres ondas radiales ortogonales y rayos con estelas largas y bloom. No rompe bloques ni aplica daño o impulso.
 
 La lente de pantalla del agujero negro colocado usa una zona de influencia limitada alrededor del horizonte para conservar una distorsión gravitacional sutil sin crear un contorno exterior enorme. El horizonte 3D y el disco de acreción siguen activos. El efecto visual no simula relatividad general ni altera bloques o colisiones; el aspecto final debe comprobarse dentro de Minecraft.
 

@@ -111,11 +111,15 @@ Los efectos aparecen en los clientes de la misma dimensión que los jugadores se
 
 `/vfxonce scan <x> <y> <z> <color>` inicia un aro de escaneo desde las coordenadas indicadas. El aro se adapta al relieve del terreno cargado y termina solo; no hace falta ejecutar otro comando para detenerlo.
 
+`/vfxonce punto_cero <x> <y> <z>` genera una descarga cósmica gigantesca en las coordenadas indicadas. Un núcleo blanco-cian libera una envolvente esférica, tres frentes de onda en planos distintos y filamentos radiales azulados con estelas largas y bloom. Se ejecuta con Photon y termina automáticamente; no rompe bloques, no hace daño ni impulsa jugadores.
+
 `/vfxonce trampolin <x> <y> <z> [potencia] [radio] [velocidad]` crea un pulso circular de un solo uso. El frente se expande por el suelo, la malla visual se eleva en crestas concéntricas y los jugadores que estén en el suelo reciben un impulso vertical cuando la onda los alcanza. La potencia representa la altura aproximada del salto en bloques; el radio se mide en bloques y la velocidad en bloques por tick. Los valores por defecto son potencia `12`, radio `32` y velocidad `0.65`. Límites: potencia `1–64`, radio `4–64` y velocidad `0.15–2`.
 
 Ejemplos:
 
 ```text
+/vfxonce punto_cero 0 80 0
+/vfxonce punto_cero ~ ~ ~
 /vfxonce trampolin 0 64 0
 /vfxonce trampolin 120 70 -300 24
 /vfxonce trampolin ~ ~ ~ 32 48 0.8
@@ -146,5 +150,6 @@ Colores básicos aceptados: `azul`, `celeste`, `cian`, `rojo`, `naranja`, `amari
 - Direcciones válidas: `arriba`, `abajo`, los ocho rumbos de brújula y combinaciones con arriba/abajo. Por ejemplo, `"abajo, sur"` mira en diagonal hacia abajo y al sur. Las direcciones con espacios deben escribirse entre comillas.
 - `/vfxonce confeti <x> <y> <z>` usa un cono de emisión Photon que dispara el confeti hacia arriba; la gravedad hace que pierda altura y caiga de forma natural. La ráfaga y la caída permanecen visibles varios segundos.
 - `/vfxonce llamas <x> <y> <z>` dispara una columna de chispas cálidas en un cono estrecho, con estelas y bloom, como un cañón pirotécnico de concierto. Es un efecto de partículas, no fuego colocado en el mundo.
+- `/vfxonce punto_cero <x> <y> <z>` libera una descarga blanca y celeste de gran escala. Photon crea ondas que se expanden en varias direcciones, arcos luminosos y rayos radiales con estelas. El efecto es exclusivamente visual y se limpia automáticamente.
 
 Los comandos requieren permiso de operador de nivel 2. La cámara usa al propio jugador como entidad de cámara; solo altera la vista del cliente, no bloquea el movimiento ni modifica las coordenadas del jugador. La vista de hombro conserva el giro del ratón y añade comprobación de colisiones para evitar meter la cámara en bloques. Las ráfagas se ejecutan en las coordenadas indicadas y los emisores Photon se destruyen al terminar.

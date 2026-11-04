@@ -57,7 +57,8 @@ public final class PhotonEffectBridge {
         BLACK_HOLE,
         BLACK_HOLE_SKY,
         CONFETTI,
-        FLAMES
+        FLAMES,
+        POINT_ZERO
     }
 
     /**
@@ -110,6 +111,7 @@ public final class PhotonEffectBridge {
             // de terminar su arco y caer, no solo hasta que deja de emitir.
             case "confeti" -> { preset = Preset.CONFETTI; lifetime = 125; }
             case "llamas" -> { preset = Preset.FLAMES; lifetime = 100; }
+            case "punto_cero" -> { preset = Preset.POINT_ZERO; lifetime = 108; }
             default -> { return; }
         }
         Handle handle = play(level, position, preset, 0, 1.0F);
@@ -249,6 +251,7 @@ public final class PhotonEffectBridge {
             }
             case CONFETTI -> addConfettiBurst(fx);
             case FLAMES -> addFlameBurst(fx);
+            case POINT_ZERO -> addPointZeroBurst(fx);
             case BLACK_HOLE_SKY -> {
                 // En el cielo, el disco se orienta hacia el observador y coincide con la escala del shader.
                 addRing(fx, "Photon Sky Accretion Outer", 4.05F * safeScale, 0.0F, 6.0F, 95, 0.08F, 0.16F, 0xFFFFA34A, 0);
@@ -260,6 +263,242 @@ public final class PhotonEffectBridge {
         PhotonInstance instance = new PhotonInstance(fx, level, position, orientationFor(preset));
         instance.start();
         return new Handle(instance);
+    }
+
+
+    /**
+     * Descarga cósmica inspirada en la explosión del Punto Cero de Fortnite:
+     * un núcleo blanco-cian libera ondas radiales en varios planos, una envolvente
+     * esférica y filamentos que salen disparados en 3D. Todo se ejecuta en Photon.
+     */
+    private static void addPointZeroBurst(FX fx) {
+        addPointZeroCore(fx);
+
+        // Onda espacial que se expande en todas las direcciones.
+        addPointZeroSphericalWave(fx, "Photon Punto Cero Spherical Shockwave",
+                168.0F, 34, 10, 16.0F, 0, 0xFF8DEBFF);
+
+        // Tres frentes ortogonales crean la lectura de una onda que atraviesa el cielo,
+        // en vez de una explosión convencional de fuego o pólvora.
+        addPointZeroRingWave(fx, "Photon Punto Cero Horizontal Wave",
+                192.0F, 38, 9, 22.0F, 0, 0, 0xFF63D9FF);
+        addPointZeroRingWave(fx, "Photon Punto Cero Vertical Wave A",
+                174.0F, 36, 9, 22.0F, 4, 1, 0xFFB4F4FF);
+        addPointZeroRingWave(fx, "Photon Punto Cero Vertical Wave B",
+                182.0F, 37, 9, 22.0F, 8, 2, 0xFF9AAEFF);
+
+        // Los filamentos viajan desde el centro y dejan estelas largas y ligeramente
+        // turbulentas: son los rayos celestes que dan escala a la explosión.
+        addPointZeroRayLayer(fx, "Photon Punto Cero Azure Rays",
+                5.2F, 18.0F, 52, 0, 0xFF58CFFF, 0.075F, 30);
+        addPointZeroRayLayer(fx, "Photon Punto Cero White Rays",
+                6.0F, 15.0F, 46, 3, 0xFFE9FCFF, 0.045F, 27);
+    }
+
+    /** Núcleo luminoso compacto que marca el punto de origen de la descarga. */
+    private static void addPointZeroCore(FX fx) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName("Photon Punto Cero White Core");
+        emitter.setDelay(0);
+        ParticleConfig config = emitter.config;
+        config.setDuration(5);
+        config.setLooping(false);
+        config.setStartLifetime(NumberFunction.constant(18));
+        config.setStartSpeed(NumberFunction.constant(0.25F));
+        config.setStartSize(new NumberFunction3(0.78F, 0.78F, 0.78F));
+        config.setStartColor(NumberFunction.color(0xFFF5FFFF));
+        config.setMaxParticles(120);
+        config.emission.setEmissionRate(NumberFunction.constant(18.0F));
+
+        Sphere sphere = new Sphere();
+        sphere.setRadius(1.0F);
+        sphere.setRadiusThickness(0.32F);
+        config.shape.setShape(sphere);
+        config.shape.setPosition(new NumberFunction3(0.0F, 0.0F, 0.0F));
+        config.shape.setScale(new NumberFunction3(1.15F, 1.15F, 1.15F));
+
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.88F);
+        config.trails.setLifetime(NumberFunction.constant(0.42F));
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(12);
+        config.trails.config.setMinVertexDistance(0.035F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(0.24F));
+        config.trails.config.setColorOverTrail(NumberFunction.color(0xFFFFFFFF));
+
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(0xFFFFFFFF);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /**
+     * Envolvente esférica: el tamaño de la Sphere aumenta mediante una curva de Photon.
+     * Las partículas tienen poca vida para que el frente se lea como una onda móvil.
+     */
+    private static void addPointZeroSphericalWave(
+            FX fx, String name, float endRadius, int duration, int particleLifetime,
+            float rate, int delay, int color
+    ) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName(name);
+        emitter.setDelay(delay);
+        ParticleConfig config = emitter.config;
+        config.setDuration(duration);
+        config.setLooping(false);
+        config.setStartLifetime(NumberFunction.constant(particleLifetime));
+        config.setStartSpeed(NumberFunction.constant(0.0F));
+        config.setStartSize(new NumberFunction3(0.095F, 0.095F, 0.095F));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(260);
+        config.emission.setEmissionRate(NumberFunction.constant(rate));
+
+        Sphere sphere = new Sphere();
+        sphere.setRadius(1.0F);
+        sphere.setRadiusThickness(0.965F);
+        config.shape.setShape(sphere);
+        config.shape.setPosition(new NumberFunction3(0.0F, 0.0F, 0.0F));
+
+        Curve radiusCurve = new Curve(0.0F, duration, 1.2F, endRadius,
+                1.2F, "duration", "shockwave radius");
+        radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 1.0F, 1.0F,
+                0.12F, 0.12F, 0.88F, 0.88F));
+        config.shape.setScale(new NumberFunction3(radiusCurve, radiusCurve, radiusCurve));
+
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.90F);
+        config.trails.setLifetime(NumberFunction.constant(0.60F));
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(16);
+        config.trails.config.setMinVertexDistance(0.035F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(0.085F));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
+
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /**
+     * Onda circular expandible en un plano configurable. Photon anima el radio y
+     * mantiene el movimiento orbital, dejando arcos luminosos en el frente.
+     * plane 0 = XZ, 1 = XY, 2 = YZ.
+     */
+    private static void addPointZeroRingWave(
+            FX fx, String name, float endRadius, int duration, int particleLifetime,
+            float rate, int delay, int plane, int color
+    ) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName(name);
+        emitter.setDelay(delay);
+        ParticleConfig config = emitter.config;
+        config.setDuration(duration);
+        config.setLooping(false);
+        config.setStartLifetime(NumberFunction.constant(particleLifetime));
+        config.setStartSpeed(NumberFunction.constant(0.0F));
+        config.setStartSize(new NumberFunction3(0.105F, 0.105F, 0.105F));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(280);
+        config.emission.setEmissionRate(NumberFunction.constant(rate));
+
+        Circle circle = new Circle();
+        circle.setRadius(1.0F);
+        circle.setRadiusThickness(0.035F);
+        config.shape.setShape(circle);
+        config.shape.setPosition(new NumberFunction3(0.0F, 0.0F, 0.0F));
+        config.shape.setRotation(new NumberFunction3(
+                plane == 1 ? 90.0F : 0.0F,
+                0.0F,
+                plane == 2 ? 90.0F : 0.0F));
+
+        Curve radiusCurve = new Curve(0.0F, duration, 0.8F, endRadius,
+                0.8F, "duration", "radial wave radius");
+        radiusCurve.setCurves(new ECBCurves(0.0F, 0.0F, 1.0F, 1.0F,
+                0.10F, 0.10F, 0.90F, 0.90F));
+        config.shape.setScale(new NumberFunction3(radiusCurve, 1.0F, radiusCurve));
+
+        config.velocityOverLifetime.setEnable(true);
+        config.velocityOverLifetime.setOrbitalMode(
+                com.lowdragmc.photon.client.gameobject.emitter.data.VelocityOverLifetimeSetting.OrbitalMode.AngularVelocity);
+        config.velocityOverLifetime.setOrbital(switch (plane) {
+            case 1 -> new NumberFunction3(0.13F, 0.0F, 0.0F);
+            case 2 -> new NumberFunction3(0.0F, 0.0F, 0.13F);
+            default -> new NumberFunction3(0.0F, 0.13F, 0.0F);
+        });
+
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.94F);
+        config.trails.setLifetime(NumberFunction.constant(0.72F));
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(20);
+        config.trails.config.setMinVertexDistance(0.035F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(0.095F));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
+
+        config.noise.setEnable(true);
+        config.noise.setFrequency(0.28F);
+        config.noise.setPosition(new NumberFunction3(0.025F, 0.025F, 0.025F));
+        config.noise.setRotation(NumberFunction.constant(1.4F));
+        config.noise.setSize(NumberFunction.constant(0.012F));
+
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
+    }
+
+    /**
+     * Ráfaga radial de Photon. La forma Sphere orienta las partículas hacia fuera;
+     * sus estelas largas se leen como rayos de energía que salen del núcleo.
+     */
+    private static void addPointZeroRayLayer(
+            FX fx, String name, float speed, float rate, int lifetime,
+            int delay, int color, float trailWidth, int trailTime
+    ) {
+        ParticleEmitter emitter = new ParticleEmitter();
+        emitter.setName(name);
+        emitter.setDelay(delay);
+        ParticleConfig config = emitter.config;
+        config.setDuration(15);
+        config.setLooping(false);
+        config.setStartLifetime(NumberFunction.constant(lifetime));
+        config.setStartSpeed(NumberFunction.constant(speed));
+        config.setStartSize(new NumberFunction3(0.060F, 0.060F, 0.060F));
+        config.setStartColor(NumberFunction.color(color));
+        config.setMaxParticles(360);
+        config.emission.setEmissionRate(NumberFunction.constant(rate));
+
+        Sphere sphere = new Sphere();
+        sphere.setRadius(1.0F);
+        sphere.setRadiusThickness(0.985F);
+        config.shape.setShape(sphere);
+        config.shape.setPosition(new NumberFunction3(0.0F, 0.0F, 0.0F));
+        config.shape.setScale(new NumberFunction3(1.35F, 1.35F, 1.35F));
+
+        config.noise.setEnable(true);
+        config.noise.setFrequency(0.34F);
+        config.noise.setPosition(new NumberFunction3(0.035F, 0.035F, 0.035F));
+        config.noise.setRotation(NumberFunction.constant(2.0F));
+        config.noise.setSize(NumberFunction.constant(0.016F));
+
+        config.trails.setEnable(true);
+        config.trails.setRatio(0.98F);
+        config.trails.setLifetime(NumberFunction.constant(0.88F));
+        config.trails.setInheritParticleColor(true);
+        config.trails.setSizeAffectsWidth(false);
+        config.trails.config.setTime(trailTime);
+        config.trails.config.setMinVertexDistance(0.025F);
+        config.trails.config.setWidthOverTrail(NumberFunction.constant(trailWidth));
+        config.trails.config.setColorOverTrail(NumberFunction.color(color));
+
+        config.renderer.setBloomEffect(true);
+        config.renderer.setBloomColor(color);
+        config.physics.setEnable(false);
+        fx.getMainFX().objects().add(emitter);
     }
 
     /**

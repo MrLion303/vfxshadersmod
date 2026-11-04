@@ -64,7 +64,10 @@ public final class VfxOnceCommands {
                                 .executes(context -> photonBurst(context, "confeti"))))
                 .then(Commands.literal("llamas")
                         .then(Commands.argument("posicion", Vec3Argument.vec3())
-                                .executes(context -> photonBurst(context, "llamas")))));
+                                .executes(context -> photonBurst(context, "llamas"))))
+                .then(Commands.literal("punto_cero")
+                        .then(Commands.argument("posicion", Vec3Argument.vec3())
+                                .executes(context -> photonBurst(context, "punto_cero")))));
     }
 
     private static int photonBurst(CommandContext<CommandSourceStack> context, String effect) {
@@ -72,7 +75,12 @@ public final class VfxOnceCommands {
         ServerLevel level = context.getSource().getLevel();
         VfxNetwork.sendToDimension(level, new VfxCommandPacket(
                 VfxCommandPacket.PHOTON_ONCE, effect, level.dimension().location(), 0.0F, position));
-        String label = "confeti".equals(effect) ? "Confeti" : "Llamarada de chispas";
+        String label = switch (effect) {
+            case "confeti" -> "Confeti";
+            case "llamas" -> "Llamarada de chispas";
+            case "punto_cero" -> "Punto Cero";
+            default -> "Efecto Photon";
+        };
         context.getSource().sendSuccess(() -> Component.literal(
                 label + " Photon lanzado desde (" + fmt(position.x) + ", "
                         + fmt(position.y) + ", " + fmt(position.z) + ")."), true);
