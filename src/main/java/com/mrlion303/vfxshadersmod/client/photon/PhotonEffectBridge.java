@@ -364,7 +364,7 @@ public final class PhotonEffectBridge {
         config.noise.setSize(NumberFunction.constant(0.018F));
 
         enablePointZeroFadeOut(config);
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(0xFF7CEBFF);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
@@ -428,7 +428,7 @@ public final class PhotonEffectBridge {
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
         enablePointZeroFadeOut(config);
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
@@ -498,7 +498,7 @@ public final class PhotonEffectBridge {
         config.noise.setSize(NumberFunction.constant(0.012F));
 
         enablePointZeroFadeOut(config);
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
@@ -549,7 +549,7 @@ public final class PhotonEffectBridge {
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
         enablePointZeroFadeOut(config);
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
@@ -599,7 +599,7 @@ public final class PhotonEffectBridge {
             config.noise.setPosition(new NumberFunction3(0.075F, 0.035F, 0.075F));
             config.noise.setRotation(NumberFunction.constant(3.2F));
             config.noise.setSize(NumberFunction.constant(0.018F));
-            config.renderer.setBloomEffect(false);
+            config.renderer.setBloomEffect(true);
             config.renderer.setBloomColor(colors[i]);
             fx.getMainFX().objects().add(emitter);
         }
@@ -658,7 +658,7 @@ public final class PhotonEffectBridge {
             config.trails.config.setWidthOverTrail(NumberFunction.constant(0.05F + i * 0.006F));
             config.trails.config.setColorOverTrail(NumberFunction.color(colors[i]));
 
-            config.renderer.setBloomEffect(false);
+            config.renderer.setBloomEffect(true);
             config.renderer.setBloomColor(colors[i]);
             fx.getMainFX().objects().add(emitter);
         }
@@ -720,7 +720,7 @@ public final class PhotonEffectBridge {
             case 2 -> new NumberFunction3(0.14F, 0.0F, 0.0F);
             default -> new NumberFunction3(0.0F, 0.14F, 0.0F);
         });
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.trails.setEnable(true);
         config.trails.setRatio(0.58F);
@@ -786,7 +786,7 @@ public final class PhotonEffectBridge {
             config.trails.config.setColorOverTrail(NumberFunction.color(color));
         }
 
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
@@ -834,7 +834,7 @@ public final class PhotonEffectBridge {
         config.trails.config.setWidthOverTrail(NumberFunction.constant(0.075F));
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
@@ -887,7 +887,7 @@ public final class PhotonEffectBridge {
                     NumberFunction.constant(x), centerCurve, NumberFunction.constant(z)));
             config.shape.setScale(new NumberFunction3(
                     NumberFunction.constant(1.05F), heightCurve, NumberFunction.constant(0.68F)));
-            config.renderer.setBloomEffect(false);
+            config.renderer.setBloomEffect(true);
             config.renderer.setBloomColor(color);
             config.physics.setEnable(false);
             fx.getMainFX().objects().add(emitter);
@@ -941,7 +941,7 @@ public final class PhotonEffectBridge {
         config.shape.setScale(new NumberFunction3(radiusCurve,
                 NumberFunction.constant(1.0F), radiusCurve));
 
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
@@ -981,7 +981,7 @@ public final class PhotonEffectBridge {
         config.trails.config.setWidthOverTrail(NumberFunction.constant(0.12F));
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         // Photon detecta la colisión con el terreno y retira la estrella al tocarlo.
         // Su estela se desvanece después, sin una comprobación de suelo del renderer propio.
@@ -1021,7 +1021,7 @@ public final class PhotonEffectBridge {
         config.trails.config.setWidthOverTrail(NumberFunction.constant(0.075F));
         config.trails.config.setColorOverTrail(NumberFunction.color(color));
 
-        config.renderer.setBloomEffect(false);
+        config.renderer.setBloomEffect(true);
         config.renderer.setBloomColor(color);
         config.physics.setEnable(false);
         fx.getMainFX().objects().add(emitter);
