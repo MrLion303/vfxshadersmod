@@ -12,7 +12,6 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
@@ -28,7 +27,27 @@ public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
     private static final int VERTICAL_BANDS = 6;
     private static final int LAYERS = 3;
     private static final double BASE_RADIUS = 76.0D;
+    private static volatile Vec3 requestedActivationOrigin;
+    private Vec3 origin = Vec3.ZERO;
     private long age;
+
+    public static void configureActivationOrigin(Vec3 position) {
+        requestedActivationOrigin = position;
+    }
+
+    @Override
+    public void onStart(EffectContext context) {
+        age = 0L;
+        Vec3 configured = requestedActivationOrigin;
+        requestedActivationOrigin = null;
+        if (configured == null) {
+            var player = Minecraft.getInstance().player;
+            configured = player == null
+                    ? context.level().getSharedSpawnPos().getCenter()
+                    : player.position();
+        }
+        origin = configured.add(0.0D, 20.0D, 0.0D);
+    }
 
     @Override
     public EffectId id() {
@@ -47,17 +66,11 @@ public final class RainbowAuroraEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        Player player = minecraft.player;
-        if (player == null || minecraft.level == null) {
-            return;
-        }
-
-        Vec3 playerPosition = player.getPosition(partialTick);
+        if (minecraft.level == null) return;
         Vec3 cameraPosition = event.getCamera().getPosition();
-        double centerX = playerPosition.x - cameraPosition.x;
-        // Eleva las cortinas para que floten claramente por encima del terreno.
-        double centerY = playerPosition.y + 20.0D - cameraPosition.y;
-        double centerZ = playerPosition.z - cameraPosition.z;
+        double centerX = origin.x - cameraPosition.x;
+        double centerY = origin.y - cameraPosition.y;
+        double centerZ = origin.z - cameraPosition.z;
         double time = age + partialTick;
 
         PoseStack.Pose pose = event.getPoseStack().last();

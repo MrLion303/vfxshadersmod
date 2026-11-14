@@ -32,7 +32,9 @@ public final class VfxServerCommands {
     private static final Set<String> EFFECTS = Set.of(
             "demo_orbit",
             "music_horizon_bars",
+            "music_sync_bars",
             "rainbow_aurora",
+            "rainbow_aurora_photon",
             "rainbow_sky",
             "blackhole",
             "blackhole_sky",
@@ -143,7 +145,8 @@ public final class VfxServerCommands {
             context.getSource().sendFailure(Component.literal("Efecto inválido o requiere coordenadas: " + effect));
             return 0;
         }
-        send(context.getSource().getLevel(), VfxCommandPacket.ENABLE, effect, 0.0F, Vec3.ZERO);
+        send(context.getSource().getLevel(), VfxCommandPacket.ENABLE,
+                effect, 0.0F, context.getSource().getPosition());
         active(context.getSource().getLevel()).add(effect);
         context.getSource().sendSuccess(() -> Component.literal("Se activó " + effect + " en los clientes de esta dimensión."), true);
         return 1;
@@ -226,7 +229,7 @@ public final class VfxServerCommands {
         Set<String> active = active(context.getSource().getLevel());
         boolean enable = !active.contains(effect);
         send(context.getSource().getLevel(), enable ? VfxCommandPacket.ENABLE : VfxCommandPacket.DISABLE,
-                effect, 0.0F, Vec3.ZERO);
+                effect, 0.0F, enable ? context.getSource().getPosition() : Vec3.ZERO);
         if (enable) {
             active.add(effect);
         } else {

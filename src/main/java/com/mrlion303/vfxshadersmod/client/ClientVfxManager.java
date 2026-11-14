@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import com.mrlion303.vfxshadersmod.client.postprocess.BlackHoleLensingPass;
 import com.mrlion303.vfxshadersmod.client.postprocess.TrampolineWaveDistortionPass;
 import com.mrlion303.vfxshadersmod.client.effect.TrampolineWaveEffect;
+import com.mrlion303.vfxshadersmod.client.effect.MusicHorizonBarsEffect;
+import com.mrlion303.vfxshadersmod.client.effect.MusicSyncBarsEffect;
+import com.mrlion303.vfxshadersmod.client.effect.RainbowAuroraEffect;
 import com.mrlion303.vfxshadersmod.client.photon.PhotonEffectBridge;
 import com.mrlion303.vfxshadersmod.client.render.ClientVfxRenderer;
 import com.mrlion303.vfxshadersmod.client.render.ClientWorldVfxRendererRegistry;
@@ -13,6 +16,7 @@ import com.mrlion303.vfxshadersmod.core.effect.EffectRegistry;
 import com.mrlion303.vfxshadersmod.core.effect.VfxEffect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import org.slf4j.Logger;
 
@@ -41,6 +45,10 @@ public final class ClientVfxManager {
     }
 
     public static Result enable(EffectId id) {
+        return enable(id, null);
+    }
+
+    public static Result enable(EffectId id, Vec3 activationOrigin) {
         if (!EffectRegistry.ids().contains(id)) {
             return Result.UNKNOWN_EFFECT;
         }
@@ -59,14 +67,31 @@ public final class ClientVfxManager {
             return Result.UNKNOWN_EFFECT;
         }
 
+        EffectContext context = EffectContext.fromLevel(level);
+        configureActivationOrigin(id, activationOrigin);
         try {
-            effect.onStart(EffectContext.fromLevel(level));
+            effect.onStart(context);
             ACTIVE.put(id, effect);
             try {
-                PHOTON_ACTIVE.put(id, PhotonEffectBridge.playForEffect(id.location().getPath(), level));
+                String effectPath = id.location().getPath();
+                PhotonEffectBridge.Handle photonHandle =
+                        PhotonEffectBridge.playForEffect(effectPath, level, activationOrigin);
+                if (PhotonEffectBridge.requiresPhotonForVisibility(effectPath)
+                        && !photonHandle.isRunning()) {
+                    throw new IllegalStateException("Photon no creó un runtime activo para " + effectPath);
+                }
+                PHOTON_ACTIVE.put(id, photonHandle);
             } catch (RuntimeException photonException) {
-                // El efecto original conserva su funcionamiento si un preset Photon no puede inicializarse.
                 LOGGER.error("No se pudo iniciar el preset Photon para {}", id, photonException);
+                if (PhotonEffectBridge.requiresPhotonForVisibility(id.location().getPath())) {
+                    ACTIVE.remove(id);
+                    try {
+                        effect.onStop(context);
+                    } catch (RuntimeException stopException) {
+                        LOGGER.warn("No se pudo limpiar {} tras fallar Photon", id, stopException);
+                    }
+                    return Result.UNKNOWN_EFFECT;
+                }
             }
             return Result.SUCCESS;
         } catch (RuntimeException exception) {
@@ -95,10 +120,26 @@ public final class ClientVfxManager {
     }
 
     public static Result toggle(EffectId id) {
+        return toggle(id, null);
+    }
+
+    public static Result toggle(EffectId id, Vec3 activationOrigin) {
         if (!EffectRegistry.ids().contains(id)) {
             return Result.UNKNOWN_EFFECT;
         }
-        return isActive(id) ? disable(id) : enable(id);
+        return isActive(id) ? disable(id) : enable(id, activationOrigin);
+    }
+
+    private static void configureActivationOrigin(EffectId id, Vec3 activationOrigin) {
+        if (activationOrigin == null) return;
+        switch (id.location().getPath()) {
+            case "music_horizon_bars" -> MusicHorizonBarsEffect.configureActivationOrigin(activationOrigin);
+            case "music_sync_bars" -> MusicSyncBarsEffect.configureActivationOrigin(activationOrigin);
+            case "rainbow_aurora" -> RainbowAuroraEffect.configureActivationOrigin(activationOrigin);
+            default -> {
+                // Otros efectos usan un origen propio o siguen intencionalmente al jugador/cámara.
+            }
+        }
     }
 
     public static int disableAll() {
@@ -109,6 +150,7 @@ public final class ClientVfxManager {
 
     /** Limpia los efectos y libera buffers auxiliares al abandonar el mundo. */
     public static void clear() {
+        PhotonEffectBridge.clearOneShots();
         for (EffectId id : new ArrayList<>(PHOTON_ACTIVE.keySet())) {
             stopPhoton(id);
         }

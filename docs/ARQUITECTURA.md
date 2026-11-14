@@ -6,11 +6,11 @@
 
 ## Integración con el runtime real de Photon
 
-`PhotonEffectBridge` construye efectos con las clases oficiales `FX`, `FXEffect`, `ParticleEmitter` y `ParticleConfig` de Photon 1.1.17 para Forge 1.20.1. Los emisores, las formas, el movimiento orbital, el bloom y las estelas se procesan en el runtime de Photon; no es una imitación con un renderer propio.
+`PhotonEffectBridge` construye efectos con las clases oficiales `FX`, `FXEffect`, `ParticleEmitter` y `ParticleConfig` de Photon 1.1.17 para Forge 1.20.1. Los emisores, las formas, el movimiento orbital y las estelas se procesan en el runtime de Photon; el bloom adicional queda desactivado para evitar incompatibilidades con otros pases de posprocesamiento; no es una imitación con un renderer propio.
 
 La migración se mantiene compuesta para no perder mecánicas que Photon no reemplaza por sí solo. `demo_orbit`, `music_horizon_bars`, `rainbow_aurora`, `cloud_vortex` y `falling_stars` usan Photon como renderer principal y no dibujan también sus versiones antiguas. En `starsspeed`, Photon dibuja las estrellas y sus estelas; el renderer propio conserva únicamente el tinte global del cielo.
 
-Las ondas de `ground_aurora`, `scan` y `trampolin` usan emisores Photon con curvas de escala, además de conservar las superficies que siguen el relieve y la mecánica del servidor. El portal y los agujeros negros combinan anillos, bloom y estelas Photon con shaders propios de interior o lente de pantalla; el tinte de `rainbow_sky` también se mantiene como shader porque Photon no reemplaza una cúpula de color para todo el cielo.
+Las ondas de `ground_aurora`, `scan` y `trampolin` usan emisores Photon con curvas de escala, además de conservar las superficies que siguen el relieve y la mecánica del servidor. El portal y los agujeros negros combinan anillos y estelas Photon con shaders propios de interior o lente de pantalla; el tinte de `rainbow_sky` también se mantiene como shader porque Photon no reemplaza una cúpula de color para todo el cielo.
 
 Los presets se construyen en memoria mediante la API real de Photon; todavía no están empaquetados como archivos `.fx` editables directamente desde el editor. La dependencia se resuelve desde el artefacto de Photon para Forge 1.20.1 junto con LowDragLib, sin copiar el código fuente de Photon.
 

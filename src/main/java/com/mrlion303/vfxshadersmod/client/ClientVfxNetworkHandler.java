@@ -35,9 +35,11 @@ public final class ClientVfxNetworkHandler {
             case VfxCommandPacket.PLAYER_VFX -> ClientPlayerVfxRenderer.setPlayerEffect(
                     (int) Math.round(packet.x()), packet.effect(),
                     "enable".equalsIgnoreCase(packet.option()));
-            case VfxCommandPacket.ENABLE -> ClientVfxManager.enable(effectId(packet.effect()));
+            case VfxCommandPacket.ENABLE -> ClientVfxManager.enable(
+                    effectId(packet.effect()), packet.position());
             case VfxCommandPacket.DISABLE -> ClientVfxManager.disable(effectId(packet.effect()));
-            case VfxCommandPacket.TOGGLE -> ClientVfxManager.toggle(effectId(packet.effect()));
+            case VfxCommandPacket.TOGGLE -> ClientVfxManager.toggle(
+                    effectId(packet.effect()), packet.position());
             case VfxCommandPacket.DISABLE_ALL -> ClientVfxManager.disableAll();
             case VfxCommandPacket.PLACE_BLACKHOLE ->
                     BlackHolePlacement.placeAt(packet.diameter(), new Vec3(packet.x(), packet.y(), packet.z()));

@@ -13,7 +13,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 
@@ -29,6 +31,31 @@ public final class MusicSyncBarsEffect implements VfxEffect, ClientVfxRenderer {
     private static final double BASE_OFFSET = 0.12D;
     private static final float[] SOUND_ENERGY = new float[BAR_COUNT];
     private long age;
+    private static volatile Vec3 requestedActivationOrigin;
+    private Vec3 origin = Vec3.ZERO;
+    private final double[] groundHeights = new double[BAR_COUNT];
+    private long groundHeightsUpdatedAt = Long.MIN_VALUE;
+
+    public static void configureActivationOrigin(Vec3 position) {
+        requestedActivationOrigin = position;
+    }
+
+    @Override
+    public void onStart(EffectContext context) {
+        age = 0L;
+        Vec3 configured = requestedActivationOrigin;
+        requestedActivationOrigin = null;
+        if (configured != null) {
+            origin = configured;
+        } else {
+            var player = Minecraft.getInstance().player;
+            origin = player == null
+                    ? context.level().getSharedSpawnPos().getCenter()
+                    : player.position();
+        }
+        java.util.Arrays.fill(groundHeights, Double.NaN);
+        groundHeightsUpdatedAt = Long.MIN_VALUE;
+    }
 
     @Override
     public EffectId id() {
@@ -100,16 +127,12 @@ public final class MusicSyncBarsEffect implements VfxEffect, ClientVfxRenderer {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        Player player = minecraft.player;
-        if (player == null || minecraft.level == null) {
-            return;
-        }
-
-        Vec3 playerPosition = player.getPosition(partialTick);
+        Level level = minecraft.level;
+        if (level == null) return;
+        updateGroundHeights(level);
         Vec3 cameraPosition = event.getCamera().getPosition();
-        double centerX = playerPosition.x - cameraPosition.x;
-        double centerY = playerPosition.y - cameraPosition.y;
-        double centerZ = playerPosition.z - cameraPosition.z;
+        double centerX = origin.x - cameraPosition.x;
+        double centerZ = origin.z - cameraPosition.z;
         double time = age + partialTick;
 
         PoseStack.Pose pose = event.getPoseStack().last();
@@ -131,20 +154,40 @@ public final class MusicSyncBarsEffect implements VfxEffect, ClientVfxRenderer {
 
             float hue = (float) (angle / (Math.PI * 2.0D)) + (float) time * 0.0012F;
             int rgb = VfxGeometry.rainbowRgb(hue);
-
-            drawBar(vertices, pose, centerX, centerY, centerZ, angle, height, rgb, 1.85D, 0.02F, 0.12F);
-            drawBar(vertices, pose, centerX, centerY, centerZ, angle, height, rgb, 1.28D, 0.07F, 0.28F);
-            drawBar(vertices, pose, centerX, centerY, centerZ, angle, height, rgb, 0.82D, 0.32F, 0.96F);
+            double groundY = groundHeights[i];
+            if (!Double.isFinite(groundY)) continue;
+            double baseY = groundY - cameraPosition.y;
+            drawBar(vertices, pose, centerX, baseY, centerZ, angle, height, rgb, 1.85D, 0.02F, 0.12F);
+            drawBar(vertices, pose, centerX, baseY, centerZ, angle, height, rgb, 1.28D, 0.07F, 0.28F);
+            drawBar(vertices, pose, centerX, baseY, centerZ, angle, height, rgb, 0.82D, 0.32F, 0.96F);
         }
 
         buffers.endBatch(renderType);
+    }
+
+    private void updateGroundHeights(Level level) {
+        long gameTime = level.getGameTime();
+        if (groundHeightsUpdatedAt != Long.MIN_VALUE && gameTime - groundHeightsUpdatedAt < 10L) return;
+        groundHeightsUpdatedAt = gameTime;
+        int sampleY = Math.max(level.getMinBuildHeight(),
+                Math.min(level.getMaxBuildHeight() - 1, (int) Math.floor(origin.y)));
+        for (int i = 0; i < BAR_COUNT; i++) {
+            double angle = Math.PI * 2.0D * i / BAR_COUNT;
+            int blockX = (int) Math.floor(origin.x + Math.cos(angle) * RADIUS);
+            int blockZ = (int) Math.floor(origin.z + Math.sin(angle) * RADIUS);
+            if (!level.hasChunkAt(new BlockPos(blockX, sampleY, blockZ))) {
+                groundHeights[i] = Double.NaN;
+                continue;
+            }
+            groundHeights[i] = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, blockX, blockZ);
+        }
     }
 
     private static void drawBar(
             VertexConsumer vertices,
             PoseStack.Pose pose,
             double centerX,
-            double centerY,
+            double baseY,
             double centerZ,
             double angle,
             double height,
@@ -160,7 +203,7 @@ public final class MusicSyncBarsEffect implements VfxEffect, ClientVfxRenderer {
         double cx = centerX + radialX * RADIUS;
         double cz = centerZ + radialZ * RADIUS;
         double halfWidth = width * 0.5D;
-        double bottom = centerY + BASE_OFFSET;
+        double bottom = baseY + BASE_OFFSET;
         double top = bottom + height;
 
         double leftX = cx - tangentX * halfWidth;
