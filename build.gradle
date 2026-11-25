@@ -68,7 +68,16 @@ tasks.register('prepararCodigoPhoton') {
             }
             copy {
                 from zipTree(archive)
-                into rootDir.parentFile
+                into rootDir
+                eachFile { details ->
+                    def segments = details.relativePath.segments
+                    if (segments.length > 1) {
+                        details.relativePath = new RelativePath(!details.isDirectory(), *segments.drop(1))
+                    } else {
+                        details.exclude()
+                    }
+                }
+                includeEmptyDirs = false
             }
         }
 
