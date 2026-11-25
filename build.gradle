@@ -60,7 +60,9 @@ tasks.register('prepararCodigoPhoton') {
 
     doLast {
         def rootDir = photonRoot.get().asFile
-        if (!rootDir.exists()) {
+        def photonEntryPoint = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/client/gameobject/IFXObject.java')
+        if (!photonEntryPoint.exists()) {
+            delete(rootDir)
             def archive = photonArchive.get().asFile
             archive.parentFile.mkdirs()
             new URL("https://codeload.github.com/Low-Drag-MC/Photon/zip/${photonRevision}").withInputStream { input ->
