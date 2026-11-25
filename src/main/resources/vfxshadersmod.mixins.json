@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.mrlion303.vfxshadersmod.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "IFXObjectMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -48,6 +48,88 @@ sourceSets.main.resources {
     srcDir 'src/generated/resources'
 }
 
+// Photon 1.1.17 se compila dentro de VFXShaderMod desde su código fuente GPL-3.0.
+def photonRevision = '507499fbe5a3fc72bb90993e059848cbb31f13ca'
+def photonRoot = layout.buildDirectory.dir("photon-source/Photon-${photonRevision}")
+def photonArchive = layout.buildDirectory.file("photon-source/Photon-${photonRevision}.zip")
+
+tasks.register('prepararCodigoPhoton') {
+    inputs.property('revision', photonRevision)
+    inputs.property('patchVersion', 1)
+    outputs.dir(photonRoot)
+
+    doLast {
+        def rootDir = photonRoot.get().asFile
+        if (!rootDir.exists()) {
+            def archive = photonArchive.get().asFile
+            archive.parentFile.mkdirs()
+            new URL("https://codeload.github.com/Low-Drag-MC/Photon/zip/${photonRevision}").withInputStream { input ->
+                archive.withOutputStream { output -> output << input }
+            }
+            copy {
+                from zipTree(archive)
+                into rootDir.parentFile
+            }
+        }
+
+        def interfaceFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/client/gameobject/IFXObject.java')
+        def interfaceSource = interfaceFile.getText('UTF-8')
+        def vanillaAdd = 'Minecraft.getInstance().particleEngine.add(particle);'
+        def isolatedAdd = 'com.mrlion303.vfxshadersmod.client.photon.PhotonWorldParticleEngine.addParticle(particle);'
+        if (interfaceSource.contains(vanillaAdd)) {
+            interfaceSource = interfaceSource.replace(vanillaAdd, isolatedAdd)
+            interfaceFile.setText(interfaceSource, 'UTF-8')
+        } else if (!interfaceSource.contains(isolatedAdd)) {
+            throw new GradleException('No se encontró el punto de emisión de partículas de Photon 1.1.17.')
+        }
+
+        def photonFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/Photon.java')
+        def photonSource = photonFile.getText('UTF-8')
+        photonSource = photonSource.replace('import dev.architectury.injectables.annotations.ExpectPlatform;\n', '')
+        photonSource = photonSource.replace('import org.slf4j.LoggerFactory;\n',
+                'import org.slf4j.LoggerFactory;\nimport net.minecraftforge.common.ForgeConfig;\n')
+        photonSource = photonSource.replace(
+                '''    @ExpectPlatform
+    public static boolean isStencilEnabled(RenderTarget target) {
+        throw new AssertionError();
+    }''',
+                '''    public static boolean isStencilEnabled(RenderTarget target) {
+        return target.isStencilEnabled();
+    }''')
+        photonSource = photonSource.replace(
+                '''    @ExpectPlatform
+    public static boolean useCombinedDepthStencilAttachment() {
+        throw new AssertionError();
+    }''',
+                '''    public static boolean useCombinedDepthStencilAttachment() {
+        return ForgeConfig.CLIENT.useCombinedDepthStencilAttachment.get();
+    }''')
+        if (photonSource.contains('@ExpectPlatform')) {
+            throw new GradleException('No se pudieron adaptar todos los métodos de plataforma de Photon.')
+        }
+        photonFile.setText(photonSource, 'UTF-8')
+    }
+}
+
+def photonCommonJava = photonRoot.map { it.dir('common/src/main/java') }
+def photonForgeJava = photonRoot.map { it.dir('forge/src/main/java') }
+def photonCommonResources = photonRoot.map { it.dir('common/src/main/resources') }
+def photonForgeResources = photonRoot.map { it.dir('forge/src/main/resources') }
+
+sourceSets.main.java.srcDir(photonCommonJava)
+sourceSets.main.java.srcDir(photonForgeJava)
+sourceSets.main.java.exclude(
+        'com/lowdragmc/photon/forge/PhotonImpl.java',
+        'com/lowdragmc/photon/forge/core/**',
+        'com/lowdragmc/photon/core/mixins/**',
+        'com/lowdragmc/photon/client/ClientCommands.java',
+        'com/lowdragmc/photon/client/forge/ClientEventListener.java'
+)
+
+tasks.named('compileJava').configure {
+    dependsOn tasks.named('prepararCodigoPhoton')
+}
+
 // Genera texturas de referencia a partir de las imágenes guía del proyecto.
 // Se usan como mapas de color/densidad sobre geometría 3D y volúmenes raymarched.
 def vfxReferenceResources = layout.buildDirectory.dir('generated/vfxReferenceResources')
@@ -170,6 +252,7 @@ tasks.named('processResources').configure {
 
 repositories {
     maven { url = 'https://maven.minecraftforge.net' }
+    maven { url = 'https://maven.fabricmc.net/' }
     mavenCentral()
     // Archivo oficial de Photon para Forge 1.20.1.
     maven { url = 'https://cursemaven.com' }
@@ -179,11 +262,30 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    implementation fg.deobf("curse.maven:photon-871522:7501597") { transitive = false }
+    compileOnly 'net.fabricmc:fabric-loader:0.15.11'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
     implementation fg.deobf("com.lowdragmc.ldlib:ldlib-forge-1.20.1:1.0.42") { transitive = false }
 }
 
 tasks.named('processResources').configure {
+    dependsOn tasks.named('prepararCodigoPhoton')
+    from(photonCommonResources) {
+        include 'assets/**'
+        include 'data/**'
+    }
+    from(photonForgeResources) {
+        include 'assets/**'
+        include 'data/**'
+    }
+    from(photonRoot) {
+        include 'LICENSE'
+        into 'META-INF/licenses'
+        rename { 'PHOTON-LICENSE.txt' }
+    }
+
     def replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,

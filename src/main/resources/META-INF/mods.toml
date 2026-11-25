@@ -9,6 +9,9 @@ displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
 
+[[mixins]]
+config="vfxshadersmod.mixins.json"
+
 [[dependencies.${mod_id}]]
 modId="forge"
 mandatory=true
@@ -24,8 +27,8 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
-modId="photon"
+modId="ldlib"
 mandatory=true
-versionRange="[1.1.17,)"
+versionRange="[1.0.42,)"
 ordering="AFTER"
 side="BOTH"
