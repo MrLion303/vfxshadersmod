@@ -154,7 +154,8 @@ tasks.register('prepararCodigoPhoton') {
                 lastBlend = BlendModeAccessor.getLastApplied();
                 BlendModeAccessor.setLastApplied(shader.getBlend());
             }'''
-            def newAccessor = '''if (RenderSystem.getShader() instanceof ShaderInstance shader) {
+            def newAccessor = '''ShaderInstance shader = RenderSystem.getShader();
+            if (shader != null) {
                 lastBlend = com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getLastAppliedBlendMode();
                 com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.setLastAppliedBlendMode(
                         com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getBlend(shader));
