@@ -98,15 +98,17 @@ tasks.register('prepararCodigoPhoton') {
         photonSource = photonSource.replace('import org.slf4j.LoggerFactory;' + System.lineSeparator(),
                 'import org.slf4j.LoggerFactory;' + System.lineSeparator() + 'import net.minecraftforge.common.ForgeConfig;' + System.lineSeparator())
         photonSource = photonSource.replace(
-                '''    public static boolean isStencilEnabled(RenderTarget target) {
-        return target.isStencilEnabled();
+                '''    @ExpectPlatform
+    public static boolean isStencilEnabled(RenderTarget target) {
+        throw new AssertionError();
     }''',
                 '''    public static boolean isStencilEnabled(RenderTarget target) {
         return target.isStencilEnabled();
     }''')
         photonSource = photonSource.replace(
-                '''    public static boolean useCombinedDepthStencilAttachment() {
-        return ForgeConfig.CLIENT.useCombinedDepthStencilAttachment.get();
+                '''    @ExpectPlatform
+    public static boolean useCombinedDepthStencilAttachment() {
+        throw new AssertionError();
     }''',
                 '''    public static boolean useCombinedDepthStencilAttachment() {
         return ForgeConfig.CLIENT.useCombinedDepthStencilAttachment.get();
