@@ -86,20 +86,18 @@ tasks.register('prepararCodigoPhoton') {
         def photonFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/Photon.java')
         def photonSource = photonFile.getText('UTF-8')
         photonSource = photonSource.replace('import dev.architectury.injectables.annotations.ExpectPlatform;' + System.lineSeparator(), '')
-        photonSource = photonSource.replace('import org.slf4j.LoggerFactory;\n',
-                'import org.slf4j.LoggerFactory;\nimport net.minecraftforge.common.ForgeConfig;\n')
+        photonSource = photonSource.replace('import org.slf4j.LoggerFactory;' + System.lineSeparator(),
+                'import org.slf4j.LoggerFactory;' + System.lineSeparator() + 'import net.minecraftforge.common.ForgeConfig;' + System.lineSeparator())
         photonSource = photonSource.replace(
-                '''    @ExpectPlatform
-    public static boolean isStencilEnabled(RenderTarget target) {
-        throw new AssertionError();
+                '''    public static boolean isStencilEnabled(RenderTarget target) {
+        return target.isStencilEnabled();
     }''',
                 '''    public static boolean isStencilEnabled(RenderTarget target) {
         return target.isStencilEnabled();
     }''')
         photonSource = photonSource.replace(
-                '''    @ExpectPlatform
-    public static boolean useCombinedDepthStencilAttachment() {
-        throw new AssertionError();
+                '''    public static boolean useCombinedDepthStencilAttachment() {
+        return ForgeConfig.CLIENT.useCombinedDepthStencilAttachment.get();
     }''',
                 '''    public static boolean useCombinedDepthStencilAttachment() {
         return ForgeConfig.CLIENT.useCombinedDepthStencilAttachment.get();
