@@ -66,18 +66,34 @@ tasks.register('prepararCodigoPhoton') {
             new URL("https://codeload.github.com/Low-Drag-MC/Photon/zip/${photonRevision}").withInputStream { input ->
                 archive.withOutputStream { output -> output << input }
             }
+            def extractedDir = layout.buildDirectory.dir('photon-download/extracted').get().asFile
+            delete(extractedDir)
+            extractedDir.mkdirs()
             copy {
                 from zipTree(archive)
+                into extractedDir
+            }
+
+            def sourceFiles = fileTree(extractedDir).matching {
+                include '**/common/src/main/java/com/lowdragmc/photon/client/gameobject/IFXObject.java'
+            }.files
+            if (sourceFiles.isEmpty()) {
+                throw new GradleException('No se encontró IFXObject.java dentro del código fuente descargado de Photon.')
+            }
+
+            def upstreamRoot = sourceFiles.first().parentFile
+            while (upstreamRoot != null &&
+                    !(new File(upstreamRoot, 'common/src/main/java').isDirectory() &&
+                      new File(upstreamRoot, 'forge/src/main/java').isDirectory())) {
+                upstreamRoot = upstreamRoot.parentFile
+            }
+            if (upstreamRoot == null) {
+                throw new GradleException('No se pudo localizar la raíz del código fuente de Photon.')
+            }
+
+            copy {
+                from upstreamRoot
                 into rootDir
-                eachFile { details ->
-                    def segments = details.relativePath.segments
-                    if (segments.length > 1) {
-                        details.relativePath = new RelativePath(!details.isDirectory(), *segments.drop(1))
-                    } else {
-                        details.exclude()
-                    }
-                }
-                includeEmptyDirs = false
             }
         }
 
