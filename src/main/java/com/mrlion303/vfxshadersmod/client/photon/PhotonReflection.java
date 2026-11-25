@@ -3,6 +3,7 @@ package com.mrlion303.vfxshadersmod.client.photon;
 import com.mojang.blaze3d.shaders.BlendMode;
 import com.mojang.blaze3d.shaders.Uniform;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -13,22 +14,16 @@ import java.util.Map;
  * Evita instalar mixins sobre clases vanilla.
  */
 public final class PhotonReflection {
-    private static final Field LAST_APPLIED_BLEND = findField(BlendMode.class, "lastApplied");
-    private static final Field SHADER_BLEND = findField(ShaderInstance.class, "blend");
-    private static final Field SHADER_SAMPLERS = findField(ShaderInstance.class, "samplerNames");
-    private static final Field SHADER_UNIFORMS = findField(ShaderInstance.class, "uniformMap");
+    private static final Field LAST_APPLIED_BLEND = findField(BlendMode.class, "f_85499_");
+    private static final Field SHADER_BLEND = findField(ShaderInstance.class, "f_173302_");
+    private static final Field SHADER_SAMPLERS = findField(ShaderInstance.class, "f_173329_");
+    private static final Field SHADER_UNIFORMS = findField(ShaderInstance.class, "f_173333_");
 
     private PhotonReflection() {
     }
 
-    private static Field findField(Class<?> owner, String name) {
-        try {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            return field;
-        } catch (ReflectiveOperationException exception) {
-            throw new ExceptionInInitializerError(exception);
-        }
+    private static Field findField(Class<?> owner, String srgName) {
+        return ObfuscationReflectionHelper.findField(owner, srgName);
     }
 
     private static Object get(Field field, Object owner) {
