@@ -85,7 +85,7 @@ tasks.register('prepararCodigoPhoton') {
 
         def photonFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/Photon.java')
         def photonSource = photonFile.getText('UTF-8')
-        photonSource = photonSource.replace('import dev.architectury.injectables.annotations.ExpectPlatform;\n', '')
+        photonSource = photonSource.replace('import dev.architectury.injectables.annotations.ExpectPlatform;' + System.lineSeparator(), '')
         photonSource = photonSource.replace('import org.slf4j.LoggerFactory;\n',
                 'import org.slf4j.LoggerFactory;\nimport net.minecraftforge.common.ForgeConfig;\n')
         photonSource = photonSource.replace(

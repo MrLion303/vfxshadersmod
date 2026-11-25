@@ -1,12 +1,8 @@
 package com.mrlion303.vfxshadersmod.mixin;
 
-import com.lowdragmc.photon.client.fx.IEffect;
 import com.lowdragmc.photon.client.gameobject.IFXObject;
-import com.mojang.blaze3d.vertex.ParticleRenderType;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleEngine;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
