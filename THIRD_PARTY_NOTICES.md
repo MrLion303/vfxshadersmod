@@ -7,7 +7,7 @@ VFXShaderMod incorpora el código fuente de Photon 1.1.17 para Minecraft 1.20.1 
 - Proyecto original: https://github.com/Low-Drag-MC/Photon
 - Revisión integrada: 507499fbe5a3fc72bb90993e059848cbb31f13ca
 - Licencia completa: `META-INF/licenses/PHOTON-LICENSE.txt`
-- El punto de emisión de partículas fue adaptado para dirigir los objetos de Photon a un motor independiente, separado del ParticleEngine vanilla.
+- El punto de emisión de partículas fue adaptado para dirigir los objetos de Photon a un motor independiente, separado del ParticleEngine vanilla. Los accessors de estado se sustituyeron por reflexión y la integración específica de Iris/Oculus se desactivó: Photon utiliza el framebuffer principal de Minecraft.
 
 El código de Photon se descarga desde la revisión indicada durante la compilación, se adapta y se compila dentro del JAR de VFXShaderMod. No se necesita instalar el mod Photon original.
 
