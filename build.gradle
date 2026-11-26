@@ -55,7 +55,7 @@ def photonArchive = layout.buildDirectory.file("photon-source/Photon-${photonRev
 
 tasks.register('prepararCodigoPhoton') {
     inputs.property('revision', photonRevision)
-    inputs.property('patchVersion', 1)
+    inputs.property('patchVersion', 2)
     outputs.dir(photonRoot)
 
     doLast {
@@ -164,6 +164,691 @@ tasks.register('prepararCodigoPhoton') {
                 throw new GradleException("No se encontró el accessor de renderizado en ${relativePath}.")
             }
             sourceFile.setText(source.replace(oldAccessor, newAccessor), 'UTF-8')
+        }
+
+        // El motor integrado dibuja sus propios emisores. No instala hooks globales ni usa Bloom sobre el framebuffer compartido.
+        def photonRenderTypeFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/client/gameobject/emitter/PhotonParticleRenderType.java')
+        def photonRenderTypeSource = photonRenderTypeFile.getText('UTF-8')
+        def oldFinishRender = '''    public static void finishRender() {
+        // render after opaque objects with depth test enabled, otherwise apply bloom effect in front of entities.
+        if (LAYER == RendererSetting.Layer.Opaque || IrisFramebufferUtils.isRenderingGUIScreen()) {
+            renderBloom();
+        }
+
+        if (LAYER == RendererSetting.Layer.Opaque) {
+            LAYER = RendererSetting.Layer.Translucent;
+        }
+    }'''
+        def newFinishRender = '''    public static void finishRender() {
+        // El Bloom original enlaza targets compartidos y puede alterar partículas de Minecraft/otros mods.
+        bloomMark = false;
+        if (LAYER == RendererSetting.Layer.Opaque) {
+            LAYER = RendererSetting.Layer.Translucent;
+        }
+    }'''
+        if (photonRenderTypeSource.contains(oldFinishRender)) {
+            photonRenderTypeSource = photonRenderTypeSource.replace(oldFinishRender, newFinishRender)
+        } else if (!photonRenderTypeSource.contains('bloomMark = false;')) {
+            throw new GradleException('No se encontró el cierre de renderizado de Photon para aislar Bloom.')
+        }
+        photonRenderTypeFile.setText(photonRenderTypeSource, 'UTF-8')
+
+        // Los presets integrados no deben enlazar los framebuffers de Bloom de Photon.
+        def photonRenderConfigFiles = [
+                'common/src/main/java/com/lowdragmc/photon/client/gameobject/emitter/particle/ParticleConfig.java',
+                'common/src/main/java/com/lowdragmc/photon/client/gameobject/emitter/trail/TrailConfig.java',
+                'common/src/main/java/com/lowdragmc/photon/client/gameobject/emitter/beam/BeamConfig.java'
+        ]
+        photonRenderConfigFiles.each { relativePath ->
+            def sourceFile = new File(rootDir, relativePath)
+            def source = sourceFile.getText('UTF-8')
+            def oldBloomSelection = '''            if (renderer.isBloomEffect()) {
+                beginBloom();
+                BloomEffect.setBloomColor(renderer.getBloomColor());
+            } else {
+                RenderSystem.setShader(GameRenderer::getParticleShader);
+            }'''
+            if (source.contains(oldBloomSelection)) {
+                source = source.replace(oldBloomSelection,
+                        '            RenderSystem.setShader(GameRenderer::getParticleShader);')
+            } else if (source.contains('beginBloom();')) {
+                throw new GradleException("No se pudo aislar el Bloom de " + '
+        def materialSource = materialFile.getText('UTF-8')
+        materialSource = materialSource.replace('import com.lowdragmc.photon.core.mixins.accessor.ShaderInstanceAccessor;' + System.lineSeparator(), '')
+        materialSource = materialSource.replace(
+                'else if (!uniformTag.isEmpty() && getShader() instanceof ShaderInstanceAccessor shaderInstance) {',
+                'else if (!uniformTag.isEmpty()) {\n                var shaderInstance = getShader();')
+        materialSource = materialSource.replace('new HashSet<>(shaderInstance.getSamplerNames())',
+                'new HashSet<>(com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getSamplerNames(shaderInstance))')
+        materialSource = materialSource.replace('shaderInstance.getUniformMap()',
+                'com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getUniformMap(shaderInstance)')
+        materialSource = materialSource.replace('if (getShader() instanceof ShaderInstanceAccessor shaderAccessor) {',
+                'if (getShader() != null) {')
+        materialSource = materialSource.replace('shaderAccessor.getSamplerNames()',
+                'com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getSamplerNames(getShader())')
+        materialSource = materialSource.replace('shaderAccessor.getUniformMap()',
+                'com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getUniformMap(getShader())')
+        if (materialSource.contains('ShaderInstanceAccessor') || materialSource.contains('shaderAccessor')) {
+            throw new GradleException('Quedó una referencia al accessor de ShaderInstance en CustomShaderMaterial.')
+        }
+        materialFile.setText(materialSource, 'UTF-8')
+
+        def infoFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/gui/editor/ParticleInfoView.java')
+        def infoSource = infoFile.getText('UTF-8')
+        infoSource = infoSource.replace('import com.lowdragmc.photon.core.mixins.accessor.MinecraftAccessor;' + System.lineSeparator(), '')
+        infoSource = infoSource.replace('MinecraftAccessor.getFps()', 'Minecraft.getInstance().getFps()')
+        infoFile.setText(infoSource, 'UTF-8')
+
+        // El renderizado integrado utiliza el framebuffer vanilla sin enlazarse a Iris/Oculus.
+        def irisFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/IrisFramebufferUtils.java')
+        irisFile.setText('''package com.lowdragmc.photon;
+
+import net.minecraft.client.Minecraft;
+
+import java.lang.reflect.Field;
+
+/**
+ * Adaptador de framebuffer para el runtime integrado de VFXShaderMod.
+ * Mantiene la API de Photon y utiliza el framebuffer principal de Minecraft.
+ */
+public final class IrisFramebufferUtils {
+    private static boolean renderingGUIScreen;
+
+    private IrisFramebufferUtils() {
+    }
+
+    public static int getIrisSolidFboId() {
+        return Minecraft.getInstance().getMainRenderTarget().frameBufferId;
+    }
+
+    public static int getIrisTranslucentFboId() {
+        return Minecraft.getInstance().getMainRenderTarget().frameBufferId;
+    }
+
+    public static int getIrisDepthTextureId() {
+        return Minecraft.getInstance().getMainRenderTarget().getDepthTextureId();
+    }
+
+    public static int getIrisSolidTextureId() {
+        return Minecraft.getInstance().getMainRenderTarget().getColorTextureId();
+    }
+
+    public static int getIrisTranslucentTextureId(boolean writeBuffer) {
+        return Minecraft.getInstance().getMainRenderTarget().getColorTextureId();
+    }
+
+    public static Field getFboCachedField() {
+        return null;
+    }
+
+    public static boolean isUsingShaderPack() {
+        return false;
+    }
+
+    public static boolean isRenderingGUIScreen() {
+        return renderingGUIScreen;
+    }
+
+    public static void setRenderingGUIScreen(boolean rendering) {
+        renderingGUIScreen = rendering;
+    }
+}
+''', 'UTF-8')
+    }
+}
+
+def photonCommonJava = photonRoot.map { it.dir('common/src/main/java') }
+def photonForgeJava = photonRoot.map { it.dir('forge/src/main/java') }
+def photonCommonResources = photonRoot.map { it.dir('common/src/main/resources') }
+def photonForgeResources = photonRoot.map { it.dir('forge/src/main/resources') }
+
+sourceSets.main.java.srcDir(photonCommonJava)
+sourceSets.main.java.srcDir(photonForgeJava)
+sourceSets.main.java.exclude(
+        'com/lowdragmc/photon/forge/PhotonImpl.java',
+        'com/lowdragmc/photon/forge/core/**',
+        'com/lowdragmc/photon/core/mixins/**',
+        'com/lowdragmc/photon/client/ClientCommands.java',
+        'com/lowdragmc/photon/client/forge/ClientEventListener.java'
+)
+
+tasks.named('compileJava').configure {
+    dependsOn tasks.named('prepararCodigoPhoton')
+}
+
+// Genera texturas de referencia a partir de las imágenes guía del proyecto.
+// Se usan como mapas de color/densidad sobre geometría 3D y volúmenes raymarched.
+def vfxReferenceResources = layout.buildDirectory.dir('generated/vfxReferenceResources')
+
+tasks.register('generateVfxReferenceTextures') {
+    inputs.files(
+            file('Imagenes guia/vortice_guia.png'),
+            file('Imagenes guia/agujero_negro_guia.png')
+    )
+    outputs.dir(vfxReferenceResources)
+
+    doLast {
+        def outputDir = new File(vfxReferenceResources.get().asFile,
+                'assets/vfxshadersmod/textures/vfx')
+        outputDir.mkdirs()
+
+        def clamp01 = { double value ->
+            Math.max(0.0d, Math.min(1.0d, value))
+        }
+
+        def vortexSource = javax.imageio.ImageIO.read(file('Imagenes guia/vortice_guia.png'))
+        int cropX = 640
+        int cropY = 7
+        int cropSize = 520
+        def vortexTexture = new java.awt.image.BufferedImage(
+                256, 256, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        def graphics = vortexTexture.createGraphics()
+        graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+        graphics.drawImage(vortexSource.getSubimage(cropX, cropY, cropSize, cropSize),
+                0, 0, 256, 256, null)
+        graphics.dispose()
+
+        for (int y = 0; y < 256; y++) {
+            for (int x = 0; x < 256; x++) {
+                int pixel = vortexTexture.getRGB(x, y)
+                double red = (pixel >> 16) & 255
+                double green = (pixel >> 8) & 255
+                double blue = pixel & 255
+                double luminance = 0.2126d * red + 0.7152d * green + 0.0722d * blue
+                double warm = clamp01((red - Math.max(green * 0.72d, blue * 1.10d) + 14.0d) / 120.0d)
+                double bright = clamp01((luminance - 38.0d) / 110.0d)
+                double alpha = warm * bright
+                alpha = alpha * alpha * (3.0d - 2.0d * alpha)
+                alpha *= clamp01((red - blue + 5.0d) / 65.0d) * clamp01((green - 16.0d) / 70.0d)
+
+                // Máscara ovalada centrada en el vórtice: elimina el cielo rojizo de la
+                // captura y los objetos del escenario, conservando las nubes de la periferia.
+                double dx = (x - 122.0d) / 150.0d
+                double dy = (y - 125.0d) / 140.0d
+                double radial = Math.sqrt(dx * dx + dy * dy * 1.08d)
+                double silhouette = 1.0d
+                if (radial >= 0.73d) {
+                    silhouette = 0.0d
+                } else if (radial > 0.52d) {
+                    double t = (radial - 0.52d) / (0.73d - 0.52d)
+                    silhouette = 1.0d - t * t * (3.0d - 2.0d * t)
+                }
+                alpha *= silhouette
+
+                int a = (int) Math.round(clamp01(alpha) * 255.0d)
+                vortexTexture.setRGB(x, y, (a << 24) | (pixel & 0x00FFFFFF))
+            }
+        }
+        javax.imageio.ImageIO.write(vortexTexture, 'png',
+                new File(outputDir, 'vortex_reference.png'))
+
+        def holeSource = javax.imageio.ImageIO.read(file('Imagenes guia/agujero_negro_guia.png'))
+        int textureWidth = 512
+        int textureHeight = 128
+        def diskTexture = new java.awt.image.BufferedImage(
+                textureWidth, textureHeight, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        double centerX = 405.0d
+        double centerY = 248.0d
+
+        for (int y = 0; y < textureHeight; y++) {
+            double radial = y / (double) (textureHeight - 1)
+            // Muestrea solo el plasma próximo al horizonte; radios mayores capturaban
+            // estrellas, el haz del cielo y partes del terreno de la imagen de referencia.
+            double radius = 65.0d + radial * 48.0d
+            for (int x = 0; x < textureWidth; x++) {
+                double angle = 2.0d * Math.PI * x / textureWidth
+                double yScale = 0.60d - 0.045d * Math.sin(angle)
+                int sampleX = (int) Math.round(centerX + Math.cos(angle) * radius)
+                int sampleY = (int) Math.round(centerY + Math.sin(angle) * radius * yScale)
+                int pixel = 0
+                if (sampleX >= 0 && sampleX < holeSource.width
+                        && sampleY >= 0 && sampleY < holeSource.height) {
+                    pixel = holeSource.getRGB(sampleX, sampleY)
+                }
+
+                double red = (pixel >> 16) & 255
+                double green = (pixel >> 8) & 255
+                double blue = pixel & 255
+                double luminance = 0.2126d * red + 0.7152d * green + 0.0722d * blue
+                // Hue mask selectiva: conserva plasma naranja/crema y descarta estrellas,
+                // resplandores grises y fondo violeta, evitando un contorno espacial enorme.
+                double warmRed = clamp01((red - green * 0.82d + 6.0d) / 80.0d)
+                double warmBlue = clamp01((red - blue * 0.92d + 8.0d) / 70.0d)
+                double luminous = clamp01((luminance - 24.0d) / 120.0d)
+                double alpha = warmRed * warmBlue * luminous
+                alpha = alpha * alpha * (3.0d - 2.0d * alpha)
+                alpha *= 0.78d + 0.22d * (1.0d - radial)
+
+                int a = (int) Math.round(clamp01(alpha) * 255.0d)
+                diskTexture.setRGB(x, y, (a << 24) | (pixel & 0x00FFFFFF))
+            }
+        }
+        javax.imageio.ImageIO.write(diskTexture, 'png',
+                new File(outputDir, 'blackhole_disk_reference.png'))
+
+    }
+}
+
+sourceSets.main.resources.srcDir(vfxReferenceResources)
+
+tasks.named('processResources').configure {
+    dependsOn tasks.named('generateVfxReferenceTextures')
+}
+
+repositories {
+    maven { url = 'https://maven.minecraftforge.net' }
+    maven { url = 'https://maven.fabricmc.net/' }
+    mavenCentral()
+    // Archivo oficial de Photon para Forge 1.20.1.
+    maven { url = 'https://cursemaven.com' }
+    // Publicación de Photon y LowDragLib para integración Java.
+    maven { url = 'https://maven.firstdarkdev.xyz/snapshots' }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    compileOnly 'net.fabricmc:fabric-loader:0.15.11'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation fg.deobf("com.lowdragmc.ldlib:ldlib-forge-1.20.1:1.0.42") { transitive = false }
+}
+
+tasks.named('processResources').configure {
+    dependsOn tasks.named('prepararCodigoPhoton')
+    from(photonCommonResources) {
+        include 'assets/**'
+        include 'data/**'
+    }
+    from(photonForgeResources) {
+        include 'assets/**'
+        include 'data/**'
+    }
+    from(photonRoot) {
+        include 'LICENSE'
+        into 'META-INF/licenses'
+        rename { 'PHOTON-LICENSE.txt' }
+    }
+
+    def replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version          : forge_version,
+            forge_version_range    : forge_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
+}
+
+// Si el archivo del proyecto existe en la raíz, se incluye como textura del portal.
+def panoramaOverlay = file('panorama_overlay.png')
+if (panoramaOverlay.exists()) {
+    tasks.named('processResources').configure {
+        from(panoramaOverlay) {
+            into 'assets/vfxshadersmod/textures/vfx'
+            rename { 'panorama_overlay.png' }
+        }
+    }
+}
+
+tasks.named('jar').configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.version.toString(),
+                'Implementation-Vendor'   : mod_authors
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+ + "{relativePath}.")
+            }
+
+            def oldBloomTarget = '''            //bind MRT after material rendered
+            var input = BloomEffect.getInput();
+            input.bindWrite(false);'''
+            def newBloomTarget = '''            // Photon se limita al framebuffer principal durante el pase de renderizado del VFX.
+            Minecraft.getInstance().getMainRenderTarget().bindWrite(false);'''
+            if (source.contains(oldBloomTarget)) {
+                source = source.replace(oldBloomTarget, newBloomTarget)
+            } else if (source.contains('BloomEffect.getInput()')) {
+                throw new GradleException("No se pudo quitar el framebuffer compartido de " + '
+        def materialSource = materialFile.getText('UTF-8')
+        materialSource = materialSource.replace('import com.lowdragmc.photon.core.mixins.accessor.ShaderInstanceAccessor;' + System.lineSeparator(), '')
+        materialSource = materialSource.replace(
+                'else if (!uniformTag.isEmpty() && getShader() instanceof ShaderInstanceAccessor shaderInstance) {',
+                'else if (!uniformTag.isEmpty()) {\n                var shaderInstance = getShader();')
+        materialSource = materialSource.replace('new HashSet<>(shaderInstance.getSamplerNames())',
+                'new HashSet<>(com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getSamplerNames(shaderInstance))')
+        materialSource = materialSource.replace('shaderInstance.getUniformMap()',
+                'com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getUniformMap(shaderInstance)')
+        materialSource = materialSource.replace('if (getShader() instanceof ShaderInstanceAccessor shaderAccessor) {',
+                'if (getShader() != null) {')
+        materialSource = materialSource.replace('shaderAccessor.getSamplerNames()',
+                'com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getSamplerNames(getShader())')
+        materialSource = materialSource.replace('shaderAccessor.getUniformMap()',
+                'com.mrlion303.vfxshadersmod.client.photon.PhotonReflection.getUniformMap(getShader())')
+        if (materialSource.contains('ShaderInstanceAccessor') || materialSource.contains('shaderAccessor')) {
+            throw new GradleException('Quedó una referencia al accessor de ShaderInstance en CustomShaderMaterial.')
+        }
+        materialFile.setText(materialSource, 'UTF-8')
+
+        def infoFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/gui/editor/ParticleInfoView.java')
+        def infoSource = infoFile.getText('UTF-8')
+        infoSource = infoSource.replace('import com.lowdragmc.photon.core.mixins.accessor.MinecraftAccessor;' + System.lineSeparator(), '')
+        infoSource = infoSource.replace('MinecraftAccessor.getFps()', 'Minecraft.getInstance().getFps()')
+        infoFile.setText(infoSource, 'UTF-8')
+
+        // El renderizado integrado utiliza el framebuffer vanilla sin enlazarse a Iris/Oculus.
+        def irisFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/IrisFramebufferUtils.java')
+        irisFile.setText('''package com.lowdragmc.photon;
+
+import net.minecraft.client.Minecraft;
+
+import java.lang.reflect.Field;
+
+/**
+ * Adaptador de framebuffer para el runtime integrado de VFXShaderMod.
+ * Mantiene la API de Photon y utiliza el framebuffer principal de Minecraft.
+ */
+public final class IrisFramebufferUtils {
+    private static boolean renderingGUIScreen;
+
+    private IrisFramebufferUtils() {
+    }
+
+    public static int getIrisSolidFboId() {
+        return Minecraft.getInstance().getMainRenderTarget().frameBufferId;
+    }
+
+    public static int getIrisTranslucentFboId() {
+        return Minecraft.getInstance().getMainRenderTarget().frameBufferId;
+    }
+
+    public static int getIrisDepthTextureId() {
+        return Minecraft.getInstance().getMainRenderTarget().getDepthTextureId();
+    }
+
+    public static int getIrisSolidTextureId() {
+        return Minecraft.getInstance().getMainRenderTarget().getColorTextureId();
+    }
+
+    public static int getIrisTranslucentTextureId(boolean writeBuffer) {
+        return Minecraft.getInstance().getMainRenderTarget().getColorTextureId();
+    }
+
+    public static Field getFboCachedField() {
+        return null;
+    }
+
+    public static boolean isUsingShaderPack() {
+        return false;
+    }
+
+    public static boolean isRenderingGUIScreen() {
+        return renderingGUIScreen;
+    }
+
+    public static void setRenderingGUIScreen(boolean rendering) {
+        renderingGUIScreen = rendering;
+    }
+}
+''', 'UTF-8')
+    }
+}
+
+def photonCommonJava = photonRoot.map { it.dir('common/src/main/java') }
+def photonForgeJava = photonRoot.map { it.dir('forge/src/main/java') }
+def photonCommonResources = photonRoot.map { it.dir('common/src/main/resources') }
+def photonForgeResources = photonRoot.map { it.dir('forge/src/main/resources') }
+
+sourceSets.main.java.srcDir(photonCommonJava)
+sourceSets.main.java.srcDir(photonForgeJava)
+sourceSets.main.java.exclude(
+        'com/lowdragmc/photon/forge/PhotonImpl.java',
+        'com/lowdragmc/photon/forge/core/**',
+        'com/lowdragmc/photon/core/mixins/**',
+        'com/lowdragmc/photon/client/ClientCommands.java',
+        'com/lowdragmc/photon/client/forge/ClientEventListener.java'
+)
+
+tasks.named('compileJava').configure {
+    dependsOn tasks.named('prepararCodigoPhoton')
+}
+
+// Genera texturas de referencia a partir de las imágenes guía del proyecto.
+// Se usan como mapas de color/densidad sobre geometría 3D y volúmenes raymarched.
+def vfxReferenceResources = layout.buildDirectory.dir('generated/vfxReferenceResources')
+
+tasks.register('generateVfxReferenceTextures') {
+    inputs.files(
+            file('Imagenes guia/vortice_guia.png'),
+            file('Imagenes guia/agujero_negro_guia.png')
+    )
+    outputs.dir(vfxReferenceResources)
+
+    doLast {
+        def outputDir = new File(vfxReferenceResources.get().asFile,
+                'assets/vfxshadersmod/textures/vfx')
+        outputDir.mkdirs()
+
+        def clamp01 = { double value ->
+            Math.max(0.0d, Math.min(1.0d, value))
+        }
+
+        def vortexSource = javax.imageio.ImageIO.read(file('Imagenes guia/vortice_guia.png'))
+        int cropX = 640
+        int cropY = 7
+        int cropSize = 520
+        def vortexTexture = new java.awt.image.BufferedImage(
+                256, 256, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        def graphics = vortexTexture.createGraphics()
+        graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+        graphics.drawImage(vortexSource.getSubimage(cropX, cropY, cropSize, cropSize),
+                0, 0, 256, 256, null)
+        graphics.dispose()
+
+        for (int y = 0; y < 256; y++) {
+            for (int x = 0; x < 256; x++) {
+                int pixel = vortexTexture.getRGB(x, y)
+                double red = (pixel >> 16) & 255
+                double green = (pixel >> 8) & 255
+                double blue = pixel & 255
+                double luminance = 0.2126d * red + 0.7152d * green + 0.0722d * blue
+                double warm = clamp01((red - Math.max(green * 0.72d, blue * 1.10d) + 14.0d) / 120.0d)
+                double bright = clamp01((luminance - 38.0d) / 110.0d)
+                double alpha = warm * bright
+                alpha = alpha * alpha * (3.0d - 2.0d * alpha)
+                alpha *= clamp01((red - blue + 5.0d) / 65.0d) * clamp01((green - 16.0d) / 70.0d)
+
+                // Máscara ovalada centrada en el vórtice: elimina el cielo rojizo de la
+                // captura y los objetos del escenario, conservando las nubes de la periferia.
+                double dx = (x - 122.0d) / 150.0d
+                double dy = (y - 125.0d) / 140.0d
+                double radial = Math.sqrt(dx * dx + dy * dy * 1.08d)
+                double silhouette = 1.0d
+                if (radial >= 0.73d) {
+                    silhouette = 0.0d
+                } else if (radial > 0.52d) {
+                    double t = (radial - 0.52d) / (0.73d - 0.52d)
+                    silhouette = 1.0d - t * t * (3.0d - 2.0d * t)
+                }
+                alpha *= silhouette
+
+                int a = (int) Math.round(clamp01(alpha) * 255.0d)
+                vortexTexture.setRGB(x, y, (a << 24) | (pixel & 0x00FFFFFF))
+            }
+        }
+        javax.imageio.ImageIO.write(vortexTexture, 'png',
+                new File(outputDir, 'vortex_reference.png'))
+
+        def holeSource = javax.imageio.ImageIO.read(file('Imagenes guia/agujero_negro_guia.png'))
+        int textureWidth = 512
+        int textureHeight = 128
+        def diskTexture = new java.awt.image.BufferedImage(
+                textureWidth, textureHeight, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        double centerX = 405.0d
+        double centerY = 248.0d
+
+        for (int y = 0; y < textureHeight; y++) {
+            double radial = y / (double) (textureHeight - 1)
+            // Muestrea solo el plasma próximo al horizonte; radios mayores capturaban
+            // estrellas, el haz del cielo y partes del terreno de la imagen de referencia.
+            double radius = 65.0d + radial * 48.0d
+            for (int x = 0; x < textureWidth; x++) {
+                double angle = 2.0d * Math.PI * x / textureWidth
+                double yScale = 0.60d - 0.045d * Math.sin(angle)
+                int sampleX = (int) Math.round(centerX + Math.cos(angle) * radius)
+                int sampleY = (int) Math.round(centerY + Math.sin(angle) * radius * yScale)
+                int pixel = 0
+                if (sampleX >= 0 && sampleX < holeSource.width
+                        && sampleY >= 0 && sampleY < holeSource.height) {
+                    pixel = holeSource.getRGB(sampleX, sampleY)
+                }
+
+                double red = (pixel >> 16) & 255
+                double green = (pixel >> 8) & 255
+                double blue = pixel & 255
+                double luminance = 0.2126d * red + 0.7152d * green + 0.0722d * blue
+                // Hue mask selectiva: conserva plasma naranja/crema y descarta estrellas,
+                // resplandores grises y fondo violeta, evitando un contorno espacial enorme.
+                double warmRed = clamp01((red - green * 0.82d + 6.0d) / 80.0d)
+                double warmBlue = clamp01((red - blue * 0.92d + 8.0d) / 70.0d)
+                double luminous = clamp01((luminance - 24.0d) / 120.0d)
+                double alpha = warmRed * warmBlue * luminous
+                alpha = alpha * alpha * (3.0d - 2.0d * alpha)
+                alpha *= 0.78d + 0.22d * (1.0d - radial)
+
+                int a = (int) Math.round(clamp01(alpha) * 255.0d)
+                diskTexture.setRGB(x, y, (a << 24) | (pixel & 0x00FFFFFF))
+            }
+        }
+        javax.imageio.ImageIO.write(diskTexture, 'png',
+                new File(outputDir, 'blackhole_disk_reference.png'))
+
+    }
+}
+
+sourceSets.main.resources.srcDir(vfxReferenceResources)
+
+tasks.named('processResources').configure {
+    dependsOn tasks.named('generateVfxReferenceTextures')
+}
+
+repositories {
+    maven { url = 'https://maven.minecraftforge.net' }
+    maven { url = 'https://maven.fabricmc.net/' }
+    mavenCentral()
+    // Archivo oficial de Photon para Forge 1.20.1.
+    maven { url = 'https://cursemaven.com' }
+    // Publicación de Photon y LowDragLib para integración Java.
+    maven { url = 'https://maven.firstdarkdev.xyz/snapshots' }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    compileOnly 'net.fabricmc:fabric-loader:0.15.11'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation fg.deobf("com.lowdragmc.ldlib:ldlib-forge-1.20.1:1.0.42") { transitive = false }
+}
+
+tasks.named('processResources').configure {
+    dependsOn tasks.named('prepararCodigoPhoton')
+    from(photonCommonResources) {
+        include 'assets/**'
+        include 'data/**'
+    }
+    from(photonForgeResources) {
+        include 'assets/**'
+        include 'data/**'
+    }
+    from(photonRoot) {
+        include 'LICENSE'
+        into 'META-INF/licenses'
+        rename { 'PHOTON-LICENSE.txt' }
+    }
+
+    def replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version          : forge_version,
+            forge_version_range    : forge_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
+}
+
+// Si el archivo del proyecto existe en la raíz, se incluye como textura del portal.
+def panoramaOverlay = file('panorama_overlay.png')
+if (panoramaOverlay.exists()) {
+    tasks.named('processResources').configure {
+        from(panoramaOverlay) {
+            into 'assets/vfxshadersmod/textures/vfx'
+            rename { 'panorama_overlay.png' }
+        }
+    }
+}
+
+tasks.named('jar').configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.version.toString(),
+                'Implementation-Vendor'   : mod_authors
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+ + "{relativePath}.")
+            }
+
+            if (source.contains('            endParticle();')) {
+                source = source.replace('            endParticle();',
+                        '            Minecraft.getInstance().getMainRenderTarget().bindWrite(false);')
+            }
+            sourceFile.setText(source, 'UTF-8')
         }
 
         def materialFile = new File(rootDir, 'common/src/main/java/com/lowdragmc/photon/client/gameobject/emitter/data/material/CustomShaderMaterial.java')

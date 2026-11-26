@@ -5,12 +5,12 @@ Esta guía corresponde al mod para **Minecraft 1.20.1 + Forge 47.4.18**. La inte
 ## Instalación
 
 1. Usa una instancia de Minecraft Java **1.20.1 con Forge 47.4.18 o compatible**.
-2. Instala **Photon 1.1.17 para Forge 1.20.1** y las dependencias que pide esa versión de Photon, incluida LowDragLib si tu instalador no la agregó automáticamente.
+2. Instala **LowDragLib 1.0.42**. Photon 1.1.17 ya está integrado dentro de VFX Shaders Mod: **no instales el JAR independiente de Photon**, porque duplicaría sus clases y reactivaría sus Mixins globales.
 3. Descarga el JAR del artefacto **Compilar el mod** de GitHub Actions correspondiente al commit que quieres probar.
 4. Copia el JAR del mod a la carpeta `mods`. No extraigas ni combines los JAR.
 5. Inicia el juego. Si pruebas en un servidor dedicado, instala las dependencias requeridas en el servidor y en los clientes; usa las mismas versiones.
 
-## Prueba sugerida
+Los comandos `/vfx` son globales y los ejecuta el servidor para todos los jugadores de la dimensión. `/vfxlocal` activa efectos solo en el cliente que lo ejecuta.\n\n## Prueba sugerida
 
 Entra a un mundo de prueba, activa un efecto a la vez y revisa su posición, movimiento, desaparición y posibles errores en `logs/latest.log`.
 
@@ -79,4 +79,4 @@ Para limpiar los efectos locales antes de seguir probando:
 - La lente gravitacional de pantalla está activa alrededor del agujero negro colocado. Si la cámara queda dentro o demasiado cerca del horizonte, el objeto se oculta temporalmente para evitar que la esfera negra envuelva toda la vista.
 - Activa efectos individualmente antes de probar varios a la vez para detectar cualquier caída de rendimiento.
 
-La compilación automática valida Java, recursos JSON y shaders GLSL, pero no puede confirmar el resultado visual de la GPU. La verificación final de aspecto y rendimiento requiere abrir Minecraft con Photon instalado. Los presets se generan mediante la API de Photon en tiempo de ejecución; no están empaquetados como archivos `.fx` editables en el editor de Photon.
+La compilación automática valida Java, recursos JSON y shaders GLSL, pero no puede confirmar el resultado visual de la GPU. La verificación final de aspecto y rendimiento requiere abrir Minecraft con Photon instalado. Los presets se generan mediante la API de Photon integrada en tiempo de ejecución; no están empaquetados como archivos `.fx` editables en el editor independiente de Photon. El renderizado integrado utiliza una cola privada y no procesa las partículas del motor vanilla.

@@ -29,7 +29,7 @@ public final class ClientVfxCommands {
     }
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("vfx")
+        dispatcher.register(Commands.literal("vfxlocal")
                 .executes(ClientVfxCommands::help)
                 .then(Commands.literal("help").executes(ClientVfxCommands::help))
                 .then(Commands.literal("list").executes(ClientVfxCommands::list))
@@ -79,22 +79,22 @@ public final class ClientVfxCommands {
     private static int help(CommandContext<CommandSourceStack> context) {
         var source = context.getSource();
         source.sendSuccess(() -> Component.literal("VFX Shaders Mod — comandos"), false);
-        source.sendSuccess(() -> Component.literal("/vfx list — lista los efectos, categorías y estados"), false);
-        source.sendSuccess(() -> Component.literal("/vfx enable <efecto> — activa un efecto"), false);
-        source.sendSuccess(() -> Component.literal("/vfx enable starsspeed <color> — activa el cielo con estelas rápidas"), false);
-        source.sendSuccess(() -> Component.literal("/vfx enable ground_aurora <x> <y> <z> <color> — ondas de luz sobre el suelo"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal list — lista los efectos, categorías y estados"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal enable <efecto> — activa un efecto"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal enable starsspeed <color> — activa el cielo con estelas rápidas"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal enable ground_aurora <x> <y> <z> <color> — ondas de luz sobre el suelo"), false);
         source.sendSuccess(() -> Component.literal("/vfxonce scan <x> <y> <z> <color> — escaneo del terreno de un solo uso"), false);
         source.sendSuccess(() -> Component.literal("/vfxmove moonjump enable|disable <jugadores>"), false);
         source.sendSuccess(() -> Component.literal("/vfxmove waterwalk enable|disable <jugadores>"), false);
-        source.sendSuccess(() -> Component.literal("/vfx enable blackhole <tamaño> <x> <y> <z> — coloca un agujero negro en coordenadas exactas"), false);
-        source.sendSuccess(() -> Component.literal("/vfx disable <efecto> — desactiva un efecto"), false);
-        source.sendSuccess(() -> Component.literal("/vfx disable blackhole — elimina todos los agujeros negros colocados"), false);
-        source.sendSuccess(() -> Component.literal("/vfx enable blackhole_sky — activa el agujero celeste gigante a 50 grados sobre el horizonte"), false);
-        source.sendSuccess(() -> Component.literal("/vfx enable rainbow_sky — cambia todo el cielo y las nubes por colores uniformes del arcoíris"), false);
-        source.sendSuccess(() -> Component.literal("Los bloques de comandos también pueden ejecutar /vfx; las órdenes se replican a los clientes de la dimensión."), false);
-        source.sendSuccess(() -> Component.literal("/vfx toggle <efecto> — alterna su estado"), false);
-        source.sendSuccess(() -> Component.literal("/vfx status <efecto> — consulta el estado"), false);
-        source.sendSuccess(() -> Component.literal("/vfx disable all — limpia todos los VFX locales"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal enable blackhole <tamaño> <x> <y> <z> — coloca un agujero negro en coordenadas exactas"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal disable <efecto> — desactiva un efecto"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal disable blackhole — elimina todos los agujeros negros colocados"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal enable blackhole_sky — activa el agujero celeste gigante a 50 grados sobre el horizonte"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal enable rainbow_sky — cambia todo el cielo y las nubes por colores uniformes del arcoíris"), false);
+        source.sendSuccess(() -> Component.literal("El comando /vfx se ejecuta en el servidor y se replica a todos los clientes de la dimensión."), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal toggle <efecto> — alterna su estado"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal status <efecto> — consulta el estado"), false);
+        source.sendSuccess(() -> Component.literal("/vfxlocal disable all — limpia todos los VFX locales"), false);
         source.sendSuccess(() -> Component.literal("El tamaño es el diámetro en bloques (1 a 100); el valor normal es 10."), false);
         source.sendSuccess(() -> Component.literal("Las coordenadas aceptan valores absolutos o relativos con ~."), false);
         return 1;
@@ -117,13 +117,13 @@ public final class ClientVfxCommands {
                     + definition.displayName() + " (" + definition.id() + ")" + description;
             source.sendSuccess(() -> Component.literal(line), false);
         }
-        source.sendSuccess(() -> Component.literal("Usa /vfx enable <efecto> o /vfx disable <efecto>."), false);
+        source.sendSuccess(() -> Component.literal("Usa /vfxlocal enable <efecto> o /vfxlocal disable <efecto>."), false);
         return definitions.size();
     }
 
     private static int blackHoleUsage(CommandContext<CommandSourceStack> context) {
         context.getSource().sendFailure(Component.literal(
-                "Uso: /vfx enable blackhole <tamaño> <x> <y> <z>. El tamaño es el diámetro en bloques."));
+                "Uso: /vfxlocal enable blackhole <tamaño> <x> <y> <z>. El tamaño es el diámetro en bloques."));
         return 0;
     }
 
@@ -202,12 +202,12 @@ public final class ClientVfxCommands {
 
         EffectId id = parsed.get();
         if (!EffectRegistry.ids().contains(id)) {
-            source.sendFailure(Component.literal("No existe el efecto VFX " + id + ". Consulta /vfx list."));
+            source.sendFailure(Component.literal("No existe el efecto VFX " + id + ". Consulta /vfxlocal list."));
             return 0;
         }
         if (id.equals(BlackHoleEffect.ID) && action != Action.DISABLE) {
             source.sendFailure(Component.literal(
-                    "Para colocar un agujero negro usa /vfx enable blackhole <tamaño> <x> <y> <z>."
+                    "Para colocar un agujero negro usa /vfxlocal enable blackhole <tamaño> <x> <y> <z>."
             ));
             return 0;
         }
@@ -251,7 +251,7 @@ public final class ClientVfxCommands {
         String name = StringArgumentType.getString(context, "effect");
         Optional<EffectId> parsed = parseId(name);
         if (parsed.isEmpty() || !EffectRegistry.ids().contains(parsed.get())) {
-            source.sendFailure(Component.literal("No se encontró ese efecto. Consulta /vfx list."));
+            source.sendFailure(Component.literal("No se encontró ese efecto. Consulta /vfxlocal list."));
             return 0;
         }
 
