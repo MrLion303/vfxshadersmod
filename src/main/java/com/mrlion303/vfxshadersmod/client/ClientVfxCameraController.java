@@ -39,6 +39,14 @@ public final class ClientVfxCameraController {
 
     private ClientVfxCameraController() {}
 
+    /**
+     * Indica si una cámara de VFXShaderMod está controlando la perspectiva.
+     * API de solo lectura para compatibilidad con otros mods.
+     */
+    public static boolean isCameraOverrideActive() {
+        return mode != Mode.NONE;
+    }
+
     public static void shoulder(float seconds) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
