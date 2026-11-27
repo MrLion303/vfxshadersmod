@@ -91,7 +91,7 @@ public final class ClientVfxCommands {
         source.sendSuccess(() -> Component.literal("/vfxlocal disable blackhole — elimina todos los agujeros negros colocados"), false);
         source.sendSuccess(() -> Component.literal("/vfxlocal enable blackhole_sky — activa el agujero celeste gigante a 50 grados sobre el horizonte"), false);
         source.sendSuccess(() -> Component.literal("/vfxlocal enable rainbow_sky — cambia todo el cielo y las nubes por colores uniformes del arcoíris"), false);
-        source.sendSuccess(() -> Component.literal("El comando /vfx se ejecuta en el servidor y se replica a todos los clientes de la dimensión."), false);
+        source.sendSuccess(() -> Component.literal("Los bloques de comandos también pueden ejecutar /vfx; las órdenes se replican a los clientes de la dimensión."), false);
         source.sendSuccess(() -> Component.literal("/vfxlocal toggle <efecto> — alterna su estado"), false);
         source.sendSuccess(() -> Component.literal("/vfxlocal status <efecto> — consulta el estado"), false);
         source.sendSuccess(() -> Component.literal("/vfxlocal disable all — limpia todos los VFX locales"), false);

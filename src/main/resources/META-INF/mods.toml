@@ -9,7 +9,6 @@ displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
 
-
 [[dependencies.${mod_id}]]
 modId="forge"
 mandatory=true
@@ -25,8 +24,8 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
-modId="ldlib"
+modId="photon"
 mandatory=true
-versionRange="[1.0.42,)"
+versionRange="[1.1.17,)"
 ordering="AFTER"
 side="BOTH"
